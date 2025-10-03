@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from .models import Producto, Marca
+from django.db.models import Count
 
 def home(request):
     return render(request, 'home.html')
@@ -23,3 +25,24 @@ def politicas_privacidad(request):
 
 def terminos_condiciones(request):
     return render(request, 'terminos_condiciones.html')
+
+def product_catalog(request, brand_name=None):
+    products = Producto.objects.all()
+    if brand_name:
+        products = products.filter(marca__nombre__iexact=brand_name)
+
+    selected_brands = request.GET.getlist('marca')
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+    available_brands = Marca.objects.annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre') 
+    
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brand': brand_name,
+        'selected_brands_from_form': selected_brands,
+    }
+    
+    return render(request, 'store/tienda.html', context)

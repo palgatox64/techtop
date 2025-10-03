@@ -8,7 +8,8 @@ from store.views import (
     centro_ayuda, 
     garantias, 
     politicas_privacidad, 
-    terminos_condiciones
+    terminos_condiciones,
+    product_catalog
 )
 
 urlpatterns = [
@@ -21,4 +22,6 @@ urlpatterns = [
     path('garantias/', garantias, name='garantias'),
     path('politicas-privacidad/', politicas_privacidad, name='politicas_privacidad'),
     path('terminos-condiciones/', terminos_condiciones, name='terminos_condiciones'),
+    path('tienda/', product_catalog, name='product_catalog'),
+    path('tienda/marca/<str:brand_name>/', product_catalog, name='product_catalog_by_brand'),
 ]
