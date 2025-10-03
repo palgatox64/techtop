@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/carrito.css' %}">
+{% endblock %}
+
+{% block title %}Mi Carrito{% endblock %}
+
+{% block content %}
+<div class="cart-page-container">
+    <h1>Carrito</h1>
+    <div class="cart-layout">
+    <div class="cart-items">
+        <p class="cart-empty-message">Tu carrito de compras está vacío.</p>
+    </div>
+
+        <div class="cart-summary">
+            <h4>TOTAL DEL CARRITO</h4>
+            <div class="summary-row"><span>Total estimado</span><span class="summary-total-price"></span></div>
+            <button class="checkout-button">Finalizar compra</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

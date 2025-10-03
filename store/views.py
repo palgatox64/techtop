@@ -46,3 +46,7 @@ def product_catalog(request, brand_name=None):
     }
     
     return render(request, 'store/tienda.html', context)
+
+def carrito_page(request):
+    context = {}
+    return render(request, 'store/carrito.html', context)

@@ -9,7 +9,8 @@ from store.views import (
     garantias, 
     politicas_privacidad, 
     terminos_condiciones,
-    product_catalog
+    product_catalog,
+    carrito_page
 )
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path('terminos-condiciones/', terminos_condiciones, name='terminos_condiciones'),
     path('tienda/', product_catalog, name='product_catalog'),
     path('tienda/marca/<str:brand_name>/', product_catalog, name='product_catalog_by_brand'),
+    path('carrito/', carrito_page, name='carrito_page'),
 ]
