@@ -7,6 +7,7 @@
     <title>{% block title %}Techtop{% endblock %}</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 </head>
 <body>
@@ -36,17 +37,17 @@
             <div class="mega-menu-column full-width">
                 <h3 class="mega-menu-main-title">Marcas</h3>
                 <ul class="brand-list">
-                    <li><a href="#">Fiat</a></li>
-                    <li><a href="#">Ford</a></li>
-                    <li><a href="#">Honda</a></li>
-                    <li><a href="#">KIA</a></li>
-                    <li><a href="#">Mazda</a></li>
-                    <li><a href="#">Mitsubishi</a></li>
-                    <li><a href="#">Nissan</a></li>
-                    <li><a href="#">Renault</a></li>
-                    <li><a href="#">Volkswagen</a></li>
-                    <li><a href="#">Toyota</a></li>
-                    <li><a href="#">SsangYong</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Fiat' %}">Fiat</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Ford' %}">Ford</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Honda' %}">Honda</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'KIA' %}">KIA</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Mazda' %}">Mazda</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Mitsubishi' %}">Mitsubishi</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Nissan' %}">Nissan</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Renault' %}">Renault</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Volkswagen' %}">Volkswagen</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'Toyota' %}">Toyota</a></li>
+                    <li><a href="{% url 'product_catalog_by_brand' 'SsangYong' %}">SsangYong</a></li>
                     </ul>
             </div>
         </div>

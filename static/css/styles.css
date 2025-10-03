@@ -278,7 +278,7 @@ ul {
   align-items: center;
 }
 
-/* Capa semitransparente sobre la imagen para que el texto sea más legible */
+
 .slide-content {
     background-color: rgba(0, 0, 0, 0.5);
     padding: 2rem 3rem;

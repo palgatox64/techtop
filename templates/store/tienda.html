@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
+{% endblock %}
+
+{% block title %}Tienda - Diseño de Prueba{% endblock %}
+
+{% block content %}
+<div class="catalog-container">
+
+    <aside class="filter-sidebar">
+        <form method="GET">
+            <h3>Filtros</h3>
+            
+            <div class="filter-group">
+                <h4>Marcas</h4>
+                <ul class="filter-list checkbox-list">
+                    <li><label><input type="checkbox" name="marca" value="Fiat"> Fiat (2)</label></li>
+                    <li><label><input type="checkbox" name="marca" value="Nissan"> Nissan (1)</label></li>
+                    <li><label><input type="checkbox" name="marca" value="Toyota"> Toyota (1)</label></li>
+                </ul>
+            </div>
+            
+            <div class="filter-group">
+                <h4>Precio</h4>
+                <ul class="filter-list checkbox-list">
+                    <li><label><input type="checkbox" name="precio" value="100000-200000"> $100.000 - $200.000</label></li>
+                    <li><label><input type="checkbox" name="precio" value="200001-300000"> $200.001 - $300.000</label></li>
+                </ul>
+            </div>
+
+            <button type="submit" class="filter-button">Aplicar Filtros</button>
+        </form>
+    </aside>
+
+    <main class="product-grid">
+        
+        <div class="product-card">
+            <a href="#">
+                <img src="https://placehold.co/300x300/e0e0e0/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
+                <div class="product-info">
+                    <p class="product-brand">Fiat</p>
+                    <h4 class="product-name">Radio Android para Fiat Cronos</h4>
+                    <div class="product-prices">
+                        <p class="product-price-main">$240.000</p>
+                        <p class="price-label">Transferencia</p>
+                        <p class="product-price-secondary">$255.000</p>
+                        <p class="price-label">Otros medios de pago</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="product-card">
+            <a href="#">
+                <img src="https://placehold.co/300x300/d1d1d1/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
+                <div class="product-info">
+                    <p class="product-brand">Toyota</p>
+                    <h4 class="product-name">Pantalla Multimedia para Toyota Yaris</h4>
+                    <div class="product-prices">
+                        <p class="product-price-main">$180.000</p>
+                        <p class="price-label">Transferencia</p>
+                        <p class="product-price-secondary">$192.500</p>
+                        <p class="price-label">Otros medios de pago</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="product-card">
+            <a href="#">
+                <img src="https://placehold.co/300x300/c2c2c2/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
+                <div class="product-info">
+                    <p class="product-brand">Nissan</p>
+                    <h4 class="product-name">Radio con GPS para Nissan Kicks</h4>
+                    <div class="product-prices">
+                        <p class="product-price-main">$230.000</p>
+                        <p class="price-label">Transferencia</p>
+                        <p class="product-price-secondary">$245.000</p>
+                        <p class="price-label">Otros medios de pago</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </main>
+</div>
+{% endblock %}
