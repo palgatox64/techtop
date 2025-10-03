@@ -188,7 +188,7 @@ ul {
     transition: opacity 0.3s ease, visibility 0.3s;
 }
 
-/* Contenido interno del mega menú */
+/* Contenido interno del menú */
 .mega-menu-content {
     display: flex;
     gap: 2rem;

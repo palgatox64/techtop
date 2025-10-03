@@ -6,7 +6,6 @@
     margin: 0 auto;
 }
 
-/* --- Barra Lateral de Filtros --- */
 .filter-sidebar {
     width: 250px;
     flex-shrink: 0; 
@@ -57,7 +56,6 @@
 }
 
 
-/* --- Cuadrícula de Productos --- */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
