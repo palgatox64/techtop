@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sobre Nosotros - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/about.css' %}">
+
+<div class="about-section">
+    <div class="about-container">
+        <div class="about-text">
+            <h2>Sobre Nosotros</h2>
+            <p>
+                Aprovechando los conocimientos previamente adquiridos durante nuestra vida laboral, actuamos de manera intrépida y con la mente abierta para probar nuevas ideas y estudiar los productos disponibles en el mercado mundial. Nos encontramos con productos casi desconocidos que superaban nuestras propias expectativas. Con los productos que descubrimos durante este proceso fue que formamos TECHTOP.
+            </p>
+            <p>
+                Nuestra dedicación y ganas de mejorar de manera continua son el impulso detrás de los productos que brindamos a nuestros clientes, ofreciendo una relación amistosa, cercana y colaborativa en la resolución de sus problemas o inquietudes, ya sea antes o después de haber adquirido el producto.
+            </p>
+        </div>
+        <div class="about-image">
+            <img src="https://i.imgur.com/KWf7I5c.png" alt="Ilustración del equipo de Techtop">
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/about.js' %}"></script>
+{% endblock %}
