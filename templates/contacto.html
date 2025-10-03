@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contacto - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/contacto.css' %}">
+
+<div class="contacto-container">
+    <div class="contacto-header">
+        <h1>Contáctanos</h1>
+        <p>Estamos aquí para ayudarte. Envíanos tu mensaje y te responderemos pronto.</p>
+    </div>
+    
+    <div class="contacto-content">
+        <!-- Formulario de contacto -->
+        <div class="form-section">
+            <form class="contact-form">
+                <div class="form-group">
+                    <label for="nombre">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apellido">Apellido</label>
+                    <input type="text" id="apellido" name="apellido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mensaje">Mensaje</label>
+                    <textarea id="mensaje" name="mensaje" rows="6" required placeholder="Escribe tu mensaje aquí..."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class='bx bx-send'></i>
+                    Enviar Mensaje
+                </button>
+            </form>
+        </div>
+        
+        <!-- Información de contacto -->
+        <div class="contact-info">
+            <h3>Información de Contacto</h3>
+            <div class="info-item">
+                <i class='bx bx-phone'></i>
+                <span>+56 9 6652 6672</span>
+            </div>
+            <div class="info-item">
+                <i class='bx bx-envelope'></i>
+                <span>techtop.contacto@gmail.com</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
