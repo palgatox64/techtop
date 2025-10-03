@@ -91,18 +91,18 @@
             <div class="footer-column">
                 <h3>Ayuda</h3>
                 <ul>
-                    <li><a href="#">Centro de Ayuda</a></li>
-                    <li><a href="#">Seguimiento de mi compra</a></li>
+                    <li><a href="{% url 'centro_ayuda' %}">Centro de Ayuda</a></li>
+                    <li><a href="{% url 'seguimiento_compra' %}">Seguimiento de mi compra</a></li>
                     <li><a href="{% url 'contacto' %}">Contacto</a></li>    
-                    <li><a href="#">Garantías</a></li>
+                    <li><a href="{% url 'garantias' %}">Garantías</a></li>
                 </ul>
             </div>
             <div class="footer-column">
                 <h3>Nosotros</h3>
                 <ul>
                     <li><a href="{% url 'about' %}">Quiénes Somos</a></li>                    
-                    <li><a href="#">Políticas de Privacidad</a></li>
-                    <li><a href="#">Términos y Condiciones</a></li>
+                    <li><a href="{% url 'politicas_privacidad' %}">Políticas de Privacidad</a></li>
+                    <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
                 </ul>
             </div>
             <div class="footer-column">
