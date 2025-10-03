@@ -22,7 +22,7 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    imagen_url = models.URLField(max_length=200)
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True)
     fecha_pub = models.DateField(auto_now_add=True)
     
     # Relaciones (Foreign Keys)

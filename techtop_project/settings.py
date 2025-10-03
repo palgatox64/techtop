@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'store',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -115,3 +116,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+
+
+
+# Azure Blob Storage Configuration
+AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = os.getenv('AZURE_STORAGE_KEY')
+AZURE_CONTAINER = os.getenv('AZURE_CONTAINER')
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+        "OPTIONS": {
+            "account_name": AZURE_ACCOUNT_NAME,
+            "account_key": AZURE_ACCOUNT_KEY,
+            "azure_container": AZURE_CONTAINER,
+            "timeout": 20,
+            "expiration_secs": 500,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
