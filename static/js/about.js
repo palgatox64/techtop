@@ -1,0 +1,1 @@
+console.log("El script de la página 'Sobre Nosotros' se ha cargado correctamente.");
