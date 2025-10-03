@@ -83,6 +83,7 @@ ul {
 .navbar {
     padding: 1rem 2rem;
     border-bottom: 1px solid #e0e0e0;
+    position: relative; /* <-- AÑADE ESTO */
 }
 
 .nav-links {
@@ -154,7 +155,7 @@ ul {
 }
 
 .nav-item-dropdown {
-    position: relative;
+    position: static;
 }
 
 /* Estilo del enlace principal de navegación */
@@ -175,8 +176,7 @@ ul {
 .mega-menu {
     position: absolute;
     top: 100%;
-    left: 50%; 
-    transform: translateX(-50%); 
+    left: 0%; 
     width: 100%; 
     background-color: #fff;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -184,6 +184,7 @@ ul {
     z-index: 100;
     opacity: 0;
     visibility: hidden;
+    transform: translateY(-10px)
     transition: opacity 0.3s ease, visibility 0.3s;
 }
 
