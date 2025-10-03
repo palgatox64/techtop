@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User # Para manejar usuarios
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 # --- Modelo para la tabla CATEGORIAS ---
@@ -19,7 +18,6 @@ class Marca(models.Model):
 
 # --- Modelo para la tabla PRODUCTOS ---
 class Producto(models.Model):
-    # Django crea el id automáticamente (AutoField)
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, null=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
@@ -34,15 +32,21 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-# --- Modelo para la tabla CLIENTES ---
-# Usamos el User de Django y creamos un Perfil para extenderlo
+# --- Modelo para la tabla CLIENTES (según tu DDL) ---
 class Cliente(models.Model):
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    telefono = models.CharField(max_length=15, blank=True, null=True)
-    # nombre, apellidos y email ya están en el modelo User de Django
+    id_cliente = models.AutoField(primary_key=True)  # NUMERIC(10) NOT NULL PRIMARY KEY
+    nombre = models.CharField(max_length=100)        # VARCHAR(100) NOT NULL
+    apellidos = models.CharField(max_length=150)     # VARCHAR(150) NOT NULL  
+    email = models.EmailField(max_length=100, unique=True)  # VARCHAR(100) NOT NULL UNIQUE
+    pass_hash = models.CharField(max_length=200)     # VARCHAR(200) NOT NULL
+    telefono = models.CharField(max_length=9)            # VARCHAR(9) NOT NULL
 
+    class Meta:
+        # Usar el nombre estándar de Django: store_cliente
+        pass
+        
     def __str__(self):
-        return self.usuario.username
+        return f"{self.nombre} {self.apellidos}"
 
 # --- Modelo para la tabla DIRECCIONES ---
 class Direccion(models.Model):
@@ -72,7 +76,7 @@ class Pedido(models.Model):
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
 
     def __str__(self):
-        return f"Pedido #{self.id} de {self.cliente.usuario.username}"
+        return f"Pedido #{self.id} de {self.cliente.nombre}"
 
 # --- Modelo para la tabla DETALLES_PEDIDO ---
 class DetallePedido(models.Model):
