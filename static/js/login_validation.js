@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('login-form');
 
-    form.addEventListener('submit', async function(event) { 
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault(); // ¡AGREGAR ESTA LÍNEA QUE FALTA!
 
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
@@ -25,21 +26,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-
         try {
-            
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             
-            const response = await fetch(form.action, { 
+            const response = await fetch(form.action, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrftoken, 
+                    'X-CSRFToken': csrftoken,
                 },
-                body: new URLSearchParams({ 
+                body: new URLSearchParams({
                     'email': email,
                     'password': password,
-                    'csrfmiddlewaretoken': csrftoken 
+                    'csrfmiddlewaretoken': csrftoken
                 })
             });
 
@@ -50,10 +49,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon: 'success',
                     title: '¡Éxito!',
                     text: data.message,
-                    timer: 1500,
-                    showConfirmButton: false
+                    timer: 3000,                    // Exactamente 3 segundos
+                    showConfirmButton: false,       // No mostrar botón para que no interfiera
+                    allowOutsideClick: false,       // No permitir cerrar haciendo clic afuera
+                    allowEscapeKey: false           // No permitir cerrar con ESC
                 }).then(() => {
-                    window.location.href = data.redirect_url; // Redirige al home
+                    // Esta función se ejecuta después de exactamente 3 segundos
+                    window.location.href = data.redirect_url;
                 });
             } else {
                 Swal.fire({

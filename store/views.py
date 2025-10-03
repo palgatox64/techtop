@@ -72,19 +72,30 @@ def login_view(request):
                 request.session['cliente_id'] = cliente.id_cliente
                 request.session['cliente_nombre'] = cliente.nombre
                 
-                return JsonResponse({'success': True, 'message': f'¡Bienvenido de vuelta, {cliente.nombre}!', 'redirect_url': '/'})
+                return JsonResponse({
+                    'success': True, 
+                    'message': f'¡Bienvenido de vuelta, {cliente.nombre}!', 
+                    'redirect_url': '/'
+                })
             else:
                 print(f">>> Contraseña INCORRECTA para {correo}.")
-                return JsonResponse({'success': False, 'message': 'Correo o contraseña incorrectos.'})
+                return JsonResponse({
+                    'success': False, 
+                    'message': 'Correo o contraseña incorrectos.'
+                })
 
         except Cliente.DoesNotExist:
             print(f">>> No se encontró ningún usuario con el correo {correo}.")
-            return JsonResponse({'success': False, 'message': 'Correo o contraseña incorrectos.'})
+            return JsonResponse({
+                'success': False, 
+                'message': 'Correo o contraseña incorrectos.'
+            })
         except Exception as e:
             print(f">>> Error inesperado en login: {e}")
-            return JsonResponse({'success': False, 'message': 'Ocurrió un error inesperado. Intenta de nuevo.'})
-            
-    return redirect('home')
+            return JsonResponse({
+                'success': False, 
+                'message': 'Ocurrió un error inesperado. Intenta de nuevo.'
+            })
 
 def register_view(request):
     if request.method == 'GET':
