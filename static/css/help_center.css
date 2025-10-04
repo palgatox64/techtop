@@ -1,0 +1,130 @@
+.help-center-page {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* Encabezado y Barra de Búsqueda */
+.help-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.help-header h1 {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+}
+
+.help-header p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.search-bar {
+    display: flex;
+    max-width: 600px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.search-bar input {
+    flex-grow: 1;
+    border: none;
+    padding: 15px;
+    font-size: 1rem;
+    outline: none;
+}
+
+.search-bar button {
+    border: none;
+    background-color: #2c2c2c;
+    color: white;
+    padding: 0 25px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+/* Sección de Preguntas Frecuentes (FAQ) */
+.faq-container {
+    margin-bottom: 50px;
+}
+
+.faq-container h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.faq-item {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.faq-question {
+    width: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.faq-question i {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.faq-question.active i {
+    transform: rotate(45deg);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    line-height: 1.6;
+}
+
+.faq-answer p {
+    padding-bottom: 20px;
+}
+
+/* Sección de Contacto */
+.contact-prompt {
+    text-align: center;
+    background-color: #f9f9f9;
+    padding: 40px;
+    border-radius: 8px;
+}
+
+.contact-prompt h3 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.btn-contact {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 30px;
+    background-color: #2c2c2c;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn-contact:hover {
+    background-color: #444;
+}

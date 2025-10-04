@@ -4,5 +4,68 @@
 {% block title %}Centro de Ayuda - Techtop{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/help_center.css' %}">
 
+<div class="help-center-page">
+    <header class="help-header">
+        <h1>Centro de Ayuda</h1>
+        <p>Encuentra respuestas a tus preguntas más frecuentes.</p>
+        <div class="search-bar">
+            <input type="text" placeholder="Describe tu problema...">
+            <button type="submit"><i class='bx bx-search'></i></button>
+        </div>
+    </header>
+
+    <main class="faq-container">
+        <h2>Preguntas Frecuentes</h2>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                <span>¿Cuáles son los tiempos de envío?</span>
+                <i class='bx bx-plus'></i>
+            </button>
+            <div class="faq-answer">
+                <p>Los envíos en la Región Metropolitana tardan entre 24 y 48 horas hábiles. Para otras regiones, el tiempo estimado es de 2 a 5 días hábiles. Recibirás un número de seguimiento para monitorear tu pedido en todo momento.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                <span>¿Qué métodos de pago aceptan?</span>
+                <i class='bx bx-plus'></i>
+            </button>
+            <div class="faq-answer">
+                <p>Aceptamos pagos a través de tarjetas de crédito y débito (Visa, MasterCard, etc.) y transferencias bancarias. Todos los pagos son procesados de forma segura a través de nuestra pasarela de pago.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <button class="faq-question">
+                <span>¿Cómo funciona la garantía de los productos?</span>
+                <i class='bx bx-plus'></i>
+            </button>
+            <div class="faq-answer">
+                <p>Todos nuestros productos cuentan con una garantía legal de 6 meses por fallas de fabricación. Si tu producto presenta un defecto, contáctanos a través de nuestro Centro de Ayuda para iniciar el proceso de revisión y, si corresponde, reparación o reemplazo.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                <span>¿Puedo devolver un producto si no me gustó?</span>
+                <i class='bx bx-plus'></i>
+            </button>
+            <div class="faq-answer">
+                <p>Sí, tienes una garantía de satisfacción de 10 días desde la recepción de tu compra para devolver el producto si no cumple tus expectativas. El producto debe estar en su empaque original, sin uso y con todos sus accesorios. El costo de envío de la devolución corre por cuenta del cliente.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="contact-prompt">
+        <h3>¿No encontraste lo que buscabas?</h3>
+        <p>Nuestro equipo de soporte está listo para ayudarte con cualquier otra consulta.</p>
+        <a href="{% url 'contacto' %}" class="btn-contact">Contáctanos</a>
+    </footer>
+</div>
+
+<script src="{% static 'js/help_center.js' %}"></script>
 {% endblock %}

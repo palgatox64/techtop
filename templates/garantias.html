@@ -4,4 +4,75 @@
 {% block title %}Garantías - Techtop{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/warranties.css' %}">
+
+<div class="warranties-page">
+    <header class="warranties-header">
+        <h1>Políticas de Garantía</h1>
+        <p>Tu confianza y satisfacción son nuestra prioridad. Conoce cómo te respaldamos.</p>
+    </header>
+
+    <main class="warranties-content">
+        <div class="warranty-cards">
+            <div class="card">
+                <div class="card-icon">
+                    <i class='bx bxs-shield-check'></i>
+                </div>
+                <h3>Garantía Legal (6 Meses)</h3>
+                <p>Cubre fallas y defectos de fabricación del producto. Si tu artículo presenta un problema, lo gestionaremos según la ley.</p>
+                <ul>
+                    <li><strong>Cubre:</strong> Defectos de fábrica, fallas de funcionamiento no atribuibles al mal uso.</li>
+                    <li><strong>No cubre:</strong> Daños por mal uso, accidentes, manipulación por personal no autorizado o desgaste natural.</li>
+                    <li><strong>Proceso:</strong> El producto será evaluado por nuestro servicio técnico para certificar el origen de la falla.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">
+                    <i class='bx bxs-like'></i>
+                </div>
+                <h3>Garantía de Satisfacción (10 Días)</h3>
+                <p>Si el producto no cumple tus expectativas, puedes solicitar la devolución de tu dinero dentro de los primeros 10 días.</p>
+                <ul>
+                    <li><strong>Condiciones:</strong> El producto debe estar sin uso, en perfectas condiciones y con su empaque original completo.</li>
+                    <li><strong>Proceso:</strong> Debes contactarnos para coordinar la devolución. Los costos de envío son responsabilidad del cliente.</li>
+                    <li><strong>Excepciones:</strong> No aplica a productos de uso personal o software si sus sellos han sido abiertos.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="steps-section">
+            <h2>¿Cómo solicitar una garantía?</h2>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-text">
+                        <h4>Contáctanos</h4>
+                        <p>Escríbenos a través de nuestro formulario de contacto detallando el problema y adjuntando tu boleta o factura.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-text">
+                        <h4>Coordinación</h4>
+                        <p>Nuestro equipo te responderá en un plazo de 48 horas hábiles con las instrucciones para enviar el producto a evaluación.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-text">
+                        <h4>Resolución</h4>
+                        <p>Una vez evaluado el producto, te informaremos sobre la resolución (reparación, cambio o devolución) según corresponda.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="contact-prompt">
+        <h4>¿Tienes más dudas?</h4>
+        <p>Nuestro equipo de soporte está listo para ayudarte con cualquier consulta sobre el proceso de garantías.</p>
+        <a href="{% url 'contacto' %}" class="btn-contact">Contactar a Soporte</a>
+    </footer>
+</div>
 {% endblock %}
