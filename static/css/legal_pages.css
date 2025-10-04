@@ -1,0 +1,101 @@
+.legal-page-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+.legal-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.legal-header h1 {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+}
+
+.legal-header p {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* --- Nuevos Estilos para Banners Visuales --- */
+.visual-banner {
+    background-color: #f0f8ff; /* Un azul claro para un toque de calma */
+    border: 1px solid #cceeff;
+    border-radius: 8px;
+    padding: 25px;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #004085; /* Azul oscuro para el texto */
+}
+
+.visual-banner i {
+    font-size: 3.5rem;
+    color: #2c2c2c; /* Color principal de tu marca */
+    margin-bottom: 15px;
+    display: block; /* Para que el icono esté en su propia línea */
+}
+
+.visual-banner h3 {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    color: #2c2c2c;
+}
+
+.visual-banner p {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #555;
+    margin: 0;
+}
+
+/* Estilos específicos para cada banner si quieres variarlos */
+.privacy-banner {
+    background-color: #e6f7ff; /* Ligeramente diferente */
+    border-color: #91d5ff;
+}
+.terms-banner {
+    background-color: #e0ffe0; /* Un verde claro para el acuerdo */
+    border-color: #a0d9b5;
+}
+
+
+/* --- Contenido de las Secciones --- */
+.legal-content section {
+    margin-bottom: 30px;
+}
+
+/* Títulos de Sección con Icono */
+.legal-content h2.section-title {
+    display: flex; /* Para alinear el icono y el texto */
+    align-items: center;
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: #2c2c2c;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 5px;
+}
+
+.legal-content h2.section-title .icon-left {
+    font-size: 1.5rem; /* Tamaño del icono */
+    margin-right: 10px; /* Espacio entre icono y texto */
+    color: #2c2c2c; /* Color del icono */
+}
+
+
+.legal-content p, .legal-content li {
+    line-height: 1.7;
+    text-align: justify;
+    color: #555;
+}
+
+.legal-content ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin-top: 15px;
+}
