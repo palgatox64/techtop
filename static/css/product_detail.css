@@ -1,0 +1,166 @@
+.product-detail-container {
+    display: flex;
+    gap: 3rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+.product-gallery {
+    display: flex;
+    gap: 1rem;
+    width: 60%;
+}
+
+.gallery-thumbnails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.thumb-item {
+    width: 70px;
+    height: 70px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.thumb-item.active {
+    border-color: #000;
+}
+
+.thumb-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-main-image {
+    flex-grow: 1;
+    border: 1px solid #eee;
+    padding: 1rem;
+}
+
+.gallery-main-image img {
+    width: 100%;
+    height: auto;
+}
+
+.product-info-column {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.product-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.product-brand-name {
+    font-size: 1rem;
+    color: #555;
+}
+
+.price-box {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.price-normal-strike {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.price-discount-badge {
+    background-color: #e0f0ff;
+    color: #0056b3;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+.price-item.main-price {
+    padding-top: 0.75rem;
+    border-top: 1px dashed #ddd;
+}
+
+.price-final {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #000000;
+}
+
+.price-other {
+    font-size: 1.2rem;
+    color: #444;
+}
+
+.product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn {
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: #4a00e0;
+    color: #fff;
+}
+
+.btn-secondary {
+    background-color: #fff;
+    color: #4a00e0;
+    border: 1px solid #4a00e0;
+}
+
+.stock-info {
+    font-size: 0.9rem;
+}
+.stock-info i {
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+.product-description h3 {
+    margin-bottom: 0.5rem;
+}
+
+.product-description p {
+    color: #555;
+    line-height: 1.6;
+}
+
+.product-actions form {
+    display: flex; 
+}
+
+.product-actions form .btn {
+    width: 100%; 
+}

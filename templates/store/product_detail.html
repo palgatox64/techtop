@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/product_detail.css' %}">
+{% endblock %}
+
+{% block title %}{{ product.nombre }}{% endblock %}
+
+{% block content %}
+<div class="product-detail-container">
+    
+    <div class="product-gallery">
+        <div class="gallery-thumbnails">
+            {% if product.imagen %}
+            <div class="thumb-item active">
+                <img src="{{ product.imagen.url }}" alt="Miniatura de {{ product.nombre }}">
+            </div>
+            {% endif %}
+        </div>
+        <div class="gallery-main-image">
+            <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}">
+        </div>
+    </div>
+
+    <div class="product-info-column">
+        <h1 class="product-title">{{ product.nombre }}</h1>
+        <p class="product-brand-name">Marca: <strong>{{ product.marca.nombre }}</strong></p>
+
+        <div class="price-box">
+            <div class="price-item">
+                <span class="price-label">Normal</span>
+                <span class="price-normal-strike">${{ precio_secundario|floatformat:0|intcomma }}</span>
+            </div>
+             {% if descuento_porcentaje > 0 %}
+            <div class="price-item">
+                <span class="price-label">Descuento</span>
+                <span class="price-discount-badge">{{ descuento_porcentaje }}% DCTO.</span>
+            </div>
+            {% endif %}
+            <div class="price-item main-price">
+                <span class="price-label">Pago con transferencia</span>
+                <span class="price-final">${{ product.precio|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">Otros medios de pago</span>
+                <span class="price-other">${{ precio_secundario|floatformat:0|intcomma }}</span>
+            </div>
+        </div>
+        <div class="product-actions">
+            <form action="{% url 'add_to_cart' product.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Agregar al carro</button>
+            </form>
+            <button class="btn btn-primary">Comprar ahora</button>
+        </div>
+        <div class="stock-info">
+            <p><i class='bx bx-package'></i> Stock online: 
+                {% if product.stock > 0 %}
+                    <strong>{{ product.stock }} unidades</strong>
+                {% else %}
+                    <strong>Agotado</strong>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="product-description">
+            <h3>Descripción</h3>
+            <p>{{ product.descripcion|linebreaks }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

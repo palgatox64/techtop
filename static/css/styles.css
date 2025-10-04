@@ -79,11 +79,11 @@ ul {
     font-size: 1.8rem;
 }
 
-/* Estilos de la Barra de Navegación */
+
 .navbar {
     padding: 1rem 2rem;
     border-bottom: 1px solid #e0e0e0;
-    position: relative; /* <-- AÑADE ESTO */
+    position: relative; 
 }
 
 .nav-links {
@@ -103,14 +103,12 @@ ul {
     color: #555;
 }
 
-/* Contenedor Principal (para dejar espacio para el footer) */
 .main-content {
     min-height: 60vh; 
     padding: 2rem;
 }
 
 
-/* Estilos del Footer */
 .footer {
     background-color: #f8f9fa;
     color: #333;
@@ -158,7 +156,6 @@ ul {
     position: static;
 }
 
-/* Estilo del enlace principal de navegación */
 .nav-link {
     display: flex;
     align-items: center;
@@ -188,7 +185,7 @@ ul {
     transition: opacity 0.3s ease, visibility 0.3s;
 }
 
-/* Contenido interno del menú */
+
 .mega-menu-content {
     display: flex;
     gap: 2rem;
@@ -272,7 +269,7 @@ ul {
   background-size: cover;
   background-position: center;
 
-  /* Centrar el contenido dentro del slide */
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -357,4 +354,84 @@ ul {
 
 .swiper-pagination-bullet-active {
     background-color: #000000; 
+}
+
+.nav-item-dropdown:hover > .nav-link {
+    color: #000;
+    border-bottom: 3px solid #000;
+}
+
+
+.nav-item-dropdown:hover > .nav-link i {
+    transform: rotate(180deg);
+}
+
+
+.nav-item-dropdown:hover > .mega-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.mega-menu-products {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.mega-menu-product-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    overflow: hidden;
+    text-align: left;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mega-menu-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.mega-menu-product-card img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+.mega-menu-product-card-info {
+    padding: 0.75rem;
+}
+
+.mega-menu-product-card-info h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mega-menu-product-card-info p {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.cart-icon-wrapper {
+    position: relative; 
+    display: inline-block;
+}
+
+.cart-item-count {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background-color: #d92323;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    line-height: 1;
 }
