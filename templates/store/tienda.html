@@ -1,90 +1,63 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block extra_css %}
+{% load humanize %} {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
 {% endblock %}
 
-{% block title %}Tienda - Diseño de Prueba{% endblock %}
+{% block title %}Catálogo de Radios - TechTop{% endblock %}
 
 {% block content %}
 <div class="catalog-container">
 
     <aside class="filter-sidebar">
-        <form method="GET">
-            <h3>Filtros</h3>
+        <form method="GET" action=""> <h3>Filtros</h3>
             
+            {% if available_brands %}
             <div class="filter-group">
                 <h4>Marcas</h4>
                 <ul class="filter-list checkbox-list">
-                    <li><label><input type="checkbox" name="marca" value="Fiat"> Fiat (2)</label></li>
-                    <li><label><input type="checkbox" name="marca" value="Nissan"> Nissan (1)</label></li>
-                    <li><label><input type="checkbox" name="marca" value="Toyota"> Toyota (1)</label></li>
+                    {% for brand in available_brands %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="marca" value="{{ brand.nombre }}" {% if brand.nombre in selected_brands_from_form %}checked{% endif %}>
+                            {{ brand.nombre }} ({{ brand.product_count }})
+                        </label>
+                    </li>
+                    {% endfor %}
                 </ul>
             </div>
-            
-            <div class="filter-group">
-                <h4>Precio</h4>
-                <ul class="filter-list checkbox-list">
-                    <li><label><input type="checkbox" name="precio" value="100000-200000"> $100.000 - $200.000</label></li>
-                    <li><label><input type="checkbox" name="precio" value="200001-300000"> $200.001 - $300.000</label></li>
-                </ul>
-            </div>
-
+            {% endif %}           
             <button type="submit" class="filter-button">Aplicar Filtros</button>
         </form>
     </aside>
-
-    <main class="product-grid">
+    <main class="product-grid">    
+        {% for product in products %}
+<div class="product-card">
+    <a href="{% url 'product_detail' product.id %}">
+        {% if product.imagen %}
+            <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}" class="product-image">
+        {% else %}
+            <img src="https://placehold.co/300x300/e0e0e0/000?text=Radio+Android" alt="Imagen no disponible" class="product-image">
+        {% endif %}
+        <div class="product-info">
+            <p class="product-brand">{{ product.marca.nombre }}</p>
+            <h4 class="product-name">{{ product.nombre }}</h4>
+            <div class="product-prices">
+                <p class="product-price-main">${{ product.precio|floatformat:0|intcomma }}</p>
+                <p class="price-label">Transferencia</p>
+                <p class="product-price-secondary">${{ product.precio_secundario|floatformat:0|intcomma }}</p>
+                <p class="price-label">Otros medios de pago</p>
+            </div>
+        </div>
         
-        <div class="product-card">
-            <a href="#">
-                <img src="https://placehold.co/300x300/e0e0e0/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
-                <div class="product-info">
-                    <p class="product-brand">Fiat</p>
-                    <h4 class="product-name">Radio Android para Fiat Cronos</h4>
-                    <div class="product-prices">
-                        <p class="product-price-main">$240.000</p>
-                        <p class="price-label">Transferencia</p>
-                        <p class="product-price-secondary">$255.000</p>
-                        <p class="price-label">Otros medios de pago</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="product-card">
-            <a href="#">
-                <img src="https://placehold.co/300x300/d1d1d1/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
-                <div class="product-info">
-                    <p class="product-brand">Toyota</p>
-                    <h4 class="product-name">Pantalla Multimedia para Toyota Yaris</h4>
-                    <div class="product-prices">
-                        <p class="product-price-main">$180.000</p>
-                        <p class="price-label">Transferencia</p>
-                        <p class="product-price-secondary">$192.500</p>
-                        <p class="price-label">Otros medios de pago</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="product-card">
-            <a href="#">
-                <img src="https://placehold.co/300x300/c2c2c2/000?text=Radio+Android" alt="Producto de ejemplo" class="product-image">
-                <div class="product-info">
-                    <p class="product-brand">Nissan</p>
-                    <h4 class="product-name">Radio con GPS para Nissan Kicks</h4>
-                    <div class="product-prices">
-                        <p class="product-price-main">$230.000</p>
-                        <p class="price-label">Transferencia</p>
-                        <p class="product-price-secondary">$245.000</p>
-                        <p class="price-label">Otros medios de pago</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
+    </a>
+</div>
+{% empty %}
+    <div class="no-products-message">
+        <h4>No se encontraron productos</h4>
+        <p>Intenta ajustar los filtros o vuelve a intentarlo más tarde.</p>
+    </div>
+{% endfor %}
     </main>
 </div>
 {% endblock %}

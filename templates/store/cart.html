@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/cart.css' %}">
+{% endblock %}
+
+{% block title %}Carro de Compras{% endblock %}
+
+{% block content %}
+<div class="cart-container">
+
+    <div class="cart-main">
+        <h2>Carro ({{ cart_items|length }} item{% if cart_items|length != 1 %}s{% endif %})</h2>
+        <div class="cart-items-list">
+            {% for item in cart_items %}
+            <div class="cart-item">
+                <div class="cart-item-image">
+                    <img src="{{ item.product.imagen.url }}" alt="{{ item.product.nombre }}">
+                </div>
+                <div class="cart-item-details">
+                    <p class="brand">{{ item.product.marca.nombre }}</p>
+                    <p class="name">{{ item.product.nombre }}</p>
+                    <form action="{% url 'remove_from_cart' item.product.id %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="remove-link-button">Eliminar</button>
+                    </form>
+                </div>
+                <div class="cart-item-quantity">
+                    <form action="{% url 'update_cart' item.product.id %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="decrease">
+                        <button type="submit" class="quantity-btn">-</button>
+                    </form>
+                    <input type="text" value="{{ item.quantity }}" readonly>
+                    <form action="{% url 'update_cart' item.product.id %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="increase">
+                        <button type="submit" class="quantity-btn">+</button>
+                    </form>
+                </div>
+                <div class="cart-item-price">
+                    <p class="price-main">${{ item.subtotal_transferencia|floatformat:0|intcomma }}</p>
+                    <p class="price-label">Transferencias</p>
+                    <p class="price-secondary">${{ item.subtotal_otros_medios|floatformat:0|intcomma }}</p>
+                    <p class="price-label">Otros medios de pago</p>
+                </div>
+            </div>
+            {% empty %}
+            <p>Tu carro de compras está vacío.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="cart-summary">
+        <h3>Resumen ({{ cart_items|length }} producto{% if cart_items|length != 1 %}s{% endif %})</h3>
+        <div class="summary-item">
+            <span>Pago con transferencias</span>
+            <strong>${{ total_transferencia|floatformat:0|intcomma }}</strong>
+        </div>
+        <div class="summary-item-label">
+            <span>Transferencia y Banco Estado</span>
+        </div>
+        <div class="summary-item">
+            <span>Otros medios de pago</span>
+            <strong>${{ total_otros_medios|floatformat:0|intcomma }}</strong>
+        </div>
+        <div class="summary-item-label">
+            <span>Webpay/Onepay</span>
+        </div>
+        <div class="summary-total">
+            <span>TOTAL</span>
+            <span>-</span>
+        </div>
+        <button class="btn-checkout">Iniciar pago</button>
+    </div>
+    </div>
+{% endblock %}

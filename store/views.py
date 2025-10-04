@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect
-from .models import Producto, Marca
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Producto, Marca, Categoria
 from django.db.models import Count
 from django.contrib.auth.hashers import make_password 
 from django.contrib import messages 
@@ -8,6 +8,7 @@ import re
 from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password 
 from django.http import JsonResponse 
+from decimal import Decimal
 
 def home(request):
     return render(request, 'home.html')
@@ -33,6 +34,29 @@ def politicas_privacidad(request):
 def terminos_condiciones(request):
     return render(request, 'terminos_condiciones.html')
 
+def radios_catalog(request):
+    products = Producto.objects.filter(categoria__nombre='RADIO ANDROID')
+    selected_brands = request.GET.getlist('marca')
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+    available_brands = Marca.objects.filter(
+        producto__categoria__nombre='RADIO ANDROID' 
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+    
+    for product in products:
+        product.precio_secundario = product.precio * Decimal('1.07')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+
 def product_catalog(request, brand_name=None):
     products = Producto.objects.all()
     if brand_name:
@@ -41,9 +65,13 @@ def product_catalog(request, brand_name=None):
     selected_brands = request.GET.getlist('marca')
     if selected_brands:
         products = products.filter(marca__nombre__in=selected_brands)
+
     available_brands = Marca.objects.annotate(
         product_count=Count('producto')
-    ).filter(product_count__gt=0).order_by('nombre') 
+    ).filter(product_count__gt=0).order_by('nombre')
+    
+    for product in products:
+        product.precio_secundario = product.precio * Decimal('1.07')
     
     context = {
         'products': products,
@@ -53,6 +81,90 @@ def product_catalog(request, brand_name=None):
     }
     
     return render(request, 'store/tienda.html', context)
+
+def product_detail(request, product_id):
+    product = get_object_or_404(Producto, id=product_id)
+    precio_secundario = product.precio * Decimal('1.07')
+    descuento_porcentaje = 0
+    if precio_secundario > product.precio:
+        descuento_porcentaje = round((1 - (product.precio / precio_secundario)) * 100)
+    context = {
+        'product': product,
+        'precio_secundario': precio_secundario,
+        'descuento_porcentaje': descuento_porcentaje,
+    }
+    
+    return render(request, 'store/product_detail.html', context)
+
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Producto, id=product_id)
+    quantity = int(request.POST.get('quantity', 1))
+    cart = request.session.get('cart', {})
+    product_id_str = str(product.id)
+    if product_id_str in cart:
+        cart[product_id_str]['quantity'] += quantity
+    else:
+        cart[product_id_str] = {'quantity': quantity}
+    request.session['cart'] = cart
+    return redirect('view_cart')
+
+def view_cart(request):
+    cart = request.session.get('cart', {})
+    product_ids = cart.keys()
+    products_in_cart = Producto.objects.filter(id__in=product_ids)
+    cart_items = []
+    total_transferencia = Decimal('0.00')
+    total_otros_medios = Decimal('0.00')
+
+    for product in products_in_cart:
+        product_id_str = str(product.id)
+        quantity = cart[product_id_str]['quantity']
+        precio_secundario = product.precio * Decimal('1.07')
+
+        cart_items.append({
+            'product': product,
+            'quantity': quantity,
+            'subtotal_transferencia': product.precio * quantity,
+            'subtotal_otros_medios': precio_secundario * quantity,
+        })
+        total_transferencia += product.precio * quantity
+        total_otros_medios += precio_secundario * quantity
+
+    context = {
+        'cart_items': cart_items,
+        'total_transferencia': total_transferencia,
+        'total_otros_medios': total_otros_medios,
+    }
+    
+    return render(request, 'store/cart.html', context)
+
+def update_cart(request, product_id):
+    cart = request.session.get('cart', {})
+    product_id_str = str(product_id)
+
+    if request.method == 'POST' and product_id_str in cart:
+        action = request.POST.get('action')
+        if action == 'increase':
+            cart[product_id_str]['quantity'] += 1
+        elif action == 'decrease':
+            cart[product_id_str]['quantity'] -= 1
+            if cart[product_id_str]['quantity'] <= 0:
+                del cart[product_id_str]
+    
+    request.session['cart'] = cart
+    return redirect('view_cart')
+
+
+def remove_from_cart(request, product_id):
+    cart = request.session.get('cart', {})
+    product_id_str = str(product_id)
+
+    if product_id_str in cart:
+        del cart[product_id_str]
+
+    request.session['cart'] = cart
+    return redirect('view_cart')
+
 
 def login_view(request):
     if request.method == 'GET':
@@ -158,3 +270,5 @@ def register_view(request):
             print(f"El error específico es: {e}")
             messages.error(request, 'Ocurrió un error inesperado al crear tu cuenta. Contacta a soporte.')
             return redirect('register')
+        
+   
