@@ -173,40 +173,27 @@ def login_view(request):
     if request.method == 'POST':
         correo = request.POST.get('email')
         password = request.POST.get('password')
-        print(f">>> Intento de login con correo: {correo}") 
-
+        
         try:
             cliente = Cliente.objects.get(email=correo)
             
             if check_password(password, cliente.pass_hash):
-                print(f">>> Contraseña correcta para {correo}. Iniciando sesión.")
-                
                 request.session['cliente_id'] = cliente.id_cliente
                 request.session['cliente_nombre'] = cliente.nombre
+                request.session['tipo_usuario'] = cliente.tipo_usuario
                 
+                # Por ahora, redirigir a todos los usuarios al home
+                # independientemente de su tipo de usuario
                 return JsonResponse({
-                    'success': True, 
-                    'message': f'¡Bienvenido de vuelta, {cliente.nombre}!', 
+                    'success': True,
+                    'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
                     'redirect_url': '/'
                 })
-            else:
-                print(f">>> Contraseña INCORRECTA para {correo}.")
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'Correo o contraseña incorrectos.'
-                })
-
-        except Cliente.DoesNotExist:
-            print(f">>> No se encontró ningún usuario con el correo {correo}.")
-            return JsonResponse({
-                'success': False, 
-                'message': 'Correo o contraseña incorrectos.'
-            })
+                    
         except Exception as e:
-            print(f">>> Error inesperado en login: {e}")
             return JsonResponse({
-                'success': False, 
-                'message': 'Ocurrió un error inesperado. Intenta de nuevo.'
+                'success': False,
+                'message': 'Correo o contraseña incorrectos.'
             })
 
 def register_view(request):
@@ -270,5 +257,4 @@ def register_view(request):
             print(f"El error específico es: {e}")
             messages.error(request, 'Ocurrió un error inesperado al crear tu cuenta. Contacta a soporte.')
             return redirect('register')
-        
-   
+

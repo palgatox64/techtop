@@ -34,19 +34,25 @@ class Producto(models.Model):
 
 # --- Modelo para la tabla CLIENTES (según tu DDL) ---
 class Cliente(models.Model):
-    id_cliente = models.AutoField(primary_key=True)  # NUMERIC(10) NOT NULL PRIMARY KEY
-    nombre = models.CharField(max_length=100)        # VARCHAR(100) NOT NULL
-    apellidos = models.CharField(max_length=150)     # VARCHAR(150) NOT NULL  
-    email = models.EmailField(max_length=100, unique=True)  # VARCHAR(100) NOT NULL UNIQUE
-    pass_hash = models.CharField(max_length=200)     # VARCHAR(200) NOT NULL
-    telefono = models.CharField(max_length=9)            # VARCHAR(9) NOT NULL
+    TIPO_USUARIO_CHOICES = [
+        ('cliente', 'Cliente'),
+        ('admin', 'Administrador'),
+    ]
+    
+    id_cliente = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+    apellidos = models.CharField(max_length=150)
+    email = models.EmailField(max_length=100, unique=True)
+    pass_hash = models.CharField(max_length=200)
+    telefono = models.CharField(max_length=9)
+    tipo_usuario = models.CharField(
+        max_length=10, 
+        choices=TIPO_USUARIO_CHOICES, 
+        default='cliente'
+    )
 
-    class Meta:
-        # Usar el nombre estándar de Django: store_cliente
-        pass
-        
     def __str__(self):
-        return f"{self.nombre} {self.apellidos}"
+        return f"{self.nombre} {self.apellidos} ({self.get_tipo_usuario_display()})"
 
 # --- Modelo para la tabla DIRECCIONES ---
 class Direccion(models.Model):
