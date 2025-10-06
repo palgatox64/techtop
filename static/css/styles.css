@@ -435,3 +435,69 @@ ul {
     font-weight: bold;
     line-height: 1;
 }
+
+.user-menu {
+    position: relative; 
+    display: inline-block;
+}
+
+
+#user-menu-button {
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 10;
+    border-radius: 5px;
+    overflow: hidden; 
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+
+.user-info {
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+}
+
+.user-info span {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+
+.btn-logout {
+    padding: 8px 15px;
+    background-color: #333;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn-logout:hover {
+    background-color: #555;
+}
