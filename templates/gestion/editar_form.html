@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ titulo }} - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page form-container">
+    <header class="gestion-header">
+        <h1>{{ titulo }}</h1>
+        <p>Modifica los campos necesarios y guarda los cambios.</p>
+    </header>
+
+    <form method="POST" enctype="multipart/form-data" class="gestion-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_disabled">ID</label>
+            <input type="text" id="id_disabled" class="form-control" value="{{ objeto_id }}" disabled>
+        </div>
+
+        {{ form.as_p }}
+
+        <div class="form-actions">
+            <a href="{% url volver_url %}" class="btn-cancel">Cancelar</a>
+            <button type="submit" class="btn-submit">Guardar Cambios</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

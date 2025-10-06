@@ -9,6 +9,11 @@ from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password 
 from django.http import JsonResponse 
 from decimal import Decimal
+from .decorators import admin_required
+from .forms import CategoriaForm, MarcaForm, ProductoForm
+from django.core.paginator import Paginator # ¡Importa Paginator!
+import csv
+from django.http import HttpResponse
 
 def home(request):
     return render(request, 'home.html')
@@ -278,3 +283,250 @@ def logout_view(request):
             messages.error(request, 'Ocurrió un error al cerrar sesión.')
     
     return redirect('home')
+
+@admin_required
+def panel_gestion_view(request):
+    return render(request, 'gestion/panel.html')
+
+@admin_required
+def crear_categoria_view(request):
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Categoría creada exitosamente!')
+            return redirect('panel_gestion')
+    else:
+        form = CategoriaForm()
+    
+    return render(request, 'gestion/crear_form.html', {
+        'form': form,
+        'titulo': 'Crear Nueva Categoría'
+    })
+
+@admin_required
+def crear_marca_view(request):
+    if request.method == 'POST':
+        form = MarcaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Marca creada exitosamente!')
+            return redirect('panel_gestion')
+    else:
+        form = MarcaForm()
+
+    return render(request, 'gestion/crear_form.html', {
+        'form': form,
+        'titulo': 'Crear Nueva Marca'
+    })
+
+@admin_required
+def crear_producto_view(request):
+    if request.method == 'POST':
+        # Para formularios con archivos, se usa request.POST y request.FILES
+        form = ProductoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Producto creado exitosamente!')
+            return redirect('panel_gestion')
+    else:
+        form = ProductoForm()
+
+    return render(request, 'gestion/crear_form.html', {
+        'form': form,
+        'titulo': 'Crear Nuevo Producto'
+    })
+    
+def listar_productos_view(request):
+    productos_list = Producto.objects.all().order_by('id')
+    
+    # Lógica de paginación
+    paginator = Paginator(productos_list, 8) # Muestra 8 productos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'gestion/productos_list.html', {'page_obj': page_obj})
+
+
+# ...
+@admin_required
+def editar_producto_view(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        form = ProductoForm(request.POST, request.FILES, instance=producto)
+        
+        # ¡AQUÍ OCURRE LA VALIDACIÓN!
+        if form.is_valid():
+            form.save() # Solo se guarda si los datos son válidos
+            messages.success(request, f'¡Producto "{producto.nombre}" actualizado exitosamente!')
+            return redirect('listar_productos')
+    else:
+        form = ProductoForm(instance=producto)
+    
+    return render(request, 'gestion/editar_form.html', { # Si no es válido, se vuelve a mostrar el formulario con los errores
+        'form': form,
+        'titulo': f'Editar Producto: {producto.nombre}',
+        'objeto_id': producto.id,
+        'volver_url': 'listar_productos'
+    })
+
+# @admin_required
+def eliminar_producto_view(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        nombre_producto = producto.nombre
+        producto.delete()
+        # Devuelve una respuesta JSON en lugar de redirigir
+        return JsonResponse({'success': True, 'message': f'Producto "{nombre_producto}" eliminado exitosamente.'})
+    # Si no es POST, no hagas nada (o devuelve un error)
+    return JsonResponse({'success': False, 'message': 'Petición no válida.'})
+
+# --- VISTAS PARA CATEGORÍAS ---
+
+# @admin_required
+def listar_categorias_view(request):
+    categorias_list = Categoria.objects.all().order_by('id')
+    paginator = Paginator(categorias_list, 8) # 8 ítems por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'gestion/categorias_list.html', {'page_obj': page_obj})
+
+# @admin_required
+def editar_categoria_view(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'¡Categoría "{categoria.nombre}" actualizada exitosamente!')
+            return redirect('listar_categorias')
+    else:
+        form = CategoriaForm(instance=categoria)
+    
+    return render(request, 'gestion/editar_form.html', {
+        'form': form,
+        'titulo': f'Editar Categoría: {categoria.nombre}',
+        'objeto_id': categoria.id,
+        'volver_url': 'listar_categorias'
+    })
+
+# @admin_required
+def eliminar_categoria_view(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        nombre_categoria = categoria.nombre
+        categoria.delete()
+        return JsonResponse({'success': True, 'message': f'Categoría "{nombre_categoria}" eliminada exitosamente.'})
+    return JsonResponse({'success': False, 'message': 'Petición no válida.'})
+
+# --- VISTAS PARA MARCAS ---
+
+# @admin_required
+def listar_marcas_view(request):
+    marcas_list = Marca.objects.all().order_by('id')
+    paginator = Paginator(marcas_list, 8) # 8 ítems por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'gestion/marcas_list.html', {'page_obj': page_obj})
+
+
+# @admin_required
+def editar_marca_view(request, pk):
+    marca = get_object_or_404(Marca, pk=pk)
+    if request.method == 'POST':
+        form = MarcaForm(request.POST, instance=marca)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'¡Marca "{marca.nombre}" actualizada exitosamente!')
+            return redirect('listar_marcas')
+    else:
+        form = MarcaForm(instance=marca)
+    
+    return render(request, 'gestion/editar_form.html', {
+        'form': form,
+        'titulo': f'Editar Marca: {marca.nombre}',
+        'objeto_id': marca.id,
+        'volver_url': 'listar_marcas'
+    })
+
+# @admin_required
+def eliminar_marca_view(request, pk):
+    marca = get_object_or_404(Marca, pk=pk)
+    if request.method == 'POST':
+        nombre_marca = marca.nombre
+        marca.delete()
+        return JsonResponse({'success': True, 'message': f'Marca "{nombre_marca}" eliminada exitosamente.'})
+    return JsonResponse({'success': False, 'message': 'Petición no válida.'})
+
+    
+def exportar_productos_csv(request):
+    """
+    Genera un archivo CSV con todos los productos y lo ofrece para descarga.
+    """
+    # 1. Prepara la respuesta HTTP
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="productos_techtop.csv"'},
+    )
+    # Para que el CSV se lea correctamente con caracteres en español
+    response.write(u'\ufeff'.encode('utf8'))
+
+    # 2. Crea un "escritor" de CSV
+    writer = csv.writer(response)
+
+    # 3. Escribe la fila del encabezado
+    writer.writerow(['ID', 'Nombre', 'Descripción', 'Precio', 'Stock', 'Categoría', 'Marca'])
+
+    # 4. Obtiene todos los productos y escribe sus datos
+    # Usamos select_related para optimizar la consulta a la base de datos
+    productos = Producto.objects.select_related('categoria', 'marca').all()
+    for producto in productos:
+        writer.writerow([
+            producto.id,
+            producto.nombre,
+            producto.descripcion,
+            producto.precio,
+            producto.stock,
+            producto.categoria.nombre,
+            producto.marca.nombre,
+        ])
+
+    # 5. Devuelve la respuesta con el archivo generado
+    return response
+
+def exportar_categorias_csv(request):
+    """
+    Genera un archivo CSV con todas las categorías.
+    """
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="categorias_techtop.csv"'},
+    )
+    response.write(u'\ufeff'.encode('utf8')) # Para compatibilidad con caracteres en español
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Nombre', 'Descripción'])
+
+    for categoria in Categoria.objects.all():
+        writer.writerow([categoria.id, categoria.nombre, categoria.descripcion])
+
+    return response
+
+# @admin_required
+def exportar_marcas_csv(request):
+    """
+    Genera un archivo CSV con todas las marcas.
+    """
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="marcas_techtop.csv"'},
+    )
+    response.write(u'\ufeff'.encode('utf8'))
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Nombre'])
+
+    for marca in Marca.objects.all():
+        writer.writerow([marca.id, marca.nombre])
+
+    return response

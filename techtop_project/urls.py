@@ -18,7 +18,23 @@ from store.views import (
     product_catalog,
     login_view, 
     register_view,
-    logout_view
+    logout_view,
+    panel_gestion_view,
+    listar_productos_view,
+    crear_producto_view,
+    editar_producto_view,
+    eliminar_producto_view,
+    listar_categorias_view,
+    crear_categoria_view,
+    editar_categoria_view,
+    eliminar_categoria_view,
+    listar_marcas_view,
+    crear_marca_view,
+    editar_marca_view,
+    eliminar_marca_view,
+    exportar_productos_csv,
+    exportar_categorias_csv,
+    exportar_marcas_csv
 )
 
 from django.conf import settings
@@ -45,6 +61,22 @@ urlpatterns = [
     path('login/', login_view, name='login'),
     path('registro/', register_view, name='register'),
     path('logout/', logout_view, name='logout'), 
+    path('gestion/', panel_gestion_view, name='panel_gestion'),
+    path('gestion/productos/', listar_productos_view, name='listar_productos'),
+    path('gestion/productos/crear/', crear_producto_view, name='crear_producto'),
+    path('gestion/productos/editar/<int:pk>/', editar_producto_view, name='editar_producto'),
+    path('gestion/productos/eliminar/<int:pk>/', eliminar_producto_view, name='eliminar_producto'),
+    path('gestion/productos/exportar-csv/', exportar_productos_csv, name='exportar_productos_csv'), 
+    path('gestion/categorias/', listar_categorias_view, name='listar_categorias'),
+    path('gestion/categorias/crear/', crear_categoria_view, name='crear_categoria'),
+    path('gestion/categorias/editar/<int:pk>/', editar_categoria_view, name='editar_categoria'),
+    path('gestion/categorias/eliminar/<int:pk>/', eliminar_categoria_view, name='eliminar_categoria'),
+    path('gestion/categorias/exportar-csv/', exportar_categorias_csv, name='exportar_categorias_csv'),
+    path('gestion/marcas/exportar-csv/', exportar_marcas_csv, name='exportar_marcas_csv'),
+    path('gestion/marcas/', listar_marcas_view, name='listar_marcas'),
+    path('gestion/marcas/crear/', crear_marca_view, name='crear_marca'),
+    path('gestion/marcas/editar/<int:pk>/', editar_marca_view, name='editar_marca'),
+    path('gestion/marcas/eliminar/<int:pk>/', eliminar_marca_view, name='eliminar_marca'),
 
 ]
 
