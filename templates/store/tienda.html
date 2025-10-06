@@ -8,28 +8,49 @@
 
 {% block content %}
 <div class="catalog-container">
-
     <aside class="filter-sidebar">
-        <form method="GET" action=""> <h3>Filtros</h3>
-            
-            {% if available_brands %}
-            <div class="filter-group">
-                <h4>Marcas</h4>
-                <ul class="filter-list checkbox-list">
-                    {% for brand in available_brands %}
-                    <li>
-                        <label>
-                            <input type="checkbox" name="marca" value="{{ brand.nombre }}" {% if brand.nombre in selected_brands_from_form %}checked{% endif %}>
-                            {{ brand.nombre }} ({{ brand.product_count }})
-                        </label>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}           
-            <button type="submit" class="filter-button">Aplicar Filtros</button>
-        </form>
-    </aside>
+    <form method="GET" action="">
+        <h3>Filtros</h3>
+        
+        {% if available_brands %}
+        <div class="filter-group">
+            <h4>Marcas</h4>
+            <ul class="filter-list checkbox-list">
+                {% for brand in available_brands %}
+                <li>
+                    <label>
+                        <input type="checkbox" name="marca" value="{{ brand.nombre }}" {% if brand.nombre in selected_brands_from_form %}checked{% endif %}>
+                        {{ brand.nombre }} ({{ brand.product_count }})
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="filter-group">
+            <h4>Precio</h4>
+            <ul class="filter-list checkbox-list">
+                <li><label><input type="checkbox" name="precio" value="0-200000" {% if '0-200000' in selected_prices_from_form %}checked{% endif %}> $0 - $200.000</label></li>
+                <li><label><input type="checkbox" name="precio" value="200001-300000" {% if '200001-300000' in selected_prices_from_form %}checked{% endif %}> $200.001 - $300.000</label></li>
+                <li><label><input type="checkbox" name="precio" value="300001-400000" {% if '300001-400000' in selected_prices_from_form %}checked{% endif %}> $300.001 - $400.000</label></li>
+            </ul>
+        </div>
+
+        {% if available_inches %}
+        <div class="filter-group">
+            <h4>Pulgadas</h4>
+            <ul class="filter-list checkbox-list">
+                {% for inch in available_inches %}
+                <li><label><input type="checkbox" name="pulgadas" value="{{ inch }}" {% if inch in selected_inches_from_form %}checked{% endif %}> {{ inch }} pulgadas</label></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="filter-button">Aplicar Filtros</button>
+    </form>
+</aside>
     <main class="product-grid">    
         {% for product in products %}
 <div class="product-card">
