@@ -10,6 +10,7 @@
     display: flex;
     gap: 1rem;
     width: 60%;
+    align-self: flex-start;
 }
 
 .gallery-thumbnails {
@@ -39,13 +40,12 @@
 
 .gallery-main-image {
     flex-grow: 1;
-    border: 1px solid #eee;
-    padding: 1rem;
 }
 
 .gallery-main-image img {
     width: 100%;
     height: auto;
+    border: 1px solid #eee;
 }
 
 .product-info-column {
@@ -80,7 +80,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 1rem;
 }
 
 .price-normal-strike {
@@ -123,26 +122,35 @@
     padding: 1rem;
     font-size: 1.1rem;
     font-weight: bold;
-    border: none;
     border-radius: 4px;
     cursor: pointer;
     text-align: center;
+    border: 1px solid transparent;
 }
 
 .btn-primary {
-    background-color: #4a00e0;
+    background-color: #000000;
     color: #fff;
 }
 
 .btn-secondary {
     background-color: #fff;
-    color: #4a00e0;
-    border: 1px solid #4a00e0;
+    color: #000000;
+    border-color: #000000;
+}
+
+.product-actions form {
+    display: flex;
+}
+
+.product-actions form .btn {
+    width: 100%;
 }
 
 .stock-info {
     font-size: 0.9rem;
 }
+
 .stock-info i {
     vertical-align: middle;
     margin-right: 0.5rem;
@@ -157,10 +165,77 @@
     line-height: 1.6;
 }
 
-.product-actions form {
-    display: flex; 
+.sticky-actions-bar {
+    display: none;
 }
 
-.product-actions form .btn {
-    width: 100%; 
+@media (max-width: 768px) {
+    .product-detail-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        margin: 1rem auto;
+        padding: 0.5rem;
+        padding-bottom: 120px;
+    }
+
+    .product-gallery,
+    .product-info-column {
+        width: 100%;
+    }
+
+    .product-gallery {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+
+    .gallery-thumbnails {
+        flex-direction: row;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .thumb-item {
+        width: 60px;
+        height: 60px;
+    }
+
+    .product-title {
+        font-size: 1.4rem;
+    }
+
+    .price-final {
+        font-size: 1.7rem;
+    }
+
+    .product-info-column .product-actions {
+        display: none;
+    }
+
+    .sticky-actions-bar {
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #ffffff;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        padding: 0.75rem;
+    }
+
+    .sticky-actions-content {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .sticky-actions-content .btn {
+        flex: 1;
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+
+    .sticky-actions-content .sticky-form {
+        flex: 1;
+        display: flex;
+    }
 }

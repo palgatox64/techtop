@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load humanize %} {% block extra_css %}
+{% load humanize %} 
+
+{% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
 {% endblock %}
 
@@ -8,76 +10,89 @@
 
 {% block content %}
 <div class="catalog-container">
-    <aside class="filter-sidebar">
-    <form method="GET" action="">
-        <h3>Filtros</h3>
-        
-        {% if available_brands %}
-        <div class="filter-group">
-            <h4>Marcas</h4>
-            <ul class="filter-list checkbox-list">
-                {% for brand in available_brands %}
-                <li>
-                    <label>
-                        <input type="checkbox" name="marca" value="{{ brand.nombre }}" {% if brand.nombre in selected_brands_from_form %}checked{% endif %}>
-                        {{ brand.nombre }} ({{ brand.product_count }})
-                    </label>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        
-        <div class="filter-group">
-            <h4>Precio</h4>
-            <ul class="filter-list checkbox-list">
-                <li><label><input type="checkbox" name="precio" value="0-200000" {% if '0-200000' in selected_prices_from_form %}checked{% endif %}> $0 - $200.000</label></li>
-                <li><label><input type="checkbox" name="precio" value="200001-300000" {% if '200001-300000' in selected_prices_from_form %}checked{% endif %}> $200.001 - $300.000</label></li>
-                <li><label><input type="checkbox" name="precio" value="300001-400000" {% if '300001-400000' in selected_prices_from_form %}checked{% endif %}> $300.001 - $400.000</label></li>
-            </ul>
-        </div>
 
-        {% if available_inches %}
-        <div class="filter-group">
-            <h4>Pulgadas</h4>
-            <ul class="filter-list checkbox-list">
-                {% for inch in available_inches %}
-                <li><label><input type="checkbox" name="pulgadas" value="{{ inch }}" {% if inch in selected_inches_from_form %}checked{% endif %}> {{ inch }} pulgadas</label></li>
-                {% endfor %}
-            </ul>
+    <aside class="filter-sidebar" id="filter-sidebar">
+        <div class="filter-header">
+            <h3>Filtrar productos</h3>
+            <button class="close-filters-btn" id="close-filters-btn">&times;</button>
         </div>
-        {% endif %}
-
-        <button type="submit" class="filter-button">Aplicar Filtros</button>
-    </form>
-</aside>
-    <main class="product-grid">    
-        {% for product in products %}
-<div class="product-card">
-    <a href="{% url 'product_detail' product.id %}">
-        {% if product.imagen %}
-            <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}" class="product-image">
-        {% else %}
-            <img src="https://placehold.co/300x300/e0e0e0/000?text=Radio+Android" alt="Imagen no disponible" class="product-image">
-        {% endif %}
-        <div class="product-info">
-            <p class="product-brand">{{ product.marca.nombre }}</p>
-            <h4 class="product-name">{{ product.nombre }}</h4>
-            <div class="product-prices">
-                <p class="product-price-main">${{ product.precio_transferencia|floatformat:0|intcomma }}</p>
-                <p class="price-label">Transferencia</p>
-                <p class="product-price-secondary">${{ product.precio|floatformat:0|intcomma }}</p>
-                <p class="price-label">Otros medios de pago</p>
+        <form method="GET" action="">
+            {% if available_brands %}
+            <div class="filter-group">
+                <h4>Marcas</h4>
+                <ul class="filter-list checkbox-list">
+                    {% for brand in available_brands %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="marca" value="{{ brand.nombre }}" {% if brand.nombre in selected_brands_from_form %}checked{% endif %}>
+                            {{ brand.nombre }} ({{ brand.product_count }})
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
+            {% endif %}
+            
+            <div class="filter-group">
+                <h4>Precio</h4>
+                <ul class="filter-list checkbox-list">
+                    <li><label><input type="checkbox" name="precio" value="0-200000" {% if '0-200000' in selected_prices_from_form %}checked{% endif %}> $0 - $200.000</label></li>
+                    <li><label><input type="checkbox" name="precio" value="200001-300000" {% if '200001-300000' in selected_prices_from_form %}checked{% endif %}> $200.001 - $300.000</label></li>
+                    <li><label><input type="checkbox" name="precio" value="300001-400000" {% if '300001-400000' in selected_prices_from_form %}checked{% endif %}> $300.001 - $400.000</label></li>
+                </ul>
+            </div>
+
+            {% if available_inches %}
+            <div class="filter-group">
+                <h4>Pulgadas</h4>
+                <ul class="filter-list checkbox-list">
+                    {% for inch in available_inches %}
+                    <li><label><input type="checkbox" name="pulgadas" value="{{ inch }}" {% if inch in selected_inches_from_form %}checked{% endif %}> {{ inch }} pulgadas</label></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="filter-button">Aplicar Filtros</button>
+        </form>
+    </aside>
+
+    <main class="product-grid-container">
+        <div class="mobile-filter-trigger">
+            <button class="open-filters-btn" id="open-filters-btn">
+                <i class='bx bx-filter-alt'></i> Filtrar
+            </button>
         </div>
-    </a>
-</div>
-{% empty %}
-    <div class="no-products-message">
-        <h4>No se encontraron productos</h4>
-        <p>Intenta ajustar los filtros o vuelve a intentarlo más tarde.</p>
-    </div>
-{% endfor %}
+
+        <div class="product-grid">    
+            {% for product in products %}
+            <div class="product-card">
+                <a href="{% url 'product_detail' product.id %}">
+                    {% if product.imagen %}
+                        <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}" class="product-image">
+                    {% else %}
+                        <img src="https://placehold.co/300x300/e0e0e0/000?text=Radio+Android" alt="Imagen no disponible" class="product-image">
+                    {% endif %}
+                    <div class="product-info">
+                        <p class="product-brand">{{ product.marca.nombre }}</p>
+                        <h4 class="product-name">{{ product.nombre }}</h4>
+                        <div class="product-prices">
+                            <p class="product-price-main">${{ product.precio_transferencia|floatformat:0|intcomma }}</p>
+                            <p class="price-label">Transferencia</p>
+                            <p class="product-price-secondary">${{ product.precio|floatformat:0|intcomma }}</p>
+                            <p class="price-label">Otros medios de pago</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+                <div class="no-products-message">
+                    <h4>No se encontraron productos</h4>
+                    <p>Intenta ajustar los filtros o vuelve a intentarlo más tarde.</p>
+                </div>
+            {% endfor %}
+        </div>
     </main>
 </div>
+<div class="filter-backdrop" id="filter-backdrop"></div>
 {% endblock %}
