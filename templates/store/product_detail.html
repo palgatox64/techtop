@@ -23,17 +23,15 @@
             <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}">
         </div>
     </div>
-
     <div class="product-info-column">
         <h1 class="product-title">{{ product.nombre }}</h1>
         <p class="product-brand-name">Marca: <strong>{{ product.marca.nombre }}</strong></p>
-
-        <div class="price-box">
+                <div class="price-box">
             <div class="price-item">
                 <span class="price-label">Normal</span>
-                <span class="price-normal-strike">${{ precio_secundario|floatformat:0|intcomma }}</span>
+                <span class="price-normal-strike">${{ product.precio|floatformat:0|intcomma }}</span>
             </div>
-             {% if descuento_porcentaje > 0 %}
+            {% if descuento_porcentaje > 0 %}
             <div class="price-item">
                 <span class="price-label">Descuento</span>
                 <span class="price-discount-badge">{{ descuento_porcentaje }}% DCTO.</span>
@@ -41,11 +39,11 @@
             {% endif %}
             <div class="price-item main-price">
                 <span class="price-label">Pago con transferencia</span>
-                <span class="price-final">${{ product.precio|floatformat:0|intcomma }}</span>
+                <span class="price-final">${{ precio_transferencia|floatformat:0|intcomma }}</span>
             </div>
             <div class="price-item">
                 <span class="price-label">Otros medios de pago</span>
-                <span class="price-other">${{ precio_secundario|floatformat:0|intcomma }}</span>
+                <span class="price-other">${{ product.precio|floatformat:0|intcomma }}</span>
             </div>
         </div>
         <div class="product-actions">
