@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Gestionar Productos{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Gestión de Productos</h1>
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="table-actions">
+        <a href="{% url 'crear_producto' %}" class="btn-create">Añadir Producto</a>
+        <a href="{% url 'exportar_productos_csv' %}" class="btn-secondary">Descargar CSV</a>
+        </div>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Imagen</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Categoría</th>
+                    <th>Marca</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in page_obj %}
+                <tr>
+                    <td>{{ producto.id }}</td>
+                    <td class="product-image-cell">
+                        {% if producto.imagen and producto.imagen.url %}
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-thumbnail">
+                        {% else %}
+                            <span>Sin imagen</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ producto.nombre }}</td>
+                    <td>${{ producto.precio|floatformat:0 }}</td>
+                    <td>{{ producto.stock }}</td>
+                    <td>{{ producto.categoria.nombre }}</td>
+                    <td>{{ producto.marca.nombre }}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'editar_producto' producto.id %}" class="btn-action edit">Editar</a>
+                        <form action="{% url 'eliminar_producto' producto.id %}" method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action delete" onclick="return confirm('¿Estás seguro?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination-container">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_delete.js' %}"></script>

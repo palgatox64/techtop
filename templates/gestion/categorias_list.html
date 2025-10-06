@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Gestionar Categorías{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Gestión de Categorías</h1>
+    </header>
+
+    <div class="table-actions">
+        <a href="{% url 'crear_categoria' %}" class="btn-create">Añadir Categoría</a>
+        <a href="{% url 'exportar_categorias_csv' %}" class="btn-secondary">Descargar CSV</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in page_obj %}
+                <tr>
+                    <td>{{ categoria.id }}</td>
+                    <td>{{ categoria.nombre }}</td>
+                    <td>{{ categoria.descripcion|default:"N/A" }}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'editar_categoria' categoria.id %}" class="btn-action edit">Editar</a>
+                        <form action="{% url 'eliminar_categoria' categoria.id %}" method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action delete" onclick="return confirm('¿Estás seguro?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <nav class="pagination-container">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_delete.js' %}"></script>

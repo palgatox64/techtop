@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Panel de Gestión - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Panel de Gestión</h1>
+        <p>Desde aquí puedes administrar los productos, marcas y categorías de la tienda.</p>
+    </header>
+
+    <main class="gestion-menu">
+        <a href="{% url 'listar_productos' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bxs-box'></i></div>
+            <h3>Gestionar Productos</h3>
+            <p>Ver, añadir, editar o eliminar productos.</p>
+        </a>
+        <a href="{% url 'listar_categorias' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bxs-category'></i></div>
+            <h3>Gestionar Categorías</h3>
+            <p>Ver, añadir o editar categorías.</p>
+        </a>
+        <a href="{% url 'listar_marcas' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bxs-purchase-tag'></i></div>
+            <h3>Gestionar Marcas</h3>
+            <p>Ver, añadir o editar marcas.</p>
+        </a>
+    </main>
+</div>
+{% endblock %}
