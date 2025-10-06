@@ -44,16 +44,14 @@ def radios_catalog(request):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
-    
     for product in products:
-        product.precio_secundario = product.precio * Decimal('1.07')
+        product.precio_transferencia = product.precio * Decimal('0.97')
 
     context = {
         'products': products,
         'available_brands': available_brands,
         'selected_brands_from_form': selected_brands,
     }
-    
     return render(request, 'store/tienda.html', context)
 
 
@@ -68,10 +66,9 @@ def product_catalog(request, brand_name=None):
 
     available_brands = Marca.objects.annotate(
         product_count=Count('producto')
-    ).filter(product_count__gt=0).order_by('nombre')
-    
+    ).filter(product_count__gt=0).order_by('nombre') 
     for product in products:
-        product.precio_secundario = product.precio * Decimal('1.07')
+        product.precio_transferencia = product.precio * Decimal('0.97')
     
     context = {
         'products': products,
@@ -79,21 +76,19 @@ def product_catalog(request, brand_name=None):
         'selected_brand': brand_name,
         'selected_brands_from_form': selected_brands,
     }
-    
     return render(request, 'store/tienda.html', context)
+
 
 def product_detail(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
-    precio_secundario = product.precio * Decimal('1.07')
-    descuento_porcentaje = 0
-    if precio_secundario > product.precio:
-        descuento_porcentaje = round((1 - (product.precio / precio_secundario)) * 100)
+    precio_transferencia = product.precio * Decimal('0.97')
+    descuento_porcentaje = 3 
+    
     context = {
         'product': product,
-        'precio_secundario': precio_secundario,
+        'precio_transferencia': precio_transferencia,
         'descuento_porcentaje': descuento_porcentaje,
     }
-    
     return render(request, 'store/product_detail.html', context)
 
 def add_to_cart(request, product_id):
@@ -112,6 +107,7 @@ def view_cart(request):
     cart = request.session.get('cart', {})
     product_ids = cart.keys()
     products_in_cart = Producto.objects.filter(id__in=product_ids)
+
     cart_items = []
     total_transferencia = Decimal('0.00')
     total_otros_medios = Decimal('0.00')
@@ -119,23 +115,23 @@ def view_cart(request):
     for product in products_in_cart:
         product_id_str = str(product.id)
         quantity = cart[product_id_str]['quantity']
-        precio_secundario = product.precio * Decimal('1.07')
+        precio_transferencia_unitario = product.precio * Decimal('0.97')
 
         cart_items.append({
             'product': product,
             'quantity': quantity,
-            'subtotal_transferencia': product.precio * quantity,
-            'subtotal_otros_medios': precio_secundario * quantity,
+            'subtotal_transferencia': precio_transferencia_unitario * quantity,
+            'subtotal_otros_medios': product.precio * quantity, 
         })
-        total_transferencia += product.precio * quantity
-        total_otros_medios += precio_secundario * quantity
+        
+        total_transferencia += precio_transferencia_unitario * quantity
+        total_otros_medios += product.precio * quantity
 
     context = {
         'cart_items': cart_items,
         'total_transferencia': total_transferencia,
         'total_otros_medios': total_otros_medios,
     }
-    
     return render(request, 'store/cart.html', context)
 
 def update_cart(request, product_id):

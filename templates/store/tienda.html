@@ -43,13 +43,12 @@
             <p class="product-brand">{{ product.marca.nombre }}</p>
             <h4 class="product-name">{{ product.nombre }}</h4>
             <div class="product-prices">
-                <p class="product-price-main">${{ product.precio|floatformat:0|intcomma }}</p>
+                <p class="product-price-main">${{ product.precio_transferencia|floatformat:0|intcomma }}</p>
                 <p class="price-label">Transferencia</p>
-                <p class="product-price-secondary">${{ product.precio_secundario|floatformat:0|intcomma }}</p>
+                <p class="product-price-secondary">${{ product.precio|floatformat:0|intcomma }}</p>
                 <p class="price-label">Otros medios de pago</p>
             </div>
         </div>
-        
     </a>
 </div>
 {% empty %}
