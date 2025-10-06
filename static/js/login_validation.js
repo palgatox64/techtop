@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
 
+        // Validación de campos vacíos
         if (!email || !password) {
             Swal.fire({
                 icon: 'error',
@@ -16,12 +17,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Validación del formato de correo electrónico
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             Swal.fire({
                 icon: 'error',
                 title: 'Correo Inválido',
-                text: 'Por favor, ingresa una dirección de correo válida.',
+                text: 'Por favor, ingresa una dirección de correo válida (ej: usuario@dominio.com).',
+            });
+            return;
+        }
+
+        // Validación básica de longitud de contraseña
+        if (password.length < 6) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Contraseña muy corta',
+                text: 'La contraseña debe tener al menos 6 caracteres.',
             });
             return;
         }

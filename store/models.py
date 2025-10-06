@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from .validators import validate_chilean_phone, validate_name, validate_email_extended
 
 # --- Modelo para la tabla CATEGORIAS ---
 class Categoria(models.Model):
@@ -40,11 +41,11 @@ class Cliente(models.Model):
     ]
     
     id_cliente = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=100)
-    apellidos = models.CharField(max_length=150)
-    email = models.EmailField(max_length=100, unique=True)
+    nombre = models.CharField(max_length=100, validators=[validate_name])
+    apellidos = models.CharField(max_length=150, validators=[validate_name])
+    email = models.EmailField(max_length=100, unique=True, validators=[validate_email_extended])
     pass_hash = models.CharField(max_length=200)
-    telefono = models.CharField(max_length=9)
+    telefono = models.CharField(max_length=9, validators=[validate_chilean_phone])
     tipo_usuario = models.CharField(
         max_length=10, 
         choices=TIPO_USUARIO_CHOICES, 

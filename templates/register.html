@@ -10,42 +10,121 @@
     <div class="register-container">
         <h2 class="register-title">Crea tu Cuenta</h2>
         
-        <form id="register-form" method="POST" novalidate>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                <form id="register-form" method="POST" novalidate>
+        <form id="register-form" method="POST" novalidate>
             {% csrf_token %}
+            
             <div class="form-group">
                 <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+                <div class="input-container">
+                    <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre" required>
+                    <span class="validation-icon" id="nombre-icon"></span>
+                    <div class="tooltip" id="nombre-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Nombre:</strong><br>
+                            • Solo letras y espacios<br>
+                            • Mínimo 2 caracteres<br>
+                            • Se permiten acentos y ñ
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="apellido">Apellido</label>
-                <input type="text" id="apellido" name="apellido" placeholder="Ingresa tu apellido" required>
+                <div class="input-container">
+                    <input type="text" id="apellido" name="apellido" placeholder="Ingresa tu apellido" required>
+                    <span class="validation-icon" id="apellido-icon"></span>
+                    <div class="tooltip" id="apellido-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Apellido:</strong><br>
+                            • Solo letras y espacios<br>
+                            • Mínimo 2 caracteres<br>
+                            • Se permiten acentos y ñ
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="correo">Correo Electrónico</label>
-                <input type="email" id="correo" name="correo" placeholder="ejemplo@correo.com" required>
+                <div class="input-container">
+                    <input type="email" id="correo" name="correo" placeholder="ejemplo@correo.com" required>
+                    <span class="validation-icon" id="correo-icon"></span>
+                    <div class="tooltip" id="correo-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Correo:</strong><br>
+                            • Formato: usuario@dominio.com<br>
+                            • Debe ser único en el sistema<br>
+                            • Ej: juan@gmail.com
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
-             <div class="form-group">
+
+            <div class="form-group">
                 <label for="telefono">Número de Teléfono</label>
-                <input type="tel" id="telefono" name="telefono" placeholder="987654321" required>
+                <div class="input-container">
+                    <input type="tel" id="telefono" name="telefono" placeholder="987654321" required>
+                    <span class="validation-icon" id="telefono-icon"></span>
+                    <div class="tooltip" id="telefono-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Teléfono chileno:</strong><br>
+                            • 9 dígitos exactos<br>
+                            • Debe comenzar con 9<br>
+                            • Ej: 987654321
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" placeholder="Crea una contraseña" required>
+                <div class="input-container">
+                    <input type="password" id="password" name="password" placeholder="Crea una contraseña" required>
+                    <span class="validation-icon" id="password-icon"></span>
+                    <div class="tooltip" id="password-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Contraseña segura:</strong><br>
+                            • Mínimo 8 caracteres<br>
+                            • Al menos 1 mayúscula<br>
+                            • Al menos 1 minúscula<br>
+                            • Al menos 1 número<br>
+                            • Al menos 1 carácter especial (!@#$%^&*...)
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="password2">Confirmar Contraseña</label>
-                <input type="password" id="password2" name="password2" placeholder="Repite la contraseña" required>
+                <div class="input-container">
+                    <input type="password" id="password2" name="password2" placeholder="Repite la contraseña" required>
+                    <span class="validation-icon" id="password2-icon"></span>
+                    <div class="tooltip" id="password2-tooltip">
+                        <div class="tooltip-content">
+                            <strong>Confirmación:</strong><br>
+                            • Debe ser idéntica a la contraseña anterior<br>
+                            • Verifica que no hayas cometido errores de escritura
+                        </div>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn-register">Registrarse</button>
+
+            <button type="submit" class="btn-register" id="submit-btn" disabled>Registrarse</button>
         </form>
     </div>
 </div>

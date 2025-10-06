@@ -25,6 +25,7 @@
 
 .form-group {
     margin-bottom: 18px; 
+    position: relative;
 }
 
 .form-group label {
@@ -35,37 +36,141 @@
     color: #333;
 }
 
+.input-container {
+    position: relative;
+}
+
+/* Tooltips - OCULTOS POR DEFECTO - APARECEN HACIA ARRIBA */
+.tooltip {
+    position: absolute;
+    bottom: 100%; /* Cambiado de top: 100% a bottom: 100% */
+    left: 0;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px); /* Cambiado de translateY(-10px) a translateY(10px) */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    margin-bottom: 5px; /* Cambiado de margin-top a margin-bottom */
+}
+
+.tooltip-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    position: relative;
+    min-width: 250px;
+}
+
+.tooltip-content strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+}
+
+.tooltip-arrow {
+    position: absolute;
+    bottom: -6px; /* Cambiado de top: -6px a bottom: -6px */
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #764ba2; /* Cambiado de border-bottom a border-top */
+}
+
+/* MOSTRAR TOOLTIP SOLO CUANDO EL INPUT TIENE FOCUS */
+.input-container input:focus + .validation-icon + .tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
 .form-group input {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    padding: 12px 40px 12px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 6px;
     font-size: 1rem;
     box-sizing: border-box;
+    transition: all 0.3s ease;
+    background-color: #fafbfc;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group input.valid {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+
+.form-group input.invalid {
+    border-color: #dc3545;
+    background-color: #fff8f8;
+}
+
+.validation-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+    font-weight: bold;
+}
+
+.validation-icon.valid {
+    color: #28a745;
+}
+
+.validation-icon.invalid {
+    color: #dc3545;
 }
 
 .btn-register {
     width: 100%;
-    margin-top: 10px;
-    padding: 12px;
-    background-color: #2c2c2c;
-    color: #fff;
+    margin-top: 20px;
+    padding: 14px;
+    background-color: #2c2c2c; /* CAMBIADO: Negro por defecto cuando está habilitado */
+    color: #fff; /* CAMBIADO: Texto blanco */
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     font-size: 1rem;
-    font-weight: bold;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.btn-register:hover {
-    background-color: #444;
+.btn-register:hover:not(:disabled) {
+    background-color: #444; /* CAMBIADO: Gris oscuro al hacer hover */
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(44, 44, 44, 0.4); /* CAMBIADO: Sombra negra */
+}
+
+.btn-register:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .alert {
     padding: 15px;
     margin-bottom: 20px;
-    border-radius: 5px;
+    border-radius: 6px;
     text-align: center;
     font-size: 0.9rem;
 }
@@ -80,4 +185,33 @@
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .register-container {
+        padding: 30px 20px;
+        margin: 0 10px;
+    }
+    
+    .tooltip-content {
+        min-width: 200px;
+        font-size: 0.75rem;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 480px) {
+    .register-container {
+        padding: 25px 15px;
+    }
+    
+    .tooltip-content {
+        min-width: 180px;
+        white-space: normal;
+    }
+    
+    .tooltip-arrow {
+        left: 15px;
+    }
 }
