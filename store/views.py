@@ -182,8 +182,7 @@ def login_view(request):
                 request.session['cliente_nombre'] = cliente.nombre
                 request.session['tipo_usuario'] = cliente.tipo_usuario
                 
-                # Por ahora, redirigir a todos los usuarios al home
-                # independientemente de su tipo de usuario
+
                 return JsonResponse({
                     'success': True,
                     'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
@@ -258,3 +257,13 @@ def register_view(request):
             messages.error(request, 'Ocurrió un error inesperado al crear tu cuenta. Contacta a soporte.')
             return redirect('register')
 
+def logout_view(request):
+    if 'cliente_id' in request.session:
+        try:
+            request.session.flush()
+            messages.success(request, 'Has cerrado sesión exitosamente.')
+        except Exception as e:
+            print(f"Error al cerrar sesión: {e}")
+            messages.error(request, 'Ocurrió un error al cerrar sesión.')
+    
+    return redirect('home')

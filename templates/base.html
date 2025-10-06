@@ -19,14 +19,33 @@
                 <button type="submit"><i class='bx bx-search'></i></button>
             </div>
         <div class="header-actions">
-            <a href="{% url 'login' %}" class="action-item">  <i class='bx bx-user'></i>
-            </a>
-            <a href="{% url 'view_cart' %}" class="action-item cart-icon-wrapper">
-            <i class='bx bx-cart'></i>
-            {% if cart_item_count > 0 %}
-                <span class="cart-item-count">{{ cart_item_count }}</span>
+            {% if request.session.cliente_id %}
+                <div class="user-info">
+                    <span>Hola, {{ request.session.cliente_nombre }}</span>
+                    <div class="user-menu">
+                        <div id="user-menu-button-loggedin" class="action-item">
+                            <i class='bx bx-user'></i>
+                        </div>
+                        <div id="user-menu-dropdown-loggedin" class="dropdown-content">
+                            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="user-menu">
+                    <div id="user-menu-button" class="action-item">
+                        <i class='bx bx-user'></i>
+                    </div>
+                    <div id="user-menu-dropdown" class="dropdown-content">
+                        <a href="{% url 'login' %}">Iniciar Sesión</a>
+                        <a href="{% url 'register' %}">Regístrate</a>
+                    </div>
+                </div>
             {% endif %}
-        </a>
+
+            <a href="#" class="action-item">
+                <i class='bx bx-cart'></i>
+            </a>
         </div>
         </div>
     </header>

@@ -17,7 +17,8 @@ from store.views import (
     radios_catalog,
     product_catalog,
     login_view, 
-    register_view 
+    register_view,
+    logout_view
 )
 
 from django.conf import settings
@@ -43,6 +44,8 @@ urlpatterns = [
     path('eliminar-del-carro/<int:product_id>/', remove_from_cart, name='remove_from_cart'),
     path('login/', login_view, name='login'),
     path('registro/', register_view, name='register'),
+    path('logout/', logout_view, name='logout'), 
+
 ]
 
 if settings.DEBUG:
