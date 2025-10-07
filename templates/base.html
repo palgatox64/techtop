@@ -14,10 +14,10 @@
     <header class="header">
         <div class="header-container">
             <a href="/" class="header-logo">TECHTOP</a>
-            <div class="header-search">
-                <input type="text" placeholder="Busca los mejores productos y marcas :)">
+            <form class="header-search" method="GET" action="{% url 'search' %}">
+                <input type="text" name="q" placeholder="Busca los mejores productos y marcas :)" value="{{ search_query|default:'' }}">
                 <button type="submit"><i class='bx bx-search'></i></button>
-            </div>
+            </form>
         <div class="header-actions">
             {% if request.session.cliente_id %}
                 <div class="user-info">

@@ -34,7 +34,8 @@ from store.views import (
     eliminar_marca_view,
     exportar_productos_csv,
     exportar_categorias_csv,
-    exportar_marcas_csv
+    exportar_marcas_csv,
+    search_results_view 
 )
 
 from django.conf import settings
@@ -77,6 +78,7 @@ urlpatterns = [
     path('gestion/marcas/crear/', crear_marca_view, name='crear_marca'),
     path('gestion/marcas/editar/<int:pk>/', editar_marca_view, name='editar_marca'),
     path('gestion/marcas/eliminar/<int:pk>/', eliminar_marca_view, name='eliminar_marca'),
+    path('buscar/', search_results_view, name='search'),
 
 ]
 
