@@ -8,6 +8,10 @@
 <div class="gestion-page">
     <header class="gestion-header">
         <h1>Gestión de Marcas</h1>
+        <!-- Nuevo botón para volver al panel principal -->
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
+            <i class='bx bx-arrow-back'></i> Volver al Panel
+        </a>
     </header>
 
     <div class="table-actions">
@@ -39,10 +43,12 @@
                     <td>{{ marca.nombre }}</td>
                     <td class="actions-cell">
                         <a href="{% url 'editar_marca' marca.id %}" class="btn-action edit">Editar</a>
-                        <form action="{% url 'eliminar_marca' marca.id %}" method="POST" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-action delete" onclick="return confirm('¿Estás seguro de que quieres eliminar esta marca?');">Eliminar</button>
-                        </form>
+                        <button type="button" class="btn-action delete btn-delete-item" 
+                                data-url="{% url 'eliminar_marca' marca.id %}" 
+                                data-item-name="{{ marca.nombre }}"
+                                data-csrf-token="{{ csrf_token }}">
+                            Eliminar
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
@@ -74,5 +80,8 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_modal.js' %}"></script>
 <script src="{% static 'js/gestion_delete.js' %}"></script>
+{% endblock %}

@@ -8,6 +8,7 @@
 .gestion-header {
     text-align: center;
     margin-bottom: 40px;
+    position: relative; /* Para posicionar el botón */
 }
 
 .gestion-header h1 {
@@ -17,6 +18,48 @@
 .gestion-header p {
     font-size: 1.1rem;
     color: #666;
+}
+
+/* Nuevo estilo para el botón de volver al panel */
+.btn-back-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-back-panel:hover {
+    background-color: #5a6268;
+    color: white;
+}
+
+.btn-back-panel i {
+    font-size: 1.1rem;
+}
+
+/* Ajuste para pantallas pequeñas */
+@media (max-width: 768px) {
+    .btn-back-panel {
+        position: static;
+        margin-bottom: 20px;
+        align-self: flex-start;
+    }
+    
+    .gestion-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 }
 
 
@@ -175,9 +218,30 @@
 .crud-table th { background-color: #f8f9fa; }
 .product-thumbnail { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; }
 .actions-cell { display: flex; gap: 10px; }
-.btn-action { padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
-.btn-action.edit { background-color: #ffc107; color: #212529; }
-.btn-action.delete { background-color: #dc3545; color: white; }
+.btn-action { 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    text-decoration: none; 
+    font-weight: 600; 
+    border: none; 
+    cursor: pointer;
+    /* Nuevas propiedades para igualar altura */
+    height: 36px; /* Altura fija */
+    line-height: 20px; /* Altura de línea consistente */
+    display: inline-flex; /* Para mejor control del contenido */
+    align-items: center; /* Centrar verticalmente el texto */
+    justify-content: center; /* Centrar horizontalmente el texto */
+    box-sizing: border-box; /* Incluir padding y border en el cálculo de altura */
+    vertical-align: top; /* Alineación vertical consistente */
+}
+.btn-action.edit { 
+    background-color: #ffc107; 
+    color: #212529; 
+}
+.btn-action.delete { 
+    background-color: #dc3545; 
+    color: white; 
+}
 .pagination-container { margin-top: 30px; display: flex; justify-content: center; align-items: center; }
 .pagination { list-style: none; display: flex; gap: 5px; padding: 0; }
 .page-item .page-link { color: #007bff; padding: 10px 15px; border: 1px solid #dee2e6; text-decoration: none; transition: background-color .3s; border-radius: 5px; }
@@ -197,3 +261,162 @@
 }
 .alert-success { background-color: #d4edda; color: #155724; }
 .alert-error { background-color: #f8d7da; color: #721c24; }
+
+.modal-overlay {
+    display: flex; /* Cambiado de 'none' a 'flex' */
+    align-items: center; /* Añadido para centrar verticalmente */
+    justify-content: center; /* Añadido para centrar horizontalmente */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow-y: auto;
+    visibility: hidden; /* Añadido para ocultar */
+    opacity: 0; /* Añadido para hacerlo transparente */
+    transition: opacity 0.3s ease, visibility 0.3s ease; /* Añadido para animar */
+}
+
+.modal-overlay.show {
+    visibility: visible; /* Cambiado para mostrar */
+    opacity: 1; /* Cambiado para hacerlo opaco */
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.modal-header {
+    padding: 20px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.modal-close:hover {
+    background-color: #f0f0f0;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.modal-form {
+    width: 100%;
+}
+
+.modal-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.modal-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.modal-form .form-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.modal-form .btn-submit,
+.modal-form .btn-cancel {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.modal-form .btn-submit {
+    background-color: #2c2c2c;
+    color: white;
+}
+
+.modal-form .btn-submit:hover {
+    background-color: #444;
+}
+
+.modal-form .btn-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.modal-form .btn-cancel:hover {
+    background-color: #5a6268;
+}
+
+/* Responsividad del modal */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .modal-header,
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-form .form-actions {
+        flex-direction: column;
+    }
+    
+    .modal-form .btn-submit,
+    .modal-form .btn-cancel {
+        width: 100%;
+    }
+}

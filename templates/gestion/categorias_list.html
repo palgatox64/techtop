@@ -8,6 +8,10 @@
 <div class="gestion-page">
     <header class="gestion-header">
         <h1>Gestión de Categorías</h1>
+        <!-- Nuevo botón para volver al panel principal -->
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
+            <i class='bx bx-arrow-back'></i> Volver al Panel
+        </a>
     </header>
 
     <div class="table-actions">
@@ -33,10 +37,12 @@
                     <td>{{ categoria.descripcion|default:"N/A" }}</td>
                     <td class="actions-cell">
                         <a href="{% url 'editar_categoria' categoria.id %}" class="btn-action edit">Editar</a>
-                        <form action="{% url 'eliminar_categoria' categoria.id %}" method="POST" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-action delete" onclick="return confirm('¿Estás seguro?');">Eliminar</button>
-                        </form>
+                        <button type="button" class="btn-action delete btn-delete-item" 
+                                data-url="{% url 'eliminar_categoria' categoria.id %}" 
+                                data-item-name="{{ categoria.nombre }}"
+                                data-csrf-token="{{ csrf_token }}">
+                            Eliminar
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -57,5 +63,9 @@
     </nav>
 </div>
 {% endblock %}
+
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_modal.js' %}"></script>
 <script src="{% static 'js/gestion_delete.js' %}"></script>
+{% endblock %}
