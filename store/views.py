@@ -77,6 +77,81 @@ def radios_catalog(request):
     
     return render(request, 'store/tienda.html', context)
 
+def category_catalog(request, categoria_nombre):
+    nombre_categoria_con_espacios = categoria_nombre.replace('-', ' ')
+    categoria = get_object_or_404(Categoria, nombre__iexact=nombre_categoria_con_espacios)
+    products = Producto.objects.filter(categoria=categoria)
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+    selected_inches = request.GET.getlist('pulgadas')
+
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+    
+    if selected_inches:
+        for inch_size in selected_inches:
+            products = products.filter(nombre__icontains=inch_size)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+        
+    available_inches = ['7', '9', '10.1', '12']
+    available_brands = Marca.objects.filter(producto__in=products).annotate(product_count=Count('producto')).filter(product_count__gt=0).order_by('nombre')
+    
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'categoria_actual': categoria, 
+        'available_brands': available_brands,
+        'available_inches': available_inches,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'selected_inches_from_form': selected_inches,
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+
+def electronica_catalog(request):
+    products = Producto.objects.filter(categoria__nombre='Electrónica')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+    selected_inches = request.GET.getlist('pulgadas') 
+
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+    
+    if selected_inches:
+        for inch_size in selected_inches:
+            products = products.filter(nombre__icontains=inch_size)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+    available_inches = ['7', '9', '10.1', '12']
+    available_brands = Marca.objects.filter(producto__in=products).annotate(product_count=Count('producto')).filter(product_count__gt=0).order_by('nombre')
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'available_inches': available_inches,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'selected_inches_from_form': selected_inches,
+    }
+    return render(request, 'store/tienda.html', context)
+
 
 def product_catalog(request, brand_name=None):
     products = Producto.objects.all()
