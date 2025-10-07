@@ -136,7 +136,6 @@
     color: #777;
 }
 
-
 .mobile-filter-trigger {
     display: none;
 }
@@ -147,17 +146,14 @@
     display: none;
 }
 
-
-
 @media (max-width: 768px) {
     .catalog-container {
         flex-direction: column;
         padding: 0.5rem;
     }
 
-
     .filter-sidebar {
-        display: block; 
+        display: block;
         position: fixed;
         top: 0;
         left: 0;
@@ -172,7 +168,6 @@
         overflow-y: auto;
         box-shadow: 3px 0 15px rgba(0,0,0,0.2);
     }
-
 
     .filter-sidebar.is-open {
         transform: translateX(0);
@@ -206,7 +201,6 @@
         z-index: 1999;
     }
 
-
     .mobile-filter-trigger {
         display: block;
         text-align: center;
@@ -228,7 +222,6 @@
     .open-filters-btn i {
         font-size: 1.2rem;
     }
-
 
     .product-grid {
         grid-template-columns: repeat(2, 1fr);
