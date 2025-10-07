@@ -9,9 +9,11 @@ from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password 
 from django.http import JsonResponse 
 from decimal import Decimal
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from .decorators import admin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm
-from django.core.paginator import Paginator # ¡Importa Paginator!
+from django.core.paginator import Paginator
 import csv
 from django.http import HttpResponse
 
@@ -187,8 +189,31 @@ def login_view(request):
         return render(request, 'login.html')
 
     if request.method == 'POST':
-        correo = request.POST.get('email')
-        password = request.POST.get('password')
+        correo = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        
+        # Validaciones del backend
+        if not correo or not password:
+            return JsonResponse({
+                'success': False,
+                'message': 'Por favor, completa todos los campos.'
+            })
+        
+        # Validar formato de email
+        try:
+            validate_email(correo)
+        except ValidationError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Formato de correo electrónico inválido.'
+            })
+        
+        # Validar longitud mínima de contraseña
+        if len(password) < 6:
+            return JsonResponse({
+                'success': False,
+                'message': 'La contraseña debe tener al menos 6 caracteres.'
+            })
         
         try:
             cliente = Cliente.objects.get(email=correo)
@@ -198,17 +223,27 @@ def login_view(request):
                 request.session['cliente_nombre'] = cliente.nombre
                 request.session['tipo_usuario'] = cliente.tipo_usuario
                 
-
                 return JsonResponse({
                     'success': True,
                     'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
                     'redirect_url': '/'
                 })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Correo o contraseña incorrectos.'
+                })
                     
-        except Exception as e:
+        except Cliente.DoesNotExist:
             return JsonResponse({
                 'success': False,
                 'message': 'Correo o contraseña incorrectos.'
+            })
+        except Exception as e:
+            print(f"Error en login_view: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': 'Error interno del servidor. Intenta de nuevo.'
             })
 
 def register_view(request):
@@ -218,33 +253,93 @@ def register_view(request):
     if request.method == 'POST':
         print(">>> Petición POST recibida en register_view.")
 
-        nombre = request.POST.get('nombre')
-        apellido = request.POST.get('apellido')
-        correo = request.POST.get('correo')
-        telefono = request.POST.get('telefono')
-        password = request.POST.get('password')
-        password2 = request.POST.get('password2')
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        correo = request.POST.get('correo', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        password = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
         
         print(f">>> Datos recibidos: Correo={correo}, Nombre={nombre}")
 
-        if Cliente.objects.filter(email=correo).exists():
-            messages.error(request, 'El correo electrónico ya está en uso.')
-            print(">>> ERROR DE VALIDACIÓN: El correo ya existe.")
+        # Validaciones del backend
+        
+        # 1. Validar campos vacíos
+        if not all([nombre, apellido, correo, telefono, password, password2]):
+            messages.error(request, 'Todos los campos son obligatorios.')
             return redirect('register')
 
-        if password != password2:
-            messages.error(request, '¡Las contraseanzas no coinciden!')
-            print(">>> ERROR DE VALIDACIÓN: Las contraseñas no coinciden.")
-            return redirect('register')
-
-        if not re.match(r'^(?=.*[A-Z])(?=.*\d).{8,}$', password):
-            messages.error(request, 'La contraseña no es segura (mín. 8 caracteres, 1 mayúscula, 1 número).')
-            print(">>> ERROR DE VALIDACIÓN: La contraseña no es segura.")
+        # 2. Validar formato de nombres (solo letras y espacios)
+        name_regex = r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+        if not re.match(name_regex, nombre):
+            messages.error(request, 'El nombre solo debe contener letras y espacios.')
             return redirect('register')
         
-        if not re.match(r'^\d{9}$', telefono):
-            messages.error(request, 'El número de teléfono debe tener exactamente 9 dígitos.')
-            print(">>> ERROR DE VALIDACIÓN: El teléfono es inválido.")
+        if not re.match(name_regex, apellido):
+            messages.error(request, 'El apellido solo debe contener letras y espacios.')
+            return redirect('register')
+
+        # 3. Validar longitud de nombres
+        if len(nombre) < 2 or len(nombre) > 50:
+            messages.error(request, 'El nombre debe tener entre 2 y 50 caracteres.')
+            return redirect('register')
+        
+        if len(apellido) < 2 or len(apellido) > 100:
+            messages.error(request, 'El apellido debe tener entre 2 y 100 caracteres.')
+            return redirect('register')
+
+        # 4. Validar formato de email
+        try:
+            validate_email(correo)
+        except ValidationError:
+            messages.error(request, 'Formato de correo electrónico inválido.')
+            return redirect('register')
+
+        # 5. Validar longitud del email
+        if len(correo) > 100:
+            messages.error(request, 'El correo electrónico es demasiado largo.')
+            return redirect('register')
+
+        # 6. Verificar si el correo ya existe
+        if Cliente.objects.filter(email=correo).exists():
+            messages.error(request, 'El correo electrónico ya está en uso.')
+            return redirect('register')
+
+        # 7. Validar contraseñas coincidentes
+        if password != password2:
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return redirect('register')
+
+        # 8. Validar seguridad de contraseña (MÁS PERMISIVA CON CARACTERES ESPECIALES)
+        if len(password) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+            return redirect('register')
+        
+        if not re.search(r'[a-z]', password):
+            messages.error(request, 'La contraseña debe contener al menos una letra minúscula.')
+            return redirect('register')
+        
+        if not re.search(r'[A-Z]', password):
+            messages.error(request, 'La contraseña debe contener al menos una letra mayúscula.')
+            return redirect('register')
+        
+        if not re.search(r'\d', password):
+            messages.error(request, 'La contraseña debe contener al menos un número.')
+            return redirect('register')
+        
+        # VALIDACIÓN MÁS AMPLIA DE CARACTERES ESPECIALES - AQUÍ ESTÁ EL CAMBIO PRINCIPAL
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>/?~`]', password):
+            messages.error(request, 'La contraseña debe contener al menos un carácter especial.')
+            return redirect('register')
+        
+        # Opcional: Evitar algunos caracteres problemáticos (puedes comentar esta línea si quieres permitir TODO)
+        # if re.search(r'[\'\"\\]', password):
+        #     messages.error(request, 'La contraseña no puede contener comillas simples, comillas dobles o barras invertidas.')
+        #     return redirect('register')
+        
+        # 9. Validar teléfono chileno
+        if not re.match(r'^9\d{8}$', telefono):
+            messages.error(request, 'El número de teléfono debe tener 9 dígitos y comenzar con 9 (formato chileno).')
             return redirect('register')
 
         try:
@@ -267,9 +362,16 @@ def register_view(request):
             messages.success(request, '¡Tu cuenta ha sido creada con éxito! Ya puedes iniciar sesión.')
             return redirect('login')
         
+        except IntegrityError as e:
+            print(f"Error de integridad en la base de datos: {e}")
+            if 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
+                messages.error(request, 'El correo electrónico ya está en uso.')
+            else:
+                messages.error(request, 'Error al crear la cuenta. Por favor, intenta de nuevo.')
+            return redirect('register')
+        
         except Exception as e:
-            print(f"!!!!!!!!!! OCURRIÓ UN ERROR AL GUARDAR EN LA BASE DE DATOS !!!!!!!!!!")
-            print(f"El error específico es: {e}")
+            print(f"Error inesperado al guardar en la base de datos: {e}")
             messages.error(request, 'Ocurrió un error inesperado al crear tu cuenta. Contacta a soporte.')
             return redirect('register')
 
