@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
+{% endblock %}
+
+{% block title %}Resultados de Búsqueda para "{{ search_query }}"{% endblock %}
+
+{% block content %}
+<div class="catalog-container" style="display: block;"> <div class="search-results-header">
+        {% if products %}
+            <h1>Resultados para "{{ search_query }}"</h1>
+            <p>Se encontraron {{ products|length }} productos.</p>
+        {% else %}
+            <h1>No se encontraron resultados para "{{ search_query }}"</h1>
+            <p>Intenta con otro término de búsqueda o revisa nuestra tienda completa.</p>
+        {% endif %}
+    </div>
+
+    <main class="product-grid">    
+        {% for product in products %}
+        <div class="product-card">
+            <a href="{% url 'product_detail' product.id %}">
+                {% if product.imagen and product.imagen.url %}
+                    <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}" class="product-image">
+                {% else %}
+                    <img src="https://placehold.co/300x300?text=Sin+Imagen" alt="Imagen no disponible" class="product-image">
+                {% endif %}
+                <div class="product-info">
+                    <p class="product-brand">{{ product.marca.nombre }}</p>
+                    <h4 class="product-name">{{ product.nombre }}</h4>
+                    <div class="product-prices">
+                        <p class="product-price-main">${{ product.precio|floatformat:0|intcomma }}</p>
+                        <p class="price-label">Precio</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </main>
+</div>
+{% endblock %}

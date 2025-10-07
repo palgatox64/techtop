@@ -16,6 +16,7 @@ from .forms import CategoriaForm, MarcaForm, ProductoForm
 from django.core.paginator import Paginator
 import csv
 from django.http import HttpResponse
+from django.db.models import Q 
 
 def home(request):
     return render(request, 'home.html')
@@ -632,3 +633,23 @@ def exportar_marcas_csv(request):
         writer.writerow([marca.id, marca.nombre])
 
     return response
+
+
+def search_results_view(request):
+    """
+    Filtra los productos basándose en la consulta de búsqueda y muestra los resultados.
+    """
+    query = request.GET.get('q', '') 
+    products = None
+
+    if query:
+        products = Producto.objects.filter(
+            Q(nombre__icontains=query) |
+            Q(marca__nombre__icontains=query)
+        ).distinct()
+
+    context = {
+        'products': products,
+        'search_query': query,
+    }
+    return render(request, 'store/search_results.html', context)
