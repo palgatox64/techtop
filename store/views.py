@@ -66,6 +66,7 @@ def radios_catalog(request):
     ).filter(product_count__gt=0).order_by('nombre')
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
+        product.precio_normal = product.precio * Decimal('1.03')  # Precio normal con recargo
     context = {
         'products': products,
         'available_brands': available_brands,
@@ -104,6 +105,7 @@ def category_catalog(request, categoria_nombre):
     
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
+        product.precio_normal = product.precio * Decimal('1.03')  # Precio normal con recargo
 
     context = {
         'products': products,
@@ -141,6 +143,7 @@ def electronica_catalog(request):
     available_brands = Marca.objects.filter(producto__in=products).annotate(product_count=Count('producto')).filter(product_count__gt=0).order_by('nombre')
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
+        product.precio_normal = product.precio * Decimal('1.03')  # Precio normal con recargo
 
     context = {
         'products': products,
@@ -167,6 +170,7 @@ def product_catalog(request, brand_name=None):
     ).filter(product_count__gt=0).order_by('nombre') 
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
+        product.precio_normal = product.precio * Decimal('1.03')  # Precio normal con recargo
     
     context = {
         'products': products,
@@ -180,11 +184,13 @@ def product_catalog(request, brand_name=None):
 def product_detail(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
     precio_transferencia = product.precio * Decimal('0.97')
+    precio_normal = product.precio * Decimal('1.03')  # Precio normal con recargo
     descuento_porcentaje = 3 
     
     context = {
         'product': product,
         'precio_transferencia': precio_transferencia,
+        'precio_normal': precio_normal,
         'descuento_porcentaje': descuento_porcentaje,
     }
     return render(request, 'store/product_detail.html', context)
@@ -722,6 +728,11 @@ def search_results_view(request):
             Q(nombre__icontains=query) |
             Q(marca__nombre__icontains=query)
         ).distinct()
+        
+        # Agregar los cálculos de precio a los productos de búsqueda
+        for product in products:
+            product.precio_transferencia = product.precio * Decimal('0.97')
+            product.precio_normal = product.precio * Decimal('1.03')
 
     context = {
         'products': products,

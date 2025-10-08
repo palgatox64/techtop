@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/product_detail.css' %}">
@@ -31,7 +32,7 @@
         <div class="price-box">
             <div class="price-item">
                 <span class="price-label">Normal</span>
-                <span class="price-normal-strike">${{ product.precio|floatformat:0|intcomma }}</span>
+                <span class="price-normal-strike">${{ precio_normal|floatformat:0|dot_thousands }}</span>
             </div>
             {% if descuento_porcentaje > 0 %}
             <div class="price-item">
@@ -40,12 +41,12 @@
             </div>
             {% endif %}
             <div class="price-item main-price">
-                <span class="price-label">Pago con transferencia</span>
-                <span class="price-final">${{ precio_transferencia|floatformat:0|intcomma }}</span>
+                <span class="price-label">Otros medios de pago</span>
+                <span class="price-final">${{ product.precio|floatformat:0|dot_thousands }}</span>
             </div>
             <div class="price-item">
-                <span class="price-label">Otros medios de pago</span>
-                <span class="price-other">${{ product.precio|floatformat:0|intcomma }}</span>
+                <span class="price-label">Pago con transferencia</span>
+                <span class="price-other">${{ precio_transferencia|floatformat:0|dot_thousands }}</span>
             </div>
         </div>
 

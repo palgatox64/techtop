@@ -349,3 +349,16 @@ ul {
         height: 300px;
     }
 }
+
+.header-logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.header-logo img {
+    height: 70px; /* Ajusta la altura según necesites */
+    width: auto;
+    object-fit: contain;
+}

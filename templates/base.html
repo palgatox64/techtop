@@ -13,7 +13,9 @@
 <body>
     <header class="header">
         <div class="header-container">
-            <a href="/" class="header-logo">TECHTOP</a>
+            <a href="/" class="header-logo">
+                <img src="{% static 'img/new_black.png' %}" alt="TECHTOP">
+            </a>
             <form class="header-search" method="GET" action="{% url 'search' %}">
                 <input type="text" name="q" placeholder="Busca los mejores productos y marcas :)" value="{{ search_query|default:'' }}">
                 <button type="submit"><i class='bx bx-search'></i></button>
@@ -21,7 +23,6 @@
         <div class="header-actions">
             {% if request.session.cliente_id %}
                 <div class="user-info">
-                    <span>Hola, {{ request.session.cliente_nombre }}</span>
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
                             <i class='bx bx-user'></i>
