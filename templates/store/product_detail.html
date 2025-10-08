@@ -14,14 +14,22 @@
     
     <div class="product-gallery">
         <div class="gallery-thumbnails">
+            <!-- Imagen principal -->
             {% if product.imagen %}
-            <div class="thumb-item active">
+            <div class="thumb-item active" data-image="{{ product.imagen.url }}">
                 <img src="{{ product.imagen.url }}" alt="Miniatura de {{ product.nombre }}">
             </div>
             {% endif %}
+            
+            <!-- Imágenes adicionales -->
+            {% for imagen in imagenes_adicionales %}
+            <div class="thumb-item" data-image="{{ imagen.imagen.url }}">
+                <img src="{{ imagen.imagen.url }}" alt="Miniatura adicional de {{ product.nombre }}">
+            </div>
+            {% endfor %}
         </div>
         <div class="gallery-main-image">
-            <img src="{{ product.imagen.url }}" alt="{{ product.nombre }}">
+            <img id="main-product-image" src="{{ product.imagen.url }}" alt="{{ product.nombre }}">
         </div>
     </div>
 
@@ -85,4 +93,24 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const thumbnails = document.querySelectorAll('.thumb-item');
+        const mainImage = document.getElementById('main-product-image');
+        
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                // Remover clase active de todas las miniaturas
+                thumbnails.forEach(t => t.classList.remove('active'));
+                
+                // Agregar clase active a la miniatura clickeada
+                this.classList.add('active');
+                
+                // Cambiar la imagen principal
+                const imageUrl = this.getAttribute('data-image');
+                mainImage.src = imageUrl;
+            });
+        });
+    });
+</script>
 {% endblock %}

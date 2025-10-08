@@ -32,6 +32,13 @@ class Producto(models.Model):
     
     def __str__(self):
         return self.nombre
+    
+class ImagenProducto(models.Model):
+    producto = models.ForeignKey(Producto, related_name='imagenes_adicionales', on_delete=models.CASCADE)
+    imagen = models.ImageField(upload_to='productos/adicionales/')
+
+    def __str__(self):
+        return f"Imagen para {self.producto.nombre}"
 
 # --- Modelo para la tabla CLIENTES (según tu DDL) ---
 class Cliente(models.Model):
