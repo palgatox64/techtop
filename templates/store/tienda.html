@@ -1,13 +1,27 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
-{% load custom_filters %} <!-- Agregar esta línea --> 
+{% load custom_filters %} 
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/tienda.css' %}">
 {% endblock %}
 
-{% block title %}Catálogo de Radios - TechTop{% endblock %}
+{% block title %}
+    {% if categoria_actual %}
+        {% if category_type == 'subcategoria' %}
+            {{ categoria_actual.nombre|replace_dash }} - TechTop
+        {% else %}
+            {{ categoria_actual.nombre }} - TechTop
+        {% endif %}
+    {% elif category_type == 'accesorios' %}
+        Catálogo de Accesorios - TechTop
+    {% elif category_type == 'electronica' %}
+        Catálogo de Electrónica - TechTop
+    {% else %}
+        Catálogo de Radios - TechTop
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="catalog-container">

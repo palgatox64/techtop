@@ -20,6 +20,28 @@
     top: 2rem; 
 }
 
+.summary-product {
+    margin-bottom: 1rem;
+}
+
+.summary-product-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.summary-divider {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid #eee;
+}
+
+.summary-total-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid #eee;
+}
+
 .cart-item {
     display: flex;
     gap: 1.5rem;
