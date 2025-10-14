@@ -40,27 +40,40 @@ class ImagenProducto(models.Model):
     def __str__(self):
         return f"Imagen para {self.producto.nombre}"
 
-# --- Modelo para la tabla CLIENTES (según tu DDL) ---
+# --- Modelo para la tabla EMPLEADOS ---
+class Empleado(models.Model):
+    id_empleado = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100, validators=[validate_name])
+    apellidos = models.CharField(max_length=150, validators=[validate_name])
+    email = models.EmailField(max_length=100, unique=True, validators=[validate_email_extended])
+    pass_hash = models.CharField(max_length=200)
+    telefono = models.CharField(max_length=9, validators=[validate_chilean_phone])
+    cargo = models.CharField(max_length=100, default='Empleado')
+    fecha_contratacion = models.DateField(auto_now_add=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'EMPLEADOS'
+        verbose_name = 'Empleado'
+        verbose_name_plural = 'Empleados'
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellidos} ({self.cargo})"
+
+# --- Modelo para la tabla CLIENTES (SIN tipo_usuario) ---
 class Cliente(models.Model):
-    TIPO_USUARIO_CHOICES = [
-        ('cliente', 'Cliente'),
-        ('admin', 'Administrador'),
-    ]
-    
     id_cliente = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100, validators=[validate_name])
     apellidos = models.CharField(max_length=150, validators=[validate_name])
     email = models.EmailField(max_length=100, unique=True, validators=[validate_email_extended])
     pass_hash = models.CharField(max_length=200)
     telefono = models.CharField(max_length=9, validators=[validate_chilean_phone])
-    tipo_usuario = models.CharField(
-        max_length=10, 
-        choices=TIPO_USUARIO_CHOICES, 
-        default='cliente'
-    )
+
+    class Meta:
+        db_table = 'CLIENTES'
 
     def __str__(self):
-        return f"{self.nombre} {self.apellidos} ({self.get_tipo_usuario_display()})"
+        return f"{self.nombre} {self.apellidos}"
 
 # --- Modelo para la tabla DIRECCIONES ---
 class Direccion(models.Model):

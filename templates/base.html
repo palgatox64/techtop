@@ -21,7 +21,28 @@
                 <button type="submit"><i class='bx bx-search'></i></button>
             </form>
         <div class="header-actions">
-            {% if request.session.cliente_id %}
+            {% if request.session.user_type == 'empleado' %}
+                {# Menú para EMPLEADOS #}
+                <div class="user-info">
+                    <div class="user-menu">
+                        <div id="user-menu-button-loggedin" class="action-item">
+                            <i class='bx bx-user-circle'></i>
+                        </div>
+                        <div id="user-menu-dropdown-loggedin" class="dropdown-content">
+                            <a href="{% url 'panel_gestion' %}">
+                                <i class='bx bx-cog'></i> Panel de Gestión
+                            </a>
+                            <a href="{% url 'logout' %}">
+                                <i class='bx bx-log-out'></i> Cerrar Sesión
+                            </a>
+                        </div>
+                    </div>
+                    <span style="margin-left: 8px; font-size: 0.9rem; color: #666;">
+                        {{ request.session.empleado_nombre }} ({{ request.session.empleado_cargo }})
+                    </span>
+                </div>
+            {% elif request.session.user_type == 'cliente' %}
+                {# Menú para CLIENTES #}
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
@@ -31,8 +52,12 @@
                             <a href="{% url 'logout' %}">Cerrar Sesión</a>
                         </div>
                     </div>
+                    <span style="margin-left: 8px; font-size: 0.9rem;">
+                        {{ request.session.cliente_nombre }}
+                    </span>
                 </div>
-                {% else %}
+            {% else %}
+                {# Menú para visitantes NO logueados #}
                 <div class="user-menu">
                     <div id="user-menu-button" class="action-item">
                         <i class='bx bx-user'></i>

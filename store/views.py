@@ -3,7 +3,7 @@ from .models import Producto, Marca, Categoria
 from django.db.models import Count, Q
 from django.contrib.auth.hashers import make_password 
 from django.contrib import messages 
-from .models import Cliente 
+from .models import Cliente, Empleado
 import re 
 from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password 
@@ -267,6 +267,9 @@ def remove_from_cart(request, product_id):
 
 
 def login_view(request):
+    """
+    Vista de login UNIFICADA que valida tanto empleados como clientes
+    """
     if request.method == 'GET':
         return render(request, 'login.html')
 
@@ -281,7 +284,6 @@ def login_view(request):
                 'message': 'Por favor, completa todos los campos.'
             })
         
-        # Validar formato de email
         try:
             validate_email(correo)
         except ValidationError:
@@ -290,37 +292,69 @@ def login_view(request):
                 'message': 'Formato de correo electrónico inválido.'
             })
         
-        # Validar longitud mínima de contraseña
         if len(password) < 6:
             return JsonResponse({
                 'success': False,
                 'message': 'La contraseña debe tener al menos 6 caracteres.'
             })
         
+        # 🔥 PRIMERO: Intentar buscar en EMPLEADOS
         try:
-            cliente = Cliente.objects.get(email=correo)
+            empleado = Empleado.objects.get(email=correo)
             
-            if check_password(password, cliente.pass_hash):
-                request.session['cliente_id'] = cliente.id_cliente
-                request.session['cliente_nombre'] = cliente.nombre
-                request.session['tipo_usuario'] = cliente.tipo_usuario
+            # Verificar si el empleado está activo
+            if not empleado.activo:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Tu cuenta ha sido desactivada. Contacta al administrador.'
+                })
+            
+            if check_password(password, empleado.pass_hash):
+                # Crear sesión de EMPLEADO
+                request.session['empleado_id'] = empleado.id_empleado
+                request.session['empleado_nombre'] = empleado.nombre
+                request.session['empleado_cargo'] = empleado.cargo
+                request.session['user_type'] = 'empleado'  # 🔥 Identificador clave
                 
                 return JsonResponse({
                     'success': True,
-                    'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
-                    'redirect_url': '/'
+                    'message': f'¡Bienvenido, {empleado.nombre}! ({empleado.cargo})',
+                    'redirect_url': '/gestion/'  # Redirigir al panel de gestión
                 })
             else:
                 return JsonResponse({
                     'success': False,
                     'message': 'Correo o contraseña incorrectos.'
                 })
+                
+        except Empleado.DoesNotExist:
+            # 🔥 SEGUNDO: Si no es empleado, buscar en CLIENTES
+            try:
+                cliente = Cliente.objects.get(email=correo)
+                
+                if check_password(password, cliente.pass_hash):
+                    # Crear sesión de CLIENTE
+                    request.session['cliente_id'] = cliente.id_cliente
+                    request.session['cliente_nombre'] = cliente.nombre
+                    request.session['user_type'] = 'cliente'  # 🔥 Identificador clave
                     
-        except Cliente.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Correo o contraseña incorrectos.'
-            })
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
+                        'redirect_url': '/'  # Redirigir al home
+                    })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Correo o contraseña incorrectos.'
+                    })
+                        
+            except Cliente.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Correo o contraseña incorrectos.'
+                })
+        
         except Exception as e:
             print(f"Error en login_view: {e}")
             return JsonResponse({
@@ -437,10 +471,8 @@ def register_view(request):
                 pass_hash=hashed_password
             )
 
-            print(">>> Intentando ejecutar .save() en la base de datos...")
             nuevo_cliente.save()
             
-            print(">>> ¡ÉXITO! .save() se ejecutó sin errores.")
             messages.success(request, '¡Tu cuenta ha sido creada con éxito! Ya puedes iniciar sesión.')
             return redirect('login')
         
