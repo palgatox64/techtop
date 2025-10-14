@@ -69,9 +69,16 @@
                 </div>
             {% endif %}
 
-            <a href="#" class="action-item">
-                <i class='bx bx-cart'></i>
-            </a>
+            <div class="cart-icon-wrapper">
+                <a href="#" id="cart-icon-button" class="action-item">
+                    <i class='bx bx-cart'></i>
+                </a>
+                <span id="cart-item-count" class="cart-item-count" 
+                      {% if cart_item_count > 0 %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                      {{ cart_item_count }}
+                </span>
+            </div>
+
         </div>
         </div>
     </header>
@@ -180,8 +187,28 @@
             <p>&copy; {% now "Y" %} Techtop. Todos los derechos reservados.</p>
         </div>
     </footer>
+
+    <div id="cart-backdrop" class="cart-backdrop"></div>
+    <div id="cart-offcanvas" class="cart-offcanvas">
+        <div class="cart-offcanvas-header">
+            <h3>Tu Carrito</h3>
+            <button id="close-cart-btn" class="close-cart-btn">&times;</button>
+        </div>
+        <div id="cart-offcanvas-body" class="cart-offcanvas-body">
+            <p>Tu carrito está vacío.</p>
+        </div>
+        <div class="cart-offcanvas-footer">
+    <div class="cart-total">
+        <span>Subtotal:</span>
+        <span id="cart-subtotal">$0</span>
+    </div>
+    <a href="{% url 'view_cart' %}" class="btn-view-cart">Ir al Carro</a>
+    <a href="#" class="btn-checkout">Finalizar Compra</a>
+</div>
+    
 <script src="{% static 'js/main.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-{% block extra_js %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {% block extra_js %}{% endblock %}
+
 </body>
 </html>

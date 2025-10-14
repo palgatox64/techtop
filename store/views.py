@@ -249,8 +249,6 @@ def product_detail(request, product_id):
     precio_transferencia = product.precio * Decimal('0.97')
     precio_normal = product.precio * Decimal('1.03')
     descuento_porcentaje = 3
-    
-    # Obtener las imágenes adicionales del producto
     imagenes_adicionales = product.imagenes_adicionales.all()
     
     context = {
@@ -262,17 +260,48 @@ def product_detail(request, product_id):
     }
     return render(request, 'store/product_detail.html', context)
 
+
 def add_to_cart(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
     quantity = int(request.POST.get('quantity', 1))
     cart = request.session.get('cart', {})
     product_id_str = str(product.id)
+
     if product_id_str in cart:
         cart[product_id_str]['quantity'] += quantity
     else:
         cart[product_id_str] = {'quantity': quantity}
+    
     request.session['cart'] = cart
-    return redirect('view_cart')
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    if is_ajax:
+        cart_items_data = []
+        total_price = Decimal('0.00')
+        product_ids = cart.keys()
+        products_in_cart = Producto.objects.filter(id__in=product_ids)
+
+        for p in products_in_cart:
+            pid_str = str(p.id)
+            qty = cart[pid_str]['quantity']
+            total_price += p.precio * qty
+            cart_items_data.append({
+                'id': p.id,
+                'name': p.nombre,
+                'quantity': qty,
+                'price': float(p.precio), 
+                'image_url': p.imagen.url if p.imagen else '/static/img/placeholder.png' 
+            })
+
+        return JsonResponse({
+            'success': True,
+            'cart_item_count': len(cart),
+            'items': cart_items_data,
+            'subtotal': float(total_price) 
+        })
+    else:
+        return redirect('view_cart')
 
 def view_cart(request):
     cart = request.session.get('cart', {})
