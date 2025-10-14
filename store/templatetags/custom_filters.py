@@ -16,3 +16,10 @@ def dot_thousands(value):
     # Usar intcomma primero y luego reemplazar comas por puntos
     formatted = intcomma(value)
     return formatted.replace(',', '.')
+
+@register.filter
+def replace_dash(value):
+    """
+    Reemplaza guiones por espacios y formatea el texto
+    """
+    return value.replace('-', ' ')

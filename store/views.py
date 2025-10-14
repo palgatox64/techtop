@@ -83,14 +83,8 @@ def category_catalog(request, categoria_nombre):
     products = Producto.objects.filter(categoria=categoria)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
-    selected_inches = request.GET.getlist('pulgadas')
-
     if selected_brands:
         products = products.filter(marca__nombre__in=selected_brands)
-    
-    if selected_inches:
-        for inch_size in selected_inches:
-            products = products.filter(nombre__icontains=inch_size)
 
     if selected_prices:
         price_queries = Q()
@@ -98,38 +92,48 @@ def category_catalog(request, categoria_nombre):
             min_price, max_price = price_range.split('-')
             price_queries |= Q(precio__range=(min_price, max_price))
         products = products.filter(price_queries)
-        
-    available_inches = ['7', '9', '10.1', '12']
-    available_brands = Marca.objects.filter(producto__in=products).annotate(product_count=Count('producto')).filter(product_count__gt=0).order_by('nombre')
-    
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
+    category_type = 'subcategoria'
+    if categoria_nombre in ['Audio-y-Video', 'Seguridad-y-Sensores', 'Diagnostico-Automotriz']:
+        parent_category = 'accesorios'
+    elif categoria_nombre in ['Electronica-Automotriz', 'Electronica-General']:
+        parent_category = 'electronica'
+    else:
+        parent_category = None
 
     context = {
         'products': products,
-        'categoria_actual': categoria, 
+        'categoria_actual': categoria,
         'available_brands': available_brands,
-        'available_inches': available_inches,
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
-        'selected_inches_from_form': selected_inches,
+        'category_type': category_type,
+        'parent_category': parent_category
     }
     
     return render(request, 'store/tienda.html', context)
 
 
 def electronica_catalog(request):
-    products = Producto.objects.filter(categoria__nombre='Electrónica')
+    electronics_categories = [
+        'Electronica-Automotriz',
+        'Electronica-General'
+    ]
+    products = Producto.objects.filter(categoria__nombre__in=electronics_categories)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
-    selected_inches = request.GET.getlist('pulgadas') 
-
+    selected_categories = request.GET.getlist('categoria')
     if selected_brands:
         products = products.filter(marca__nombre__in=selected_brands)
     
-    if selected_inches:
-        for inch_size in selected_inches:
-            products = products.filter(nombre__icontains=inch_size)
+    if selected_categories:
+        products = products.filter(categoria__nombre__in=selected_categories)
 
     if selected_prices:
         price_queries = Q()
@@ -137,21 +141,84 @@ def electronica_catalog(request):
             min_price, max_price = price_range.split('-')
             price_queries |= Q(precio__range=(min_price, max_price))
         products = products.filter(price_queries)
-    available_inches = ['7', '9', '10.1', '12']
-    available_brands = Marca.objects.filter(producto__in=products).annotate(product_count=Count('producto')).filter(product_count__gt=0).order_by('nombre')
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    available_categories = Categoria.objects.filter(
+        nombre__in=electronics_categories,
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
     for product in products:
         product.precio_transferencia = product.precio * Decimal('0.97')
 
     context = {
         'products': products,
         'available_brands': available_brands,
-        'available_inches': available_inches,
+        'available_categories': available_categories,
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
-        'selected_inches_from_form': selected_inches,
+        'selected_categories_from_form': selected_categories,
+        'category_type': 'electronica'
     }
+    
     return render(request, 'store/tienda.html', context)
 
+    
+def accesorios_catalog(request):
+    accessory_categories = [
+        'Audio-y-Video', 
+        'Seguridad-y-Sensores', 
+        'Diagnostico-Automotriz',
+        'Herramientas-de-Medicion',
+        'Medidores'
+    ]
+    products = Producto.objects.filter(categoria__nombre__in=accessory_categories)
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+    selected_categories = request.GET.getlist('categoria')
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_categories:
+        products = products.filter(categoria__nombre__in=selected_categories)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    available_categories = Categoria.objects.filter(
+        nombre__in=accessory_categories,
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'available_categories': available_categories,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'selected_categories_from_form': selected_categories,
+        'category_type': 'accesorios'
+    }
+
+    return render(request, 'store/tienda.html', context)
 
 def product_catalog(request, brand_name=None):
     products = Producto.objects.all()
@@ -747,6 +814,279 @@ def exportar_marcas_csv(request):
 
     return response
 
+
+def audio_video_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Audio-y-Video')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'audio_video',
+        'category_title': 'Audio y Video'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def seguridad_sensores_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Seguridad-y-Sensores')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'seguridad_sensores',
+        'category_title': 'Seguridad y Sensores'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def diagnostico_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Diagnostico-Automotriz')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'diagnostico',
+        'category_title': 'Diagnóstico Automotriz'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def herramientas_medicion_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Herramientas-de-Medicion')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'herramientas_medicion',
+        'category_title': 'Herramientas de Medición'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def medidores_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Medidores')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'medidores',
+        'category_title': 'Medidores'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def electronica_automotriz_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Electronica-Automotriz')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'electronica_automotriz',
+        'category_title': 'Electrónica Automotriz'
+    }
+    
+    return render(request, 'store/tienda.html', context)
+
+def electronica_general_catalog(request):
+    # Obtener productos y filtros seleccionados
+    products = Producto.objects.filter(categoria__nombre='Electronica-General')
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    # Aplicar filtros
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    # Obtener marcas disponibles
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    # Calcular precio de transferencia
+    for product in products:
+        product.precio_transferencia = product.precio * Decimal('0.97')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'electronica_general',
+        'category_title': 'Electrónica General'
+    }
+    
+    return render(request, 'store/tienda.html', context)
 
 def search_results_view(request):
     """
