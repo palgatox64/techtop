@@ -47,7 +47,22 @@
                 </ul>
             </div>
             {% endif %}
-            
+
+            {% if available_categories %}
+            <div class="filter-group">
+                <h4>Categorías</h4>
+                <ul class="filter-list checkbox-list">
+                    {% for category in available_categories %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="categoria" value="{{ category.nombre }}" {% if category.nombre in selected_categories_from_form %}checked{% endif %}>
+                            {{ category.nombre }} ({{ category.product_count }})
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             <div class="filter-group">
                 <h4>Precio</h4>
                 <ul class="filter-list checkbox-list">
