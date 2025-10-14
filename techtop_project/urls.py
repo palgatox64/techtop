@@ -20,14 +20,7 @@ from store.views import (
     product_catalog,
     login_view, 
     register_view,
-    category_catalog,
-    audio_video_catalog,
-    seguridad_sensores_catalog,
-    diagnostico_catalog,
-    herramientas_medicion_catalog,
-    medidores_catalog,
-    electronica_automotriz_catalog,
-    electronica_general_catalog,
+    category_catalog, 
     logout_view,
     panel_gestion_view,
     listar_productos_view,
@@ -45,7 +38,8 @@ from store.views import (
     exportar_productos_csv,
     exportar_categorias_csv,
     exportar_marcas_csv,
-    search_results_view 
+    search_results_view ,
+    get_cart_data
 )
 
 from django.conf import settings
@@ -64,16 +58,10 @@ urlpatterns = [
     path('tienda/', product_catalog, name='product_catalog'),
     path('tienda/marca/<str:brand_name>/', product_catalog, name='product_catalog_by_brand'),
     path('radios/', radios_catalog, name='radios_catalog'),
-    path('categoria/<str:categoria_nombre>/', category_catalog, name='category_catalog'),
     path('electronica/', electronica_catalog, name='electronica_catalog'),
+    path('api/get-cart/', get_cart_data, name='get_cart_data'),
     path('accesorios/', accesorios_catalog, name='accesorios_catalog'),
-    path('audio-video/', audio_video_catalog, name='audio_video_catalog'),
-    path('seguridad-sensores/', seguridad_sensores_catalog, name='seguridad_sensores_catalog'),
-    path('diagnostico-automotriz/', diagnostico_catalog, name='diagnostico_catalog'),
-    path('herramientas-medicion/', herramientas_medicion_catalog, name='herramientas_medicion_catalog'),
-    path('medidores/', medidores_catalog, name='medidores_catalog'),
-    path('electronica-automotriz/', electronica_automotriz_catalog, name='electronica_automotriz_catalog'),
-    path('electronica-general/', electronica_general_catalog, name='electronica_general_catalog'),
+    path('categoria/<str:categoria_nombre>/', category_catalog, name='category_catalog'),
     path('producto/<int:product_id>/', product_detail, name='product_detail'),
     path('carro/', view_cart, name='view_cart'),
     path('agregar/<int:product_id>/', add_to_cart, name='add_to_cart'),
@@ -82,6 +70,7 @@ urlpatterns = [
     path('login/', login_view, name='login'),
     path('registro/', register_view, name='register'),
     path('logout/', logout_view, name='logout'), 
+    path('buscar/', search_results_view, name='search'),
     path('gestion/', panel_gestion_view, name='panel_gestion'),
     path('gestion/productos/', listar_productos_view, name='listar_productos'),
     path('gestion/productos/crear/', crear_producto_view, name='crear_producto'),
@@ -93,13 +82,11 @@ urlpatterns = [
     path('gestion/categorias/editar/<int:pk>/', editar_categoria_view, name='editar_categoria'),
     path('gestion/categorias/eliminar/<int:pk>/', eliminar_categoria_view, name='eliminar_categoria'),
     path('gestion/categorias/exportar-csv/', exportar_categorias_csv, name='exportar_categorias_csv'),
-    path('gestion/marcas/exportar-csv/', exportar_marcas_csv, name='exportar_marcas_csv'),
     path('gestion/marcas/', listar_marcas_view, name='listar_marcas'),
     path('gestion/marcas/crear/', crear_marca_view, name='crear_marca'),
     path('gestion/marcas/editar/<int:pk>/', editar_marca_view, name='editar_marca'),
     path('gestion/marcas/eliminar/<int:pk>/', eliminar_marca_view, name='eliminar_marca'),
-    path('buscar/', search_results_view, name='search'),
-
+    path('gestion/marcas/exportar-csv/', exportar_marcas_csv, name='exportar_marcas_csv'),
 ]
 
 if settings.DEBUG:

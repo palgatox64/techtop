@@ -85,25 +85,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeCartBtn = document.getElementById('close-cart-btn');
 
     function openCartPanel() {
-        cartBackdrop.classList.add('is-active');
-        cartOffcanvas.classList.add('is-open');
+        if(cartBackdrop) cartBackdrop.classList.add('is-active');
+        if(cartOffcanvas) cartOffcanvas.classList.add('is-open');
     }
 
     function closeCartPanel() {
-        cartBackdrop.classList.remove('is-active');
-        cartOffcanvas.classList.remove('is-open');
+        if(cartBackdrop) cartBackdrop.classList.remove('is-active');
+        if(cartOffcanvas) cartOffcanvas.classList.remove('is-open');
     }
 
     if(cartIconButton) cartIconButton.addEventListener('click', (e) => { e.preventDefault(); openCartPanel(); });
     if(closeCartBtn) closeCartBtn.addEventListener('click', closeCartPanel);
     if(cartBackdrop) cartBackdrop.addEventListener('click', closeCartPanel);
-
-    
-    function updateCartPanel(data) {
+    function updateCartUI(data) {
+        const cartCountSpan = document.getElementById('cart-item-count');
         const cartBody = document.getElementById('cart-offcanvas-body');
         const cartSubtotal = document.getElementById('cart-subtotal');
-        cartBody.innerHTML = '';
+        
+        if (!cartCountSpan || !cartBody || !cartSubtotal) {
+            console.error("Elementos del carrito no encontrados en el DOM.");
+            return;
+        }
 
+        cartCountSpan.textContent = data.cart_item_count;
+        cartCountSpan.style.display = data.cart_item_count > 0 ? 'block' : 'none';
+        cartBody.innerHTML = '';
         if (data.items && data.items.length > 0) {
             data.items.forEach(item => {
                 const formattedPrice = item.price.toLocaleString('es-CL');
@@ -125,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-
     document.body.addEventListener('submit', function(event) {
         if (event.target.matches('form[action*="/agregar/"]')) {
             event.preventDefault();
@@ -139,18 +144,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             })
-            .then(response => {
-                if (!response.ok) { throw new Error('Network response was not ok'); }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Respuesta del servidor:', data); 
                 if (data.success) {
-                    const cartCountSpan = document.getElementById('cart-item-count');
-                    cartCountSpan.textContent = data.cart_item_count;
-                    cartCountSpan.style.display = data.cart_item_count > 0 ? 'block' : 'none';
-                    
-                    updateCartPanel(data);
+                    updateCartUI(data);
 
                     Swal.fire({
                         icon: 'success', title: '¡Producto Agregado!', toast: true,
@@ -162,10 +159,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     Swal.fire({ icon: 'error', title: 'Oops...', text: data.message || 'Ocurrió un error.' });
                 }
             })
-            .catch(error => {
-                console.error('Error en la petición AJAX:', error);
-                Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudo comunicar con el servidor.' });
-            });
+            .catch(error => console.error('Error en AJAX al agregar:', error));
         }
     });
+
+    function loadInitialCart() {
+        fetch('/api/get-cart/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateCartUI(data);
+                }
+            })
+            .catch(error => console.error('Error al cargar el carrito inicial:', error));
+    }
+    loadInitialCart();
 });

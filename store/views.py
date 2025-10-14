@@ -122,8 +122,9 @@ def category_catalog(request, categoria_nombre):
 
 def electronica_catalog(request):
     electronics_categories = [
-        'Electronica-Automotriz',
-        'Electronica-General'
+        'Electronica Automotriz',
+        'Electronica General',
+        'Electronica',
     ]
     products = Producto.objects.filter(categoria__nombre__in=electronics_categories)
     selected_brands = request.GET.getlist('marca')
@@ -171,11 +172,15 @@ def electronica_catalog(request):
     
 def accesorios_catalog(request):
     accessory_categories = [
-        'Audio-y-Video', 
+        'Audio', 
         'Seguridad-y-Sensores', 
         'Diagnostico-Automotriz',
         'Herramientas-de-Medicion',
-        'Medidores'
+        'Medidores',
+        'Parlante',     
+        'Scanner',
+        'Compresor',
+        'Cargador'
     ]
     products = Producto.objects.filter(categoria__nombre__in=accessory_categories)
     selected_brands = request.GET.getlist('marca')
@@ -242,6 +247,36 @@ def product_catalog(request, brand_name=None):
         'selected_brands_from_form': selected_brands,
     }
     return render(request, 'store/tienda.html', context)
+
+
+def get_cart_data(request):
+    cart = request.session.get('cart', {})
+    cart_items_data = []
+    total_price = Decimal('0.00')
+
+    if cart:
+        product_ids = cart.keys()
+        products_in_cart = Producto.objects.filter(id__in=product_ids)
+
+        for p in products_in_cart:
+            pid_str = str(p.id)
+            if pid_str in cart:
+                qty = cart[pid_str]['quantity']
+                total_price += p.precio * qty
+                cart_items_data.append({
+                    'id': p.id,
+                    'name': p.nombre,
+                    'quantity': qty,
+                    'price': float(p.precio),
+                    'image_url': p.imagen.url if p.imagen and hasattr(p.imagen, 'url') else ''
+                })
+
+    return JsonResponse({
+        'success': True,
+        'cart_item_count': len(cart),
+        'items': cart_items_data,
+        'subtotal': float(total_price)
+    })
 
 
 def product_detail(request, product_id):
