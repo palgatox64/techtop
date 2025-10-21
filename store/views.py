@@ -17,6 +17,7 @@ from django.core.paginator import Paginator
 import csv
 from django.http import HttpResponse
 from django.db.models import Q 
+from django.contrib.auth import logout
 
 def home(request):
     return render(request, 'home.html')
@@ -621,14 +622,31 @@ def register_view(request):
             return redirect('register')
 
 def logout_view(request):
-    if 'cliente_id' in request.session:
-        try:
-            request.session.flush()
-            messages.success(request, 'Has cerrado sesión exitosamente.')
-        except Exception as e:
-            print(f"Error al cerrar sesión: {e}")
-            messages.error(request, 'Ocurrió un error al cerrar sesión.')
-    
+    if request.method == 'POST':
+        # Limpiar manualmente las variables de sesión personalizadas
+        request.session.pop('empleado_id', None)
+        request.session.pop('empleado_nombre', None)
+        request.session.pop('empleado_cargo', None)
+        request.session.pop('cliente_id', None)
+        request.session.pop('cliente_nombre', None)
+        request.session.pop('user_type', None)
+        
+        # Llamar al logout de Django
+        logout(request)
+        
+        # IMPORTANTE: Forzar guardado de sesión modificada
+        request.session.modified = True
+        
+        messages.success(request, '¡Has cerrado sesión exitosamente!')
+        
+        # Redirigir con parámetro para evitar caché
+        from django.http import HttpResponseRedirect
+        response = HttpResponseRedirect('/')
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+        
     return redirect('home')
 
 @admin_required
