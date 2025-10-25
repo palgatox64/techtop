@@ -21,7 +21,7 @@ class MarcaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria', 'marca']
+        fields = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria', 'marca', 'activo']
         
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
@@ -31,4 +31,9 @@ class ProductoForm(forms.ModelForm):
             'imagen': forms.FileInput(attrs={'class': 'form-control'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
             'marca': forms.Select(attrs={'class': 'form-select'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        
+        labels = {
+            'activo': 'Producto Activo (visible en tienda)',
         }

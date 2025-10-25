@@ -25,6 +25,7 @@ class Producto(models.Model):
     stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     imagen = models.ImageField(upload_to='productos/', null=True, blank=True)
     fecha_pub = models.DateField(auto_now_add=True)
+    activo = models.BooleanField(default=True)  # Nuevo campo
     
     # Relaciones (Foreign Keys)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
@@ -32,6 +33,12 @@ class Producto(models.Model):
     
     def __str__(self):
         return self.nombre
+    
+    def save(self, *args, **kwargs):
+        # Desactivar automáticamente si el stock llega a 0
+        if self.stock == 0:
+            self.activo = False
+        super().save(*args, **kwargs)
     
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes_adicionales', on_delete=models.CASCADE)

@@ -44,7 +44,7 @@ def terminos_condiciones(request):
     return render(request, 'terminos_condiciones.html')
 
 def radios_catalog(request):
-    products = Producto.objects.filter(categoria__nombre='RADIO ANDROID')
+    products = Producto.objects.filter(categoria__nombre='RADIO ANDROID', activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_inches = request.GET.getlist('pulgadas')
@@ -127,7 +127,7 @@ def electronica_catalog(request):
         'Electronica General',
         'Electronica',
     ]
-    products = Producto.objects.filter(categoria__nombre__in=electronics_categories)
+    products = Producto.objects.filter(categoria__nombre__in=electronics_categories, activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_categories = request.GET.getlist('categoria')
@@ -183,7 +183,7 @@ def accesorios_catalog(request):
         'Compresor',
         'Cargador'
     ]
-    products = Producto.objects.filter(categoria__nombre__in=accessory_categories)
+    products = Producto.objects.filter(categoria__nombre__in=accessory_categories, activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_categories = request.GET.getlist('categoria')

@@ -36,6 +36,7 @@
                     <th>Nombre</th>
                     <th>Precio</th>
                     <th>Stock</th>
+                    <th>Estado</th>
                     <th>Categoría</th>
                     <th>Marca</th>
                     <th>Acciones</th>
@@ -55,6 +56,13 @@
                     <td>{{ producto.nombre }}</td>
                     <td>${{ producto.precio|floatformat:0 }}</td>
                     <td>{{ producto.stock }}</td>
+                    <td>
+                        {% if producto.activo %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
                     <td>{{ producto.categoria.nombre }}</td>
                     <td>{{ producto.marca.nombre }}</td>
                     <td class="actions-cell">
