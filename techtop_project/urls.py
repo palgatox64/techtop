@@ -46,5 +46,8 @@ urlpatterns = [
     path('gestion/marcas/editar/<int:pk>/', views.editar_marca_view, name='editar_marca'),
     path('gestion/marcas/eliminar/<int:pk>/', views.eliminar_marca_view, name='eliminar_marca'),
     path('gestion/marcas/exportar-csv/', views.exportar_marcas_csv, name='exportar_marcas_csv'),
+    path('checkout/', views.checkout_view, name='checkout'),
+    path('procesar-pedido/', views.procesar_pedido_view, name='procesar_pedido'),
+    path('pedido/recibo/<int:pedido_id>/', views.generar_recibo_pdf, name='generar_recibo_pdf'),
 ]
 

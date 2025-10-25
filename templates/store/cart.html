@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
-{% load custom_filters %} <!-- Agregar esta línea -->
-
-{% block extra_css %}
+{% load custom_filters %} {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/cart.css' %}">
 {% endblock %}
 
@@ -73,7 +71,12 @@
             <span>TOTAL</span>
             <span>-</span>
         </div>
-        <button class="btn-checkout">Iniciar pago</button>
+        
+        {% if cart_items %}
+            <a href="{% url 'checkout' %}" class="btn-checkout">Iniciar pago</a>
+        {% else %}
+            <button class="btn-checkout" disabled>Carro Vacío</button>
+        {% endif %}
     </div>
     </div>
 {% endblock %}

@@ -3,7 +3,7 @@ from .models import Producto, Marca, Categoria
 from django.db.models import Count, Q
 from django.contrib.auth.hashers import make_password 
 from django.contrib import messages 
-from .models import Cliente, Empleado
+from .models import Cliente, Empleado, Pedido, DetallePedido, Direccion
 import re 
 from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password 
@@ -19,6 +19,19 @@ from django.http import HttpResponse
 from django.db.models import Q 
 from django.contrib.auth import logout
 from .validators import validate_chilean_rut
+from django.urls import reverse
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from weasyprint import HTML
+from django.conf import settings
+from .forms import CheckoutForm
+from django.http import HttpResponse, Http404, JsonResponse # Asegúrate que JsonResponse y Http404 estén importadosfrom django.template.loader import get_template
+from django.conf import settings
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.db import transaction 
+from django.utils import timezone
+from django.template.loader import get_template
 
 def home(request):
     return render(request, 'home.html')
@@ -1199,3 +1212,275 @@ def search_results_view(request):
         'search_query': query,
     }
     return render(request, 'store/search_results.html', context)
+
+# store/views.py
+
+def checkout_view(request):
+    """
+    Muestra la página de checkout, rellenando los datos si el usuario está logueado.
+    """
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, 'Tu carro está vacío.')
+        return redirect('view_cart')
+
+    # (Lógica para calcular items y totales - sin cambios)
+    product_ids = cart.keys()
+    products_in_cart = Producto.objects.filter(id__in=product_ids)
+    cart_items = []
+    total_transferencia = Decimal('0.00')
+    total_otros_medios = Decimal('0.00')
+    for product in products_in_cart:
+        product_id_str = str(product.id)
+        quantity = cart[product_id_str]['quantity']
+        precio_transferencia_unitario = product.precio * Decimal('0.97')
+        cart_items.append({
+            'product': product,
+            'quantity': quantity,
+            'subtotal_transferencia': precio_transferencia_unitario * quantity,
+            'subtotal_otros_medios': product.precio * quantity,
+        })
+        total_transferencia += precio_transferencia_unitario * quantity
+        total_otros_medios += product.precio * quantity
+
+    # --- LÓGICA MEJORADA PARA RELLENAR EL FORMULARIO ---
+    initial_data = {}
+    user_type = request.session.get('user_type')
+    user = None # Variable para guardar el objeto Cliente o Empleado
+
+    print(f"DEBUG: User type in session: {user_type}") # Para depurar
+
+    if user_type == 'cliente':
+        cliente_id = request.session.get('cliente_id')
+        if cliente_id:
+            try:
+                user = get_object_or_404(Cliente, id_cliente=cliente_id)
+                print(f"DEBUG: Cliente encontrado: {user}") # Para depurar
+            except Exception as e:
+                print(f"Error buscando Cliente ID {cliente_id}: {e}")
+                request.session.flush() # Limpiar sesión si el ID es inválido
+
+    elif user_type == 'empleado':
+        empleado_id = request.session.get('empleado_id')
+        if empleado_id:
+            try:
+                user = get_object_or_404(Empleado, id_empleado=empleado_id)
+                print(f"DEBUG: Empleado encontrado: {user}") # Para depurar
+            except Exception as e:
+                print(f"Error buscando Empleado ID {empleado_id}: {e}")
+                request.session.flush() # Limpiar sesión si el ID es inválido
+
+    # Si encontramos un usuario (Cliente o Empleado), llenamos initial_data
+    if user:
+        initial_data = {
+            'nombre': user.nombre,
+            'apellidos': user.apellidos,
+            'rut': getattr(user, 'rut', ''), # Usamos getattr por si algún modelo no tuviera rut (aunque ambos lo tienen)
+            'email': user.email,
+            'telefono': user.telefono,
+        }
+        print(f"DEBUG: Initial data set: {initial_data}") # Para depurar
+    else:
+         print("DEBUG: No user found in session or DB, form will be empty.") # Para depurar
+
+
+    # Pasamos los datos iniciales al formulario
+    # Si initial_data está vacío, el formulario aparecerá en blanco
+    form = CheckoutForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'cart_items': cart_items,
+        'total_transferencia': total_transferencia,
+        'total_otros_medios': total_otros_medios,
+    }
+    return render(request, 'store/checkout.html', context)
+
+
+# --- VISTA PARA PROCESAR EL PEDIDO (SIN CAMPOS *_cliente) ---
+@transaction.atomic
+def procesar_pedido_view(request):
+    """
+    Recibe el POST del checkout, valida, crea Pedido/Detalles/Direccion (SOLO con campos existentes),
+    descuenta stock y redirige al PDF.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
+
+    cart = request.session.get('cart', {})
+    if not cart:
+        return JsonResponse({'success': False, 'message': 'Tu carro está vacío.'})
+
+    form = CheckoutForm(request.POST)
+
+    if form.is_valid():
+        cleaned_data = form.cleaned_data
+        metodo_pago = cleaned_data.get('metodo_pago')
+        tipo_entrega = cleaned_data.get('tipo_entrega')
+
+        # --- OBTENER DATOS DEL CARRITO Y VALIDAR STOCK (Sin cambios) ---
+        product_ids = cart.keys()
+        products_in_cart = Producto.objects.select_for_update().filter(id__in=product_ids)
+        cart_items_details = []
+        subtotal_calculado = Decimal('0.00')
+        product_map = {str(p.id): p for p in products_in_cart}
+        for product_id_str, item_data in cart.items():
+            product = product_map.get(product_id_str)
+            if not product: return JsonResponse({'success': False, 'message': f'Producto ID {product_id_str} no disponible.'})
+            quantity = item_data['quantity']
+            if product.stock < quantity: return JsonResponse({'success': False, 'message': f'Stock insuficiente para "{product.nombre}".'})
+            precio_unitario_a_guardar = product.precio * Decimal('0.97') if metodo_pago == 'transferencia' else product.precio
+            cart_items_details.append({'producto': product, 'cantidad': quantity, 'precio_unitario': precio_unitario_a_guardar})
+            subtotal_calculado += precio_unitario_a_guardar * quantity
+
+        # --- BUSCAR CLIENTE LOGUEADO (Sin cambios) ---
+        cliente_obj = None
+        if request.session.get('user_type') == 'cliente':
+            try:
+                cliente_obj = Cliente.objects.get(id_cliente=request.session.get('cliente_id'))
+            except Cliente.DoesNotExist:
+                request.session.flush()
+
+        # --- MANEJAR DIRECCIÓN Y COSTO DE ENVÍO (Sin cambios) ---
+        direccion_obj = None
+        costo_envio_calculado = Decimal('0.00')
+        if tipo_entrega == 'delivery':
+            costo_envio_calculado = Decimal('4500')
+            if cliente_obj:
+                 try:
+                     direccion_obj = Direccion.objects.create(
+                        cliente=cliente_obj,
+                        calle=cleaned_data.get('calle'),
+                        numero=cleaned_data.get('numero', ''),
+                        ciudad='Santiago', # Temporal
+                        region='Metropolitana', # Temporal
+                        codigo_postal=cleaned_data.get('codigo_postal', '')
+                     )
+                 except Exception as e:
+                      print(f"Error al crear dirección: {e}")
+                      direccion_obj = None
+
+        # --- CALCULAR TOTAL FINAL (Sin cambios) ---
+        total_final = subtotal_calculado + costo_envio_calculado
+
+        # --- CREAR EL OBJETO Pedido (CORREGIDO: SIN CAMPOS EXTRA) ---
+        try:
+            # Quitamos los campos nombre_cliente, apellidos_cliente, rut_cliente,
+            # email_cliente, telefono_cliente, metodo_pago, tipo_entrega, costo_envio
+            # porque NO existen en el modelo Pedido actual.
+            pedido_data = {
+                'cliente': cliente_obj,        # Clave foránea a Cliente (puede ser None)
+                'direccion_envio': direccion_obj, # Clave foránea a Direccion (puede ser None)
+                'total': total_final,          # DecimalField
+                'estado': 'procesando',        # CharField
+                # 'fecha_pedido' se añade automáticamente (auto_now_add=True)
+            }
+            nuevo_pedido = Pedido.objects.create(**pedido_data)
+            # El ID se genera automáticamente
+
+        except Exception as e:
+             # Si aún da error aquí, será por otra razón (ej: tipo de dato incorrecto)
+             print(f"ERROR AL CREAR PEDIDO: {e}")
+             # Mensaje de error genérico para el usuario
+             return JsonResponse({'success': False, 'message': 'Hubo un error al registrar tu pedido. Intenta de nuevo más tarde.'})
+
+
+        # --- CREAR LOS OBJETOS DetallePedido Y DESCONTAR STOCK (Sin cambios) ---
+        for item in cart_items_details:
+            try:
+                DetallePedido.objects.create(
+                    pedido=nuevo_pedido,
+                    producto=item['producto'],
+                    cantidad=item['cantidad'],
+                    precio_unitario=item['precio_unitario']
+                )
+                producto_a_actualizar = item['producto']
+                producto_a_actualizar.stock -= item['cantidad']
+                producto_a_actualizar.save(update_fields=['stock', 'activo'])
+            except Exception as e:
+                print(f"Error al crear DetallePedido o actualizar stock para {item['producto'].nombre}: {e}")
+                raise e # Re-lanzar para rollback
+
+        # --- LIMPIAR CARRITO (Sin cambios) ---
+        request.session['cart'] = {}
+        request.session.modified = True
+
+        # --- REDIRIGIR AL PDF (Sin cambios) ---
+        redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
+        return JsonResponse({
+            'success': True,
+            'message': '¡Pedido recibido con éxito! Generando recibo...',
+            'redirect_url': redirect_url
+        })
+
+    else:
+        # El formulario NO es válido (Sin cambios)
+        error_message = "Error en el formulario. Por favor, revisa tus datos."
+        if form.errors:
+            first_error_field = next(iter(form.errors))
+            first_error_msg = form.errors[first_error_field][0]
+            error_message = f"Error en '{first_error_field.replace('_',' ').title()}': {first_error_msg}"
+        return JsonResponse({ 'success': False, 'message': error_message })
+
+def generar_recibo_pdf(request, pedido_id):
+    """
+    Genera un recibo en PDF para un pedido REAL desde la BD.
+    Obtiene datos del cliente SÓLO si hay un Cliente asociado.
+    """
+    try:
+        # Buscamos el pedido y precargamos datos relacionados
+        pedido = Pedido.objects.select_related('cliente', 'direccion_envio').get(id=pedido_id)
+        detalles = pedido.detalles.select_related('producto').all()
+    except Pedido.DoesNotExist:
+        raise Http404("Pedido no encontrado")
+
+    # --- OBTENER DATOS DEL CLIENTE (CORREGIDO: SÓLO DESDE pedido.cliente) ---
+    # Valores por defecto si no hay cliente asociado
+    cliente_nombre_completo = 'Cliente no registrado'
+    cliente_email = 'No disponible'
+    cliente_rut = 'No disponible'
+
+    # Si SÍ hay un objeto Cliente asociado al pedido, usamos sus datos
+    if pedido.cliente:
+        cliente_nombre_completo = f"{pedido.cliente.nombre} {pedido.cliente.apellidos}"
+        cliente_email = pedido.cliente.email
+        # Asumiendo que tu modelo Cliente tiene el campo 'rut'
+        cliente_rut = getattr(pedido.cliente, 'rut', 'No disponible') # Usamos getattr por seguridad
+
+
+    # --- CÁLCULOS (sin cambios) ---
+    subtotal = sum(d.precio_unitario * d.cantidad for d in detalles)
+    total_iva = subtotal * Decimal('0.19') # Asumiendo IVA 19%
+    # Inferimos costo envío basado en si hay dirección guardada
+    costo_envio = Decimal('4500') if pedido.direccion_envio else Decimal('0.00')
+    total_pagado = pedido.total # Usamos el total guardado
+
+    logo_path = request.build_absolute_uri(settings.STATIC_URL + 'img/new_black.png')
+
+    context = {
+        'pedido': pedido, # Objeto Pedido completo
+        'detalles': detalles, # Lista de DetallePedido reales
+        'cliente_nombre_completo': cliente_nombre_completo, # Dato corregido
+        'cliente_email': cliente_email, # Dato corregido
+        'cliente_rut': cliente_rut, # Dato corregido
+        'subtotal': subtotal,
+        'total_iva': total_iva,
+        'costo_envio': costo_envio, # Costo inferido
+        'total_pagado': total_pagado, # Total del pedido
+        'logo_path': logo_path,
+        'fecha_actual': timezone.now()
+    }
+
+    # --- GENERACIÓN PDF (sin cambios) ---
+    template = get_template('store/recibo_pdf.html')
+    html = template.render(context)
+    result = BytesIO()
+    pdf = pisa.CreatePDF(html, dest=result)
+
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="recibo_techtop_{pedido.id}.pdf"'
+        return response
+    else:
+        print(f"xhtml2pdf error: {pdf.err}")
+        return HttpResponse(f"Error al generar el PDF: {pdf.err}. Revisa los logs.", status=500)
