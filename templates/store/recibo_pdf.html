@@ -1,0 +1,194 @@
+{% load custom_filters %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo de Compra {{ pedido.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm 1.5cm;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+        .header {
+            text-align: right;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            overflow: auto;
+            zoom: 1;
+        }
+        .header img {
+            max-width: 180px;
+            float: left;
+            margin-right: 20px;
+        }
+        .header-info {
+            text-align: right;
+        }
+        .header-info h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.8rem;
+            color: #000;
+        }
+        .header-info p {
+            margin: 2px 0;
+            font-size: 1rem;
+        }
+        .customer-info {
+            margin-bottom: 30px;
+            clear: both;
+        }
+        .customer-info h3 {
+            font-size: 1.2rem;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        table.items th, table.items td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.items th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+            border-bottom-width: 1px;
+            border-color: #ccc;
+        }
+        table.items td.numeric, table.items th.numeric {
+            text-align: right;
+        }
+        td.product-name {
+             width: 50%;
+        }
+        .totals {
+            width: 45%;
+            float: right;
+            clear: both;
+        }
+        .totals table {
+            width: 100%;
+        }
+        .totals td {
+            padding: 4px 5px;
+        }
+        .totals td.label {
+            text-align: right;
+            font-weight: 500;
+            padding-right: 15px;
+        }
+        .totals td.value {
+            text-align: right;
+            width: 45%;
+        }
+        .totals tr.total-final td {
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-top: 1px solid #000;
+            padding-top: 8px;
+            margin-top: 5px;
+        }
+        .footer {
+            position: fixed;
+            bottom: -2cm;
+            left: 0;
+            right: 0;
+            height: 1cm;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="footer">
+        Techtop &copy; {% now "Y" %} | Gracias por tu compra | Documento no válido como boleta oficial.
+    </div>
+
+    <div class="header">
+        {% if logo_path %}
+            <img src="{{ logo_path }}" alt="Techtop Logo">
+        {% endif %}
+        <div class="header-info">
+            <h1>RECIBO DE COMPRA</h1>
+            <p><strong>Pedido N°:</strong> {{ pedido.id }}</p>
+            <p><strong>Fecha:</strong> {{ pedido.fecha }}</p>
+        </div>
+    </div>
+
+    <div class="customer-info">
+        <h3>Datos del Cliente</h3>
+        <p>
+            <strong>Nombre:</strong> {{ cliente_nombre_completo }}<br>
+            <strong>Email:</strong> {{ cliente_email }} <br>
+            {# Mostramos RUT si existe #}
+            {% if cliente_rut != 'No disponible' %}<strong>RUT:</strong> {{ cliente_rut }}{% endif %}
+        </p>
+    </div>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th class="product-name">Producto</th>
+                <th class="numeric">Cantidad</th>
+                <th class="numeric">Precio Unit.</th>
+                <th class="numeric">Total Item</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in detalles %}
+            {# *** CORRECCIÓN AQUÍ: Usamos {% widthratio %} para multiplicar *** #}
+            {% widthratio item.precio_unitario 1 item.cantidad as item_total %}
+            <tr>
+                <td class="product-name">{{ item.nombre }}</td>
+                <td class="numeric">{{ item.cantidad }}</td>
+                <td class="numeric">${{ item.precio_unitario|floatformat:0|dot_thousands }}</td>
+                {# Mostramos la variable calculada 'item_total' #}
+                <td class="numeric">${{ item_total|floatformat:0|dot_thousands }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">No hay productos en este pedido.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table>
+            <tr>
+                <td class="label">Subtotal:</td>
+                <td class="value">${{ subtotal|floatformat:0|dot_thousands }}</td>
+            </tr>
+            <tr>
+                <td class="label">IVA (19% aprox.):</td>
+                <td class="value">${{ total_iva|floatformat:0|dot_thousands }}</td>
+            </tr>
+            {% if costo_envio > 0 %}
+            <tr>
+                <td class="label">Costo de Envío:</td>
+                <td class="value">${{ costo_envio|floatformat:0|dot_thousands }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-final">
+                <td class="label">TOTAL PAGADO:</td>
+                <td class="value">${{ total_pagado|floatformat:0|dot_thousands }}</td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>
