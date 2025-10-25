@@ -18,6 +18,7 @@ import csv
 from django.http import HttpResponse
 from django.db.models import Q 
 from django.contrib.auth import logout
+from .validators import validate_chilean_rut
 
 def home(request):
     return render(request, 'home.html')
@@ -501,6 +502,7 @@ def register_view(request):
     if request.method == 'POST':
         print(">>> Petición POST recibida en register_view.")
 
+        rut = request.POST.get('rut', '').strip()
         nombre = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         correo = request.POST.get('correo', '').strip()
@@ -508,16 +510,28 @@ def register_view(request):
         password = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
         
-        print(f">>> Datos recibidos: Correo={correo}, Nombre={nombre}")
+        print(f">>> Datos recibidos: RUT={rut}, Correo={correo}, Nombre={nombre}")
 
         # Validaciones del backend
         
         # 1. Validar campos vacíos
-        if not all([nombre, apellido, correo, telefono, password, password2]):
+        if not all([rut, nombre, apellido, correo, telefono, password, password2]):
             messages.error(request, 'Todos los campos son obligatorios.')
             return redirect('register')
 
-        # 2. Validar formato de nombres (solo letras y espacios)
+        # 2. Validar RUT chileno
+        try:
+            validate_chilean_rut(rut)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('register')
+
+        # 3. Verificar si el RUT ya existe
+        if Cliente.objects.filter(rut=rut).exists():
+            messages.error(request, 'El RUT ya está registrado en el sistema.')
+            return redirect('register')
+
+        # 4. Validar formato de nombres (solo letras y espacios)
         name_regex = r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
         if not re.match(name_regex, nombre):
             messages.error(request, 'El nombre solo debe contener letras y espacios.')
@@ -527,7 +541,7 @@ def register_view(request):
             messages.error(request, 'El apellido solo debe contener letras y espacios.')
             return redirect('register')
 
-        # 3. Validar longitud de nombres
+        # 5. Validar longitud de nombres
         if len(nombre) < 2 or len(nombre) > 50:
             messages.error(request, 'El nombre debe tener entre 2 y 50 caracteres.')
             return redirect('register')
@@ -536,29 +550,29 @@ def register_view(request):
             messages.error(request, 'El apellido debe tener entre 2 y 100 caracteres.')
             return redirect('register')
 
-        # 4. Validar formato de email
+        # 6. Validar formato de email
         try:
             validate_email(correo)
         except ValidationError:
             messages.error(request, 'Formato de correo electrónico inválido.')
             return redirect('register')
 
-        # 5. Validar longitud del email
+        # 7. Validar longitud del email
         if len(correo) > 100:
             messages.error(request, 'El correo electrónico es demasiado largo.')
             return redirect('register')
 
-        # 6. Verificar si el correo ya existe
+        # 8. Verificar si el correo ya existe
         if Cliente.objects.filter(email=correo).exists():
             messages.error(request, 'El correo electrónico ya está en uso.')
             return redirect('register')
 
-        # 7. Validar contraseñas coincidentes
+        # 9. Validar contraseñas coincidentes
         if password != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
             return redirect('register')
 
-        # 8. Validar seguridad de contraseña (MÁS PERMISIVA CON CARACTERES ESPECIALES)
+        # 10. Validar seguridad de contraseña
         if len(password) < 8:
             messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
             return redirect('register')
@@ -575,17 +589,11 @@ def register_view(request):
             messages.error(request, 'La contraseña debe contener al menos un número.')
             return redirect('register')
         
-        # VALIDACIÓN MÁS AMPLIA DE CARACTERES ESPECIALES - AQUÍ ESTÁ EL CAMBIO PRINCIPAL
         if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>/?~`]', password):
             messages.error(request, 'La contraseña debe contener al menos un carácter especial.')
             return redirect('register')
         
-        # Opcional: Evitar algunos caracteres problemáticos (puedes comentar esta línea si quieres permitir TODO)
-        # if re.search(r'[\'\"\\]', password):
-        #     messages.error(request, 'La contraseña no puede contener comillas simples, comillas dobles o barras invertidas.')
-        #     return redirect('register')
-        
-        # 9. Validar teléfono chileno
+        # 11. Validar teléfono chileno
         if not re.match(r'^9\d{8}$', telefono):
             messages.error(request, 'El número de teléfono debe tener 9 dígitos y comenzar con 9 (formato chileno).')
             return redirect('register')
@@ -596,6 +604,7 @@ def register_view(request):
 
             print(">>> Creando el objeto Cliente...")
             nuevo_cliente = Cliente(
+                rut=rut,
                 nombre=nombre,
                 apellidos=apellido,
                 email=correo,
@@ -610,7 +619,9 @@ def register_view(request):
         
         except IntegrityError as e:
             print(f"Error de integridad en la base de datos: {e}")
-            if 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
+            if 'rut' in str(e).lower():
+                messages.error(request, 'El RUT ya está en uso.')
+            elif 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
                 messages.error(request, 'El correo electrónico ya está en uso.')
             else:
                 messages.error(request, 'Error al crear la cuenta. Por favor, intenta de nuevo.')

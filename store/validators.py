@@ -2,6 +2,47 @@ import re
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email as django_validate_email
 
+def validate_chilean_rut(rut):
+    """
+    Valida el formato y dígito verificador del RUT chileno.
+    Formato esperado: 12345678-9 o 12.345.678-9
+    """
+    # Limpiar el RUT (eliminar puntos y guiones)
+    rut_limpio = rut.replace('.', '').replace('-', '').upper()
+    
+    # Verificar formato básico (7-8 dígitos + 1 dígito verificador)
+    if not re.match(r'^\d{7,8}[0-9K]$', rut_limpio):
+        raise ValidationError('Formato de RUT inválido. Use el formato: 12345678-9')
+    
+    # Separar número y dígito verificador
+    numero = rut_limpio[:-1]
+    dv_ingresado = rut_limpio[-1]
+    
+    # Calcular dígito verificador
+    suma = 0
+    multiplicador = 2
+    
+    for digito in reversed(numero):
+        suma += int(digito) * multiplicador
+        multiplicador += 1
+        if multiplicador > 7:
+            multiplicador = 2
+    
+    resto = suma % 11
+    dv_calculado = 11 - resto
+    
+    # Convertir a string según las reglas
+    if dv_calculado == 11:
+        dv_calculado = '0'
+    elif dv_calculado == 10:
+        dv_calculado = 'K'
+    else:
+        dv_calculado = str(dv_calculado)
+    
+    # Validar
+    if dv_ingresado != dv_calculado:
+        raise ValidationError(f'RUT inválido. El dígito verificador correcto es {dv_calculado}')
+
 def validate_chilean_phone(phone):
     """Valida que el teléfono sea formato chileno (9 dígitos comenzando con 9)"""
     if not re.match(r'^9\d{8}$', phone):
@@ -36,7 +77,7 @@ def validate_strong_password(password):
     # Opcional: Validar caracteres no permitidos por seguridad
     forbidden_chars = re.search(r'[\'\"\\]', password)
     if forbidden_chars:
-        raise ValidationError('La contraseña no puede contener comillas simples, comillas dobles o barras invertidas.')
+        raise ValidationError('La contraseña no puede contener comillas o barras invertidas.')
 
 def validate_email_extended(email):
     """Validación extendida de email"""
@@ -46,9 +87,3 @@ def validate_email_extended(email):
     # Validaciones adicionales
     if len(email) > 100:
         raise ValidationError('El correo electrónico es demasiado largo.')
-    
-    # Verificar dominios comunes (comentado para ser menos restrictivo)
-    # common_domains = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com']
-    # domain = email.split('@')[1].lower()
-    # if domain not in common_domains:
-    #     raise ValidationError(f'El dominio {domain} no está en la lista de dominios permitidos.')
