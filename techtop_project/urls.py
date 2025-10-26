@@ -39,7 +39,8 @@ from store.views import (
     exportar_categorias_csv,
     exportar_marcas_csv,
     search_results_view ,
-    get_cart_data
+    get_cart_data,
+    chatbot_view
 )
 
 from django.conf import settings
@@ -71,6 +72,7 @@ urlpatterns = [
     path('registro/', register_view, name='register'),
     path('logout/', logout_view, name='logout'), 
     path('buscar/', search_results_view, name='search'),
+    path('chatbot/', chatbot_view, name='chatbot'),
     path('gestion/', panel_gestion_view, name='panel_gestion'),
     path('gestion/productos/', listar_productos_view, name='listar_productos'),
     path('gestion/productos/crear/', crear_producto_view, name='crear_producto'),
