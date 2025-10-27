@@ -30,6 +30,7 @@ urlpatterns = [
     path('registro/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'), 
     path('buscar/', views.search_results_view, name='search'),
+    path('chatbot/', views.chatbot_view, name='chatbot'),  # Ruta para el chatbot inteligente
     path('gestion/', views.panel_gestion_view, name='panel_gestion'),
     path('gestion/productos/', views.listar_productos_view, name='listar_productos'),
     path('gestion/productos/crear/', views.crear_producto_view, name='crear_producto'),

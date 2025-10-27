@@ -1,37 +1,35 @@
+# Django core imports
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Producto, Marca, Categoria
+from django.http import JsonResponse, HttpResponse, Http404
+from django.contrib.auth import logout
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib import messages
 from django.db.models import Count, Q
-from django.contrib.auth.hashers import make_password 
-from django.contrib import messages 
-from .models import Cliente, Empleado, Pedido, DetallePedido, Direccion
-import re 
-from django.db import IntegrityError
-from django.contrib.auth.hashers import check_password 
-from django.http import JsonResponse 
-from decimal import Decimal
+from django.db import IntegrityError, transaction
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from .decorators import admin_required
-from .forms import CategoriaForm, MarcaForm, ProductoForm
 from django.core.paginator import Paginator
-import csv
-from django.http import HttpResponse
-from django.db.models import Q 
-from django.contrib.auth import logout
-from .validators import validate_chilean_rut
 from django.urls import reverse
-from django.template.loader import render_to_string
-from django.http import HttpResponse
-from weasyprint import HTML
-from django.conf import settings
-from .forms import CheckoutForm
-from django.http import HttpResponse, Http404, JsonResponse # Asegúrate que JsonResponse y Http404 estén importadosfrom django.template.loader import get_template
-from django.conf import settings
-from xhtml2pdf import pisa
-from io import BytesIO
-from django.db import transaction 
+from django.template.loader import render_to_string, get_template
 from django.utils import timezone
-from django.template.loader import get_template
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
+
+# Third-party imports
+from decimal import Decimal
+from io import BytesIO
+from weasyprint import HTML
+from xhtml2pdf import pisa
+import re
+import csv
+import json
+
+# Local imports
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion
+from .decorators import admin_required
+from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
+from .validators import validate_chilean_rut
 
 def home(request):
     return render(request, 'home.html')
@@ -1484,3 +1482,342 @@ def generar_recibo_pdf(request, pedido_id):
     else:
         print(f"xhtml2pdf error: {pdf.err}")
         return HttpResponse(f"Error al generar el PDF: {pdf.err}. Revisa los logs.", status=500)
+
+
+# ==================== CHATBOT INTELIGENTE ====================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def chatbot_view(request):
+    """
+    Vista para procesar las consultas del chatbot y generar respuestas inteligentes.
+    """
+    try:
+        data = json.loads(request.body)
+        user_message = data.get('message', '').lower().strip()
+        
+        # Generar respuesta basada en el mensaje del usuario
+        response = generate_chatbot_response(user_message)
+        
+        return JsonResponse(response)
+    
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error: {e}")
+        return JsonResponse({
+            'message': 'Error al procesar el mensaje. Por favor, intenta de nuevo.',
+            'data': None
+        }, status=400)
+    except Exception as e:
+        print(f"Error en chatbot_view: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'message': f'Lo siento, ocurrió un error: {str(e)}',
+            'data': None
+        }, status=500)
+
+
+def generate_chatbot_response(message):
+    """
+    Genera una respuesta inteligente basada en el mensaje del usuario.
+    Utiliza procesamiento de lenguaje natural mejorado.
+    """
+    original_message = message
+    message = message.lower().strip()
+    
+    # Palabras irrelevantes para filtrar
+    stop_words = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'al', 'por', 'para', 'en', 'y', 'o']
+    
+    # Extraer palabras clave (sin palabras irrelevantes)
+    words = [w for w in message.split() if w not in stop_words and len(w) > 1]
+    
+    # ========== RESPUESTAS PRIORITARIAS (NO BÚSQUEDA) ==========
+    
+    # 1. SALUDOS (PRIMERO - Alta prioridad)
+    if any(word in message for word in ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'hey', 'hi', 'saludos']) and len(words) <= 3:
+        return {
+            'message': '👋 <strong>¡Hola! Bienvenido a TechTop</strong><br><br>Soy tu asistente virtual inteligente. Puedo ayudarte con:<br><br>🔍 <strong>Búsqueda rápida de productos:</strong><br>• "Quiero un parlante Bluetooth"<br>• "Muéstrame medidores láser"<br>• "Cargadores de batería"<br><br>💡 <strong>Recomendaciones personalizadas:</strong><br>• "¿Qué me recomiendas para mi auto?"<br>• "Productos más vendidos"<br>• "Lo más económico"<br><br>📋 <strong>Información útil:</strong><br>• Ver categorías y marcas<br>• Seguimiento de pedidos<br>• Métodos de pago y garantías<br><br><em>¿En qué puedo ayudarte hoy?</em>',
+            'data': {'type': 'welcome'}
+        }
+    
+    # 2. AGRADECIMIENTOS
+    if any(word in message for word in ['gracias', 'gracias!', 'thank', 'excelente', 'perfecto', 'genial']) and len(words) <= 3:
+        return {
+            'message': '😊 ¡De nada! Es un placer ayudarte.<br><br>¿Necesitas algo más? Puedo ayudarte a encontrar productos específicos o resolver cualquier duda.',
+            'data': None
+        }
+    
+    # 3. AYUDA
+    if any(word in message for word in ['ayuda', 'help', 'que puedes hacer', 'qué puedes hacer', 'como funciona', 'cómo funciona']):
+        return {
+            'message': '💡 <strong>Soy tu asistente de compras inteligente</strong><br><br><strong>🎯 Puedo ayudarte a:</strong><br><br>1️⃣ <strong>Encontrar productos exactos:</strong><br>• "Parlante Bluetooth para exteriores"<br>• "Medidor láser de distancia"<br>• "Radio Android para Nissan"<br><br>2️⃣ <strong>Darte recomendaciones:</strong><br>• "¿Qué productos recomiendas?"<br>• "Lo más vendido"<br>• "Productos económicos"<br><br>3️⃣ <strong>Comparar y filtrar:</strong><br>• "Diferencia entre medidores"<br>• "Compresores más baratos"<br>• "Productos de marca Xiaomi"<br><br>4️⃣ <strong>Resolver dudas:</strong><br>• Métodos de pago<br>• Seguimiento de pedidos<br>• Garantías y devoluciones<br><br><em>¡Escribe cualquier consulta y te ayudaré!</em>',
+            'data': {'type': 'help'}
+        }
+    
+    # 4. SEGUIMIENTO DE PEDIDOS
+    if any(word in message for word in ['pedido', 'orden', 'compra', 'rastrear', 'seguimiento', 'envío', 'envio', 'tracking', 'donde esta', 'dónde está']):
+        return {
+            'message': '📦 <strong>Seguimiento de Pedidos</strong><br><br>Para rastrear tu pedido en tiempo real:<br><br>1️⃣ Visita: <a href="/seguimiento-compra/" style="color: #667eea; font-weight: bold;">Seguimiento de Compra</a><br>2️⃣ Ingresa tu número de orden<br>3️⃣ Confirma con tu correo electrónico<br><br>ℹ️ <strong>Recibirás información sobre:</strong><br>• Estado actual del pedido<br>• Fecha estimada de entrega<br>• Número de guía de envío<br><br>¿Necesitas ayuda con algo más?',
+            'data': {'type': 'link', 'url': '/seguimiento-compra/'}
+        }
+    
+    # 5. MÉTODOS DE PAGO
+    if any(word in message for word in ['pago', 'pagar', 'tarjeta', 'transferencia', 'efectivo', 'método', 'forma', 'como pago', 'cómo pago']):
+        return {
+            'message': '💳 <strong>Métodos de Pago Disponibles</strong><br><br>✅ <strong>Tarjeta de crédito/débito</strong><br>   • Visa, Mastercard, American Express<br>   • Pago seguro y encriptado<br><br>💸 <strong>Transferencia bancaria</strong><br>   • <span style="color: #48bb78; font-weight: bold;">¡3% de descuento!</span><br>   • Procesamiento en 24-48 hrs<br><br>💵 <strong>Efectivo en tienda</strong><br>   • Paga al retirar tu producto<br>   • Sin cargos adicionales<br><br>🔒 <strong>Todos los pagos son 100% seguros</strong><br><br>¿Tienes alguna pregunta sobre un método específico?',
+            'data': {'type': 'payment_methods'}
+        }
+    
+    # 6. GARANTÍAS
+    if any(word in message for word in ['garantia', 'garantía', 'devolución', 'devolucion', 'cambio', 'retorno', 'defectuoso']):
+        return {
+            'message': '🛡️ <strong>Garantías y Devoluciones</strong><br><br>✅ <strong>Todos nuestros productos incluyen:</strong><br>• Garantía del fabricante<br>• Certificado de autenticidad<br>• Soporte técnico<br><br>🔄 <strong>Política de devolución:</strong><br>• 30 días para cambios y devoluciones<br>• Producto en perfecto estado<br>• Con embalaje original<br><br>📞 <strong>Para más detalles:</strong><br>• <a href="/garantias/" style="color: #667eea; font-weight: bold;">Ver Política Completa</a><br>• <a href="/contacto/" style="color: #667eea; font-weight: bold;">Contactar Soporte</a><br><br>¿Tienes un caso específico?',
+            'data': {'type': 'link', 'url': '/garantias/'}
+        }
+    
+    # 7. CONTACTO
+    if any(word in message for word in ['contacto', 'teléfono', 'telefono', 'dirección', 'direccion', 'ubicación', 'ubicacion', 'horario', 'llamar', 'visitar']):
+        return {
+            'message': '📞 <strong>¿Cómo contactarnos?</strong><br><br>• <a href="/contacto/" style="color: #667eea; font-weight: bold;">Formulario de Contacto</a><br>• <a href="/centro-ayuda/" style="color: #667eea; font-weight: bold;">Centro de Ayuda</a><br><br>⏰ <strong>Horario de atención:</strong><br>Lunes a Viernes: 9:00 - 18:00<br>Sábados: 10:00 - 14:00<br><br>¿Necesitas ayuda con algo específico?',
+            'data': {'type': 'contact'}
+        }
+    
+    # ========== BÚSQUEDA DE PRODUCTOS ==========
+    
+    # 8. PALABRAS CLAVE DE BÚSQUEDA EXPLÍCITA
+    search_keywords = ['quiero', 'busco', 'necesito', 'muestra', 'muestrame', 'mostrame', 'ver', 'buscar', 
+                      'encontrar', 'tienes', 'tienen', 'vende', 'venden', 'precio', 'cuanto', 'cuesta',
+                      'recomienda', 'recomendación', 'sugerir', 'dame']
+    
+    is_explicit_search = any(word in message for word in search_keywords)
+    
+    # 9. SOLICITUD DE VER PRODUCTOS GENERALES
+    if any(word in message for word in ['productos', 'catalogo', 'catálogo', 'tienda', 'mostrar todo', 'todo']):
+        if any(word in message for word in ['todos', 'ver', 'mostrar', 'cuales', 'qué', 'que']):
+            productos = Producto.objects.all().order_by('-fecha_pub')[:6]
+            if productos:
+                return crear_respuesta_productos(productos, "productos destacados")
+    
+    # 10. RECOMENDACIONES Y PRODUCTOS DESTACADOS
+    if any(word in message for word in ['recomien', 'sugerir', 'mejor', 'mejores', 'destacado', 'popular', 'vendido']):
+        productos = Producto.objects.filter(stock__gt=0).order_by('-fecha_pub')[:6]
+        return crear_respuesta_productos(productos, "productos recomendados")
+    
+    # 11. CONSULTAS SOBRE PRECIOS
+    if any(word in message for word in ['barato', 'económico', 'oferta', 'descuento', 'rebaja']):
+        productos = Producto.objects.filter(stock__gt=0).order_by('precio')[:6]
+        return crear_respuesta_productos(productos, "productos más económicos")
+    elif any(word in message for word in ['caro', 'premium', 'mejor calidad', 'alta gama']):
+        productos = Producto.objects.filter(stock__gt=0).order_by('-precio')[:6]
+        return crear_respuesta_productos(productos, "productos premium")
+    
+    # 12. BÚSQUEDA POR CATEGORÍA O MARCA
+    categorias = Categoria.objects.all()
+    for categoria in categorias:
+        cat_lower = categoria.nombre.lower()
+        cat_normalized = cat_lower.replace('-', ' ').replace('_', ' ')
+        message_normalized = message.replace('-', ' ').replace('_', ' ')
+        
+        if cat_lower in message or cat_normalized in message_normalized:
+            productos = Producto.objects.filter(categoria=categoria, stock__gt=0)[:6]
+            if productos:
+                return crear_respuesta_productos(productos, f"productos de {categoria.nombre}")
+    
+    # 13. BÚSQUEDA POR MARCA
+    marcas = Marca.objects.all()
+    for marca in marcas:
+        marca_lower = marca.nombre.lower()
+        if marca_lower in message:
+            productos = Producto.objects.filter(marca=marca, stock__gt=0)[:6]
+            if productos:
+                return crear_respuesta_productos(productos, f"productos de {marca.nombre}")
+    
+    # 14. LISTAR CATEGORÍAS
+    if any(word in message for word in ['categoria', 'categoría', 'categorias', 'categorías', 'tipo', 'tipos', 'secciones']):
+        categorias = Categoria.objects.all()
+        if categorias:
+            response_text = "📁 <strong>Nuestras Categorías de Productos:</strong><br><br>"
+            for cat in categorias:
+                count = Producto.objects.filter(categoria=cat, stock__gt=0).count()
+                if count > 0:
+                    response_text += f"• <strong>{cat.nombre}</strong> - {count} productos disponibles<br>"
+            response_text += "<br><em>Escribe el nombre de una categoría para ver sus productos</em>"
+            
+            return {
+                'message': response_text,
+                'data': {'type': 'categorias', 'categorias': [c.nombre for c in categorias]}
+            }
+    
+    # 15. LISTAR MARCAS
+    if any(word in message for word in ['marca', 'marcas', 'fabricante', 'fabricantes']):
+        marcas = Marca.objects.all()
+        if marcas:
+            response_text = "🏷️ <strong>Marcas Disponibles:</strong><br><br>"
+            for marca in marcas:
+                count = Producto.objects.filter(marca=marca, stock__gt=0).count()
+                if count > 0:
+                    response_text += f"• <strong>{marca.nombre}</strong> - {count} productos<br>"
+            response_text += "<br><em>Escribe el nombre de una marca para ver sus productos</em>"
+            
+            return {
+                'message': response_text,
+                'data': {'type': 'marcas', 'marcas': [m.nombre for m in marcas]}
+            }
+    
+    # 16. BÚSQUEDA INTELIGENTE DE PRODUCTOS
+    if is_explicit_search and len(words) >= 1:
+        productos_encontrados = buscar_productos_inteligente(original_message, words)
+        if productos_encontrados and len(productos_encontrados) > 0:
+            return crear_respuesta_productos(productos_encontrados, "productos encontrados")
+    
+    # ========== RESPUESTA POR DEFECTO ==========
+    return {
+        'message': '🤔 <strong>No estoy seguro de cómo ayudarte con eso</strong><br><br>Pero puedo ayudarte con:<br><br>💬 <strong>Búsqueda de productos:</strong><br>• "Quiero ver parlantes Bluetooth"<br>• "Necesito un medidor láser"<br>• "Mostrar radios Android"<br><br>🔍 <strong>Explorar catálogo:</strong><br>• "Ver todas las categorías"<br>• "Productos más baratos"<br>• "¿Qué me recomiendas?"<br><br>ℹ️ <strong>Información:</strong><br>• "Métodos de pago"<br>• "Seguimiento de pedido"<br>• "Garantías"<br><br><em>Escribe "ayuda" para ver más opciones</em>',
+        'data': None
+    }
+
+
+def buscar_productos_inteligente(mensaje_original, palabras_clave):
+    """
+    Búsqueda inteligente de productos usando múltiples criterios.
+    Prioriza coincidencias exactas en categorías y marcas.
+    """
+    mensaje_limpio = mensaje_original.lower().strip()
+    
+    # Diccionario de sinónimos para búsqueda más inteligente
+    sinonimos = {
+        'parlante': ['parlante', 'parlantes', 'bocina', 'bocinas', 'altavoz', 'speaker', 'bluetooth'],
+        'medidor': ['medidor', 'medidores', 'nivel', 'laser', 'distancia', 'angulo'],
+        'cargador': ['cargador', 'cargadores', 'bateria', 'batería', 'fosfor'],
+        'compresor': ['compresor', 'compresores', 'aire', 'inflador'],
+        'radio': ['radio', 'radios', 'android', 'pantalla', 'multimedia', 'carplay'],
+        'scanner': ['scanner', 'escaner', 'diagnostico', 'obdii', 'obd2', 'automotriz'],
+    }
+    
+    # Expandir palabras clave con sinónimos
+    palabras_expandidas = list(palabras_clave)
+    for palabra in palabras_clave:
+        for key, values in sinonimos.items():
+            if palabra.lower() in values:
+                palabras_expandidas.extend(values)
+                break
+    
+    # PASO 1: Buscar primero en categorías (más específico)
+    categorias = Categoria.objects.all()
+    for categoria in categorias:
+        cat_nombre_lower = categoria.nombre.lower()
+        cat_words = cat_nombre_lower.split()
+        
+        if cat_nombre_lower in mensaje_limpio:
+            productos = Producto.objects.filter(categoria=categoria)[:6]
+            if productos:
+                return productos
+        
+        for cat_word in cat_words:
+            if len(cat_word) > 3 and cat_word in mensaje_limpio:
+                productos = Producto.objects.filter(categoria=categoria)[:6]
+                if productos:
+                    return productos
+        
+        for palabra in palabras_expandidas:
+            if palabra.lower() in cat_nombre_lower or cat_nombre_lower in palabra.lower():
+                productos = Producto.objects.filter(categoria=categoria)[:6]
+                if productos:
+                    return productos
+    
+    # PASO 2: Buscar en marcas
+    marcas = Marca.objects.all()
+    for marca in marcas:
+        marca_nombre_lower = marca.nombre.lower()
+        if marca_nombre_lower in mensaje_limpio or any(marca_nombre_lower in palabra for palabra in palabras_expandidas):
+            productos = Producto.objects.filter(marca=marca)[:6]
+            if productos:
+                return productos
+    
+    # PASO 3: Búsqueda general por palabras clave
+    query = Q()
+    for palabra in palabras_expandidas:
+        if len(palabra) > 1:
+            query |= Q(nombre__icontains=palabra)
+            query |= Q(descripcion__icontains=palabra)
+    
+    if mensaje_limpio:
+        query |= Q(nombre__icontains=mensaje_limpio)
+        query |= Q(descripcion__icontains=mensaje_limpio)
+    
+    if query:
+        productos = Producto.objects.filter(query).distinct()[:6]
+        if productos:
+            return productos
+    
+    # PASO 4: Búsqueda flexible
+    if palabras_clave:
+        query_flexible = Q()
+        for palabra in palabras_clave:
+            if len(palabra) > 2:
+                query_flexible |= Q(nombre__icontains=palabra)
+        
+        if query_flexible:
+            productos = Producto.objects.filter(query_flexible).distinct()[:6]
+            if productos:
+                return productos
+    
+    return Producto.objects.all()[:6]
+
+
+def crear_respuesta_productos(productos, contexto="productos"):
+    """
+    Crea una respuesta formateada con los productos encontrados.
+    """
+    if not productos:
+        return {
+            'message': 'No encontré productos que coincidan con tu búsqueda. 🤔<br><br>Intenta:<br>• Usar otras palabras clave<br>• Ver todas las categorías<br>• Escribir "ver productos" para ver el catálogo',
+            'data': None
+        }
+    
+    productos_data = []
+    for p in productos:
+        precio_transferencia = float(p.precio * Decimal('0.97'))
+        imagen_url = p.imagen.url if p.imagen else '/static/img/no-image.png'
+        
+        productos_data.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'precio': float(p.precio),
+            'precio_transferencia': precio_transferencia,
+            'imagen': imagen_url,
+            'marca': p.marca.nombre,
+            'categoria': p.categoria.nombre,
+            'stock': p.stock
+        })
+    
+    count = len(productos)
+    header = f'🎯 <strong>Encontré {count} producto{"s" if count > 1 else ""}:</strong><br><br>'
+    
+    response_text = header
+    response_text += '<div class="chatbot-products-grid">'
+    
+    for p in productos_data:
+        disponible = "✅ Disponible" if p['stock'] > 0 else "❌ Sin stock"
+        response_text += f'''
+        <div class="chatbot-product-card" onclick="window.location.href='/producto/{p['id']}/'">
+            <img src="{p['imagen']}" alt="{p['nombre']}" onerror="this.src='/static/img/no-image.png'">
+            <div class="chatbot-product-info">
+                <h4>{p['nombre']}</h4>
+                <p class="brand">{p['marca']} • {p['categoria']}</p>
+                <p class="price">💳 ${p['precio']:,.0f}</p>
+                <p class="price-transfer">💸 ${p['precio_transferencia']:,.0f} (Transferencia)</p>
+                <p class="stock">{disponible}</p>
+            </div>
+        </div>
+        '''
+    
+    response_text += '</div><br><em>Haz clic en cualquier producto para ver más detalles</em>'
+    
+    return {
+        'message': response_text,
+        'data': {
+            'type': 'productos',
+            'productos': productos_data
+        }
+    }
