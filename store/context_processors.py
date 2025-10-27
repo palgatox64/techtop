@@ -7,12 +7,11 @@ def menu_context(request):
     cart = request.session.get('cart', {})
     cart_item_count = len(cart)
     
-    # 🔥 Determinar si el usuario es empleado
     is_empleado = request.session.get('user_type') == 'empleado'
 
     return {
         'radio_brands': radio_brands,
         'featured_radios': featured_radios,
         'cart_item_count': cart_item_count,
-        'is_empleado': is_empleado,  # 🔥 Nueva variable
+        'is_empleado': is_empleado,
     }

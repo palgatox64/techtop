@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/cart.css' %}">
+    <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block title %}Finalizar Compra - Techtop{% endblock %}
+
+{% block content %}
+<div class="cart-container checkout-container">
+
+    <div class="cart-main checkout-main">
+        <h2>Finalizar Compra</h2>
+
+        <form id="checkout-form" method="POST" action="{% url 'procesar_pedido' %}">
+            {% csrf_token %}
+
+            <section class="checkout-section">
+                <h3>1. Datos de Contacto</h3>
+                <div class="form-grid">
+                    <div class="form-group full-width {% if form.email.errors %}has-error{% endif %}">
+                        <label for="{{ form.email.id_for_label }}">Email*</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<small class="error-text">{{ form.email.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="form-group {% if form.nombre.errors %}has-error{% endif %}">
+                        <label for="{{ form.nombre.id_for_label }}">Nombre*</label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}<small class="error-text">{{ form.nombre.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="form-group {% if form.apellidos.errors %}has-error{% endif %}">
+                        <label for="{{ form.apellidos.id_for_label }}">Apellidos*</label>
+                        {{ form.apellidos }}
+                        {% if form.apellidos.errors %}<small class="error-text">{{ form.apellidos.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="form-group {% if form.rut.errors %}has-error{% endif %}">
+                        <label for="{{ form.rut.id_for_label }}">RUT*</label>
+                        {{ form.rut }}
+                        {% if form.rut.errors %}<small class="error-text">{{ form.rut.errors.0 }}</small>{% endif %}
+                    </div>
+                    <div class="form-group {% if form.telefono.errors %}has-error{% endif %}">
+                        <label for="{{ form.telefono.id_for_label }}">Teléfono* (Ej: 987654321)</label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}<small class="error-text">{{ form.telefono.errors.0 }}</small>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="checkout-section">
+                <h3>2. Método de Entrega*</h3>
+                <div class="radio-options" id="delivery-options-container">
+                    {% for choice in form.tipo_entrega.field.choices %}
+                        <label class="radio-label" for="id_tipo_entrega_{{ forloop.counter0 }}">
+                            <input type="radio"
+                                   name="{{ form.tipo_entrega.name }}"
+                                   id="id_tipo_entrega_{{ forloop.counter0 }}"
+                                   value="{{ choice.0 }}"
+                                   {% if form.tipo_entrega.value == choice.0 or not form.tipo_entrega.value and form.tipo_entrega.field.initial == choice.0 %}checked{% endif %}>
+                            <div class="radio-content">
+                                <span class="radio-title">{{ choice.1 }}</span>
+                                {% if choice.0 == 'delivery' %}
+                                <span class="radio-desc">Recibe tu pedido en casa (costo adicional).</span>
+                                {% elif choice.0 == 'retiro' %}
+                                <span class="radio-desc">Retira gratis en nuestra tienda.</span>
+                                {% endif %}
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div id="delivery-address-form" class="address-form-hidden">
+                    <h4 class="delivery-form-title">Dirección de Envío</h4>
+                    <div class="delivery-address-form-grid">
+                        <div class="form-group full-width {% if form.calle.errors %}has-error{% endif %}">
+                            <label for="{{ form.calle.id_for_label }}">Calle*</label>
+                            {{ form.calle }}
+                            {% if form.calle.errors %}<small class="error-text">{{ form.calle.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="form-group {% if form.numero.errors %}has-error{% endif %}">
+                            <label for="{{ form.numero.id_for_label }}">Número*</label>
+                            {{ form.numero }}
+                            {% if form.numero.errors %}<small class="error-text">{{ form.numero.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="form-group {% if form.tipo_vivienda.errors %}has-error{% endif %}">
+                            <label for="{{ form.tipo_vivienda.id_for_label }}">Tipo de Vivienda*</label>
+                            {{ form.tipo_vivienda }}
+                            {% if form.tipo_vivienda.errors %}<small class="error-text">{{ form.tipo_vivienda.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="form-group full-width {% if form.depto_pasaje.errors %}has-error{% endif %}">
+                            <label for="{{ form.depto_pasaje.id_for_label }}">Depto / Pasaje / Villa (Opcional)</label>
+                            {{ form.depto_pasaje }}
+                            {% if form.depto_pasaje.errors %}<small class="error-text">{{ form.depto_pasaje.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="form-group full-width {% if form.codigo_postal.errors %}has-error{% endif %}">
+                            <label for="{{ form.codigo_postal.id_for_label }}">Código Postal (Opcional)</label>
+                            {{ form.codigo_postal }}
+                            {% if form.codigo_postal.errors %}<small class="error-text">{{ form.codigo_postal.errors.0 }}</small>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                 {% if form.non_field_errors %}
+                    <div class="form-errors global-errors">
+                        {% for error in form.non_field_errors %}<small class="error-text">{{ error }}</small>{% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="checkout-section">
+                <h3>3. Método de Pago*</h3>
+                <div class="radio-options payment-options">
+                    {% for choice in form.metodo_pago.field.choices %}
+                        <label class="radio-label" for="id_metodo_pago_{{ forloop.counter0 }}">
+                            <input type="radio"
+                                   name="{{ form.metodo_pago.name }}"
+                                   id="id_metodo_pago_{{ forloop.counter0 }}"
+                                   value="{{ choice.0 }}"
+                                   {% if form.metodo_pago.value == choice.0 or not form.metodo_pago.value and form.metodo_pago.field.initial == choice.0 %}checked{% endif %}>
+
+                            <div class="radio-content">
+                                {% if choice.0 == 'webpay' %}
+                                    <img src="{% static 'img/logo_webpay.png' %}" alt="Webpay" class="payment-logo">
+                                {% elif choice.0 == 'mercadopago' %}
+                                    <img src="{% static 'img/logo_mercadopago.png' %}" alt="Mercado Pago" class="payment-logo">
+                                {% elif choice.0 == 'transferencia' %}
+                                     <img src="{% static 'img/logo_servipag.png' %}" alt="Transferencia" class="payment-logo">
+                                {% else %}
+                                    <span class="radio-title">{{ choice.1 }}</span>
+                                {% endif %}
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+                 {% if form.metodo_pago.errors %}
+                    <div class="form-errors">
+                        <small class="error-text">{{ form.metodo_pago.errors.0 }}</small>
+                    </div>
+                 {% endif %}
+            </section>
+
+        </form>
+    </div>
+
+    <div class="cart-summary">
+        <h3>Resumen ({{ cart_items|length }} producto{% if cart_items|length != 1 %}s{% endif %})</h3>
+
+        <div class="summary-items-list">
+            {% for item in cart_items %}
+            <div class="summary-item-product">
+                <img src="{{ item.product.imagen.url }}" alt="{{ item.product.nombre }}">
+                <div class="summary-item-details">
+                    <span class="summary-item-name">{{ item.product.nombre }} (x{{ item.quantity }})</span>
+                    <span class="summary-item-price">${{ item.subtotal_otros_medios|floatformat:0|dot_thousands }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <hr class="summary-divider">
+
+        <div class="summary-item">
+            <span>Pago con transferencias</span>
+            {# AÑADIMOS ID AQUÍ #}
+            <strong id="subtotal-transferencia">${{ total_transferencia|floatformat:0|dot_thousands }}</strong>
+        </div>
+        <div class="summary-item-label">
+            <span>Transferencia y Banco Estado</span>
+        </div>
+        <div class="summary-item">
+            <span>Otros medios de pago</span>
+             {# AÑADIMOS ID AQUÍ #}
+            <strong id="subtotal-otros-medios">${{ total_otros_medios|floatformat:0|dot_thousands }}</strong>
+        </div>
+        <div class="summary-item-label">
+            <span>Webpay/Onepay</span>
+        </div>
+
+        {# NUEVA SECCIÓN PARA COSTO DE ENVÍO (inicialmente oculto o $0) #}
+        <div class="summary-item" id="summary-delivery-cost" style="display: none;">
+            <span>Costo de Envío</span>
+            <strong id="delivery-cost-value">$4.500</strong>
+        </div>
+
+        <div class="summary-total">
+            <span>TOTAL</span>
+             {# AÑADIMOS ID AQUÍ y un valor inicial #}
+            <span id="summary-total-value">-</span>
+        </div>
+
+        <button type="submit" form="checkout-form" class="btn-checkout" id="btn-finalizar-compra">
+            Finalizar Compra
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('checkout-form');
+    const submitBtn = document.getElementById('btn-finalizar-compra');
+    const deliveryOptions = document.querySelectorAll('input[name="tipo_entrega"]');
+    const paymentOptions = document.querySelectorAll('input[name="metodo_pago"]'); // <-- NUEVA REFERENCIA
+    const addressForm = document.getElementById('delivery-address-form');
+
+    // --- NODOS PARA LEER PRECIOS Y MOSTRAR TOTAL ---
+    const subtotalTransferenciaElement = document.getElementById('subtotal-transferencia');
+    const subtotalOtrosMediosElement = document.getElementById('subtotal-otros-medios');
+    const summaryTotalValueElement = document.getElementById('summary-total-value');
+    const summaryDeliveryCostElement = document.getElementById('summary-delivery-cost'); // <-- NUEVA REFERENCIA
+    const deliveryCostValue = 4500; // Costo de envío fijo
+
+    // --- NODOS DE INPUT PARA VALIDACIÓN (Sin cambios) ---
+    const emailInput = document.getElementById('{{ form.email.id_for_label }}');
+    const nombreInput = document.getElementById('{{ form.nombre.id_for_label }}');
+    const apellidosInput = document.getElementById('{{ form.apellidos.id_for_label }}');
+    const rutInput = document.getElementById('{{ form.rut.id_for_label }}');
+    const telefonoInput = document.getElementById('{{ form.telefono.id_for_label }}');
+    const calleInput = document.getElementById('{{ form.calle.id_for_label }}');
+    const numeroInput = document.getElementById('{{ form.numero.id_for_label }}');
+    const tipoViviendaSelect = document.getElementById('{{ form.tipo_vivienda.id_for_label }}');
+
+
+    // --- FUNCIÓN PARA FORMATEAR NÚMEROS COMO MONEDA CHILENA ---
+    function formatCurrency(value) {
+        return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
+    }
+
+    // --- FUNCIÓN PARA OBTENER PRECIOS BASE (leyendo el HTML) ---
+    function getBasePrices() {
+        // Limpiamos el texto ($ y puntos) y convertimos a número
+        const transferText = subtotalTransferenciaElement.textContent.replace(/[$.]/g, '');
+        const otherText = subtotalOtrosMediosElement.textContent.replace(/[$.]/g, '');
+        return {
+            transferencia: parseInt(transferText, 10) || 0,
+            otrosMedios: parseInt(otherText, 10) || 0
+        };
+    }
+    const basePrices = getBasePrices(); // Leemos los precios una vez al cargar
+
+
+    // --- FUNCIÓN PARA ACTUALIZAR EL TOTAL ---
+    function updateTotal() {
+        console.log("Actualizando total..."); // Debug
+        const selectedDeliveryOption = document.querySelector('input[name="tipo_entrega"]:checked');
+        const selectedPaymentOption = document.querySelector('input[name="metodo_pago"]:checked');
+
+        let currentSubtotal = 0;
+        let deliveryCost = 0;
+
+        // Determinar subtotal base según método de pago
+        if (selectedPaymentOption) {
+            console.log("Método de pago:", selectedPaymentOption.value); // Debug
+            if (selectedPaymentOption.value === 'transferencia') {
+                currentSubtotal = basePrices.transferencia;
+            } else { // Webpay o MercadoPago
+                currentSubtotal = basePrices.otrosMedios;
+            }
+        } else {
+             // Si no hay método de pago seleccionado, usamos el de "Otros Medios" por defecto para mostrar algo
+            currentSubtotal = basePrices.otrosMedios;
+        }
+        console.log("Subtotal base:", currentSubtotal); // Debug
+
+        // Determinar costo de envío y mostrar/ocultar fila
+        if (selectedDeliveryOption) {
+            console.log("Método de entrega:", selectedDeliveryOption.value); // Debug
+            if (selectedDeliveryOption.value === 'delivery') {
+                deliveryCost = deliveryCostValue;
+                summaryDeliveryCostElement.style.display = 'flex'; // O 'block', dependiendo de tu CSS base
+            } else { // Retiro en tienda
+                deliveryCost = 0;
+                summaryDeliveryCostElement.style.display = 'none';
+            }
+        } else {
+             // Si no hay método de entrega, asumimos $0 y ocultamos
+             deliveryCost = 0;
+             summaryDeliveryCostElement.style.display = 'none';
+        }
+        console.log("Costo envío:", deliveryCost); // Debug
+
+        // Calcular total final
+        const finalTotal = currentSubtotal + deliveryCost;
+        console.log("Total final:", finalTotal); // Debug
+
+        // Actualizar el HTML
+        summaryTotalValueElement.textContent = formatCurrency(finalTotal);
+    }
+
+
+    // --- FUNCIÓN PARA MOSTRAR ALERTA DE ERROR (Sin cambios) ---
+    function showErrorAlert(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Datos Inválidos',
+            text: message,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Corregir'
+        });
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Finalizar Compra';
+    }
+
+    // --- FUNCIÓN DE VALIDACIÓN PRINCIPAL (Sin cambios) ---
+    function validateForm() {
+        if (!emailInput.value.trim()) { showErrorAlert('El correo electrónico es obligatorio.'); return false; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailInput.value.trim())) { showErrorAlert('El formato del correo electrónico no es válido (ej: tu@correo.com).'); return false; }
+        if (!nombreInput.value.trim()) { showErrorAlert('El nombre es obligatorio.'); return false; }
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+        if (!nameRegex.test(nombreInput.value.trim())) { showErrorAlert('El nombre solo puede contener letras y espacios.'); return false; }
+        if (!apellidosInput.value.trim()) { showErrorAlert('Los apellidos son obligatorios.'); return false; }
+         if (!nameRegex.test(apellidosInput.value.trim())) { showErrorAlert('Los apellidos solo pueden contener letras y espacios.'); return false; }
+        if (!rutInput.value.trim()) { showErrorAlert('El RUT es obligatorio.'); return false; }
+        const rutLimpio = rutInput.value.replace(/[.-]/g, '');
+        const rutRegex = /^[0-9]+[0-9Kk]$/;
+        if (!rutRegex.test(rutLimpio)) { showErrorAlert('El RUT solo debe contener números y la letra K (ej: 12345678-9).'); return false; }
+        if (rutLimpio.length < 8 || rutLimpio.length > 10) { showErrorAlert('El RUT debe tener entre 8 y 10 caracteres (números y dígito verificador, sin puntos ni guion).'); return false; }
+        if (!telefonoInput.value.trim()) { showErrorAlert('El teléfono es obligatorio.'); return false; }
+        const phoneRegex = /^[0-9]{9}$/;
+        if (!phoneRegex.test(telefonoInput.value.trim())) { showErrorAlert('El teléfono debe contener exactamente 9 números (sin +56).'); return false; }
+        const selectedDelivery = document.querySelector('input[name="tipo_entrega"]:checked');
+        if (selectedDelivery && selectedDelivery.value === 'delivery') {
+            if (!calleInput.value.trim()) { showErrorAlert('La calle es obligatoria para el delivery.'); return false; }
+            if (!numeroInput.value.trim()) { showErrorAlert('El número de casa/depto es obligatorio para el delivery.'); return false; }
+             if (!tipoViviendaSelect.value) { showErrorAlert('Debes seleccionar un tipo de vivienda para el delivery.'); return false; }
+        }
+        const selectedPayment = document.querySelector('input[name="metodo_pago"]:checked');
+         if (!selectedPayment) { showErrorAlert('Debes seleccionar un método de pago.'); return false; }
+        return true;
+    }
+
+    // --- MANEJO DEL FORMULARIO DE DIRECCIÓN (Sin cambios) ---
+    function toggleAddressForm() {
+        const checkedOption = document.querySelector('input[name="tipo_entrega"]:checked');
+        if (!checkedOption) { addressForm.classList.add('address-form-hidden'); return; }
+        const selectedValue = checkedOption.value;
+        if (selectedValue === 'delivery') { addressForm.classList.remove('address-form-hidden'); }
+        else { addressForm.classList.add('address-form-hidden'); }
+    }
+    deliveryOptions.forEach(option => {
+        option.addEventListener('change', toggleAddressForm);
+    });
+    toggleAddressForm(); // Llamada inicial
+
+    // --- AÑADIR LISTENERS PARA ACTUALIZAR TOTAL ---
+    deliveryOptions.forEach(option => {
+        option.addEventListener('change', updateTotal); // Actualiza total al cambiar entrega
+    });
+    paymentOptions.forEach(option => {
+        option.addEventListener('change', updateTotal); // Actualiza total al cambiar pago
+    });
+    updateTotal(); // Llamada inicial para calcular el total al cargar la página
+
+
+    // --- MANEJO DEL ENVÍO DEL FORMULARIO CON VALIDACIÓN (Sin cambios) ---
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Validando...';
+        form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+        form.querySelectorAll('.error-text').forEach(el => el.textContent = '');
+        if (!validateForm()) { return; }
+        console.log("Validación JS exitosa, enviando al backend...");
+        submitBtn.textContent = 'Procesando...';
+        const formData = new FormData(form);
+        fetch(form.action, { method: 'POST', body: formData, headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: '¡Compra Exitosa!', text: data.message, timer: 3000, showConfirmButton: false, allowOutsideClick: false })
+                .then(() => { window.location.href = data.redirect_url; });
+            } else { showErrorAlert(data.message || 'Ocurrió un error en el servidor. Intenta de nuevo.'); }
+        })
+        .catch(error => { console.error('Error en la petición Fetch:', error); showErrorAlert('No se pudo conectar con el servidor. Intenta más tarde.'); });
+    });
+});
+</script>
+{% endblock %}

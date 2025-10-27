@@ -1,0 +1,283 @@
+/* static/css/checkout.css */
+
+.checkout-main {
+    flex: 2;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 2.5rem;
+    background-color: #fff;
+}
+
+.checkout-main h2 {
+    margin-bottom: 2rem;
+}
+
+.checkout-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.checkout-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.checkout-section h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* Grid para el formulario */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+/* Estilos para los botones de Radio (Entrega y Pago) */
+.radio-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.radio-options input[type="radio"] {
+    display: none; /* Ocultamos el radio real */
+}
+
+.radio-label {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    display: block;
+}
+
+.radio-label:hover {
+    border-color: #aaa;
+}
+
+.radio-options input[type="radio"]:checked + .radio-content {
+    /* Aquí podrías añadir un checkmark o algo, pero el borde es más simple */
+}
+
+.radio-options input[type="radio"]:checked + .radio-content .radio-title {
+    color: #000;
+}
+
+.radio-label-wrapper:has(input[type="radio"]:checked) .radio-label, /* Fallback para Firefox */
+.radio-label:has(input[type="radio"]:checked) { /* Estilo moderno */
+    border-color: #000;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.8);
+    background-color: #fcfcfc;
+}
+
+.radio-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #555;
+    transition: color 0.3s;
+}
+
+.radio-desc {
+    font-size: 0.9rem;
+    color: #777;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.payment-options .radio-label {
+    padding: 0.5rem 1.5rem;
+}
+
+.payment-logo {
+    height: 35px;
+    object-fit: contain;
+    margin: 10px 0;
+}
+
+/* Resumen del Pedido */
+.summary-items-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 1rem;
+}
+
+.summary-item-product {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.summary-item-product img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.summary-item-details {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.summary-item-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    max-width: 70%;
+}
+
+.summary-item-price {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.summary-divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 1.5rem 0;
+}
+
+@media (max-width: 992px) {
+    .cart-container {
+        flex-direction: column;
+    }
+    .cart-summary {
+        position: static;
+        width: 100%;
+        margin-top: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .checkout-main {
+        padding: 1.5rem;
+    }
+}
+
+/* Pega esto al final de static/css/checkout.css */
+
+#delivery-address-form {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.delivery-form-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.delivery-address-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+/* Ajuste para que los <select> se vean igual que los <input> */
+.form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: #fff;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .delivery-address-form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* Añade esto a static/css/checkout.css */
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+    border-color: #dc3545; /* Rojo Bootstrap para errores */
+    background-color: #fff8f8;
+}
+
+.form-group.has-error label {
+    color: #dc3545;
+}
+
+.error-text {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 5px;
+    display: block; /* Para que aparezca debajo */
+}
+
+.form-errors.global-errors {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+}
+
+.form-errors.global-errors .error-text {
+    color: #721c24; /* Color de texto más oscuro para el fondo rojo */
+}
+
+/* Añade esto a static/css/checkout.css */
+
+.address-form-hidden {
+    display: none;
+}

@@ -1,25 +1,35 @@
+# Django core imports
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Producto, Marca, Categoria
+from django.http import JsonResponse, HttpResponse, Http404
+from django.contrib.auth import logout
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib import messages
 from django.db.models import Count, Q
-from django.contrib.auth.hashers import make_password 
-from django.contrib import messages 
-from .models import Cliente, Empleado
-import re 
-from django.db import IntegrityError
-from django.contrib.auth.hashers import check_password 
-from django.http import JsonResponse 
-from decimal import Decimal
+from django.db import IntegrityError, transaction
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from .decorators import admin_required
-from .forms import CategoriaForm, MarcaForm, ProductoForm
 from django.core.paginator import Paginator
-import csv
-from django.http import HttpResponse
-from django.db.models import Q
-import json
+from django.urls import reverse
+from django.template.loader import render_to_string, get_template
+from django.utils import timezone
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
+
+# Third-party imports
+from decimal import Decimal
+from io import BytesIO
+from weasyprint import HTML
+from xhtml2pdf import pisa
+import re
+import csv
+import json
+
+# Local imports
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion
+from .decorators import admin_required
+from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
+from .validators import validate_chilean_rut
 
 def home(request):
     return render(request, 'home.html')
@@ -46,7 +56,7 @@ def terminos_condiciones(request):
     return render(request, 'terminos_condiciones.html')
 
 def radios_catalog(request):
-    products = Producto.objects.filter(categoria__nombre='RADIO ANDROID')
+    products = Producto.objects.filter(categoria__nombre='RADIO ANDROID', activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_inches = request.GET.getlist('pulgadas')
@@ -129,7 +139,7 @@ def electronica_catalog(request):
         'Electronica General',
         'Electronica',
     ]
-    products = Producto.objects.filter(categoria__nombre__in=electronics_categories)
+    products = Producto.objects.filter(categoria__nombre__in=electronics_categories, activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_categories = request.GET.getlist('categoria')
@@ -185,7 +195,7 @@ def accesorios_catalog(request):
         'Compresor',
         'Cargador'
     ]
-    products = Producto.objects.filter(categoria__nombre__in=accessory_categories)
+    products = Producto.objects.filter(categoria__nombre__in=accessory_categories, activo=True)
     selected_brands = request.GET.getlist('marca')
     selected_prices = request.GET.getlist('precio')
     selected_categories = request.GET.getlist('categoria')
@@ -503,6 +513,7 @@ def register_view(request):
     if request.method == 'POST':
         print(">>> Petición POST recibida en register_view.")
 
+        rut = request.POST.get('rut', '').strip()
         nombre = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         correo = request.POST.get('correo', '').strip()
@@ -510,16 +521,28 @@ def register_view(request):
         password = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
         
-        print(f">>> Datos recibidos: Correo={correo}, Nombre={nombre}")
+        print(f">>> Datos recibidos: RUT={rut}, Correo={correo}, Nombre={nombre}")
 
         # Validaciones del backend
         
         # 1. Validar campos vacíos
-        if not all([nombre, apellido, correo, telefono, password, password2]):
+        if not all([rut, nombre, apellido, correo, telefono, password, password2]):
             messages.error(request, 'Todos los campos son obligatorios.')
             return redirect('register')
 
-        # 2. Validar formato de nombres (solo letras y espacios)
+        # 2. Validar RUT chileno
+        try:
+            validate_chilean_rut(rut)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('register')
+
+        # 3. Verificar si el RUT ya existe
+        if Cliente.objects.filter(rut=rut).exists():
+            messages.error(request, 'El RUT ya está registrado en el sistema.')
+            return redirect('register')
+
+        # 4. Validar formato de nombres (solo letras y espacios)
         name_regex = r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
         if not re.match(name_regex, nombre):
             messages.error(request, 'El nombre solo debe contener letras y espacios.')
@@ -529,7 +552,7 @@ def register_view(request):
             messages.error(request, 'El apellido solo debe contener letras y espacios.')
             return redirect('register')
 
-        # 3. Validar longitud de nombres
+        # 5. Validar longitud de nombres
         if len(nombre) < 2 or len(nombre) > 50:
             messages.error(request, 'El nombre debe tener entre 2 y 50 caracteres.')
             return redirect('register')
@@ -538,29 +561,29 @@ def register_view(request):
             messages.error(request, 'El apellido debe tener entre 2 y 100 caracteres.')
             return redirect('register')
 
-        # 4. Validar formato de email
+        # 6. Validar formato de email
         try:
             validate_email(correo)
         except ValidationError:
             messages.error(request, 'Formato de correo electrónico inválido.')
             return redirect('register')
 
-        # 5. Validar longitud del email
+        # 7. Validar longitud del email
         if len(correo) > 100:
             messages.error(request, 'El correo electrónico es demasiado largo.')
             return redirect('register')
 
-        # 6. Verificar si el correo ya existe
+        # 8. Verificar si el correo ya existe
         if Cliente.objects.filter(email=correo).exists():
             messages.error(request, 'El correo electrónico ya está en uso.')
             return redirect('register')
 
-        # 7. Validar contraseñas coincidentes
+        # 9. Validar contraseñas coincidentes
         if password != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
             return redirect('register')
 
-        # 8. Validar seguridad de contraseña (MÁS PERMISIVA CON CARACTERES ESPECIALES)
+        # 10. Validar seguridad de contraseña
         if len(password) < 8:
             messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
             return redirect('register')
@@ -577,17 +600,11 @@ def register_view(request):
             messages.error(request, 'La contraseña debe contener al menos un número.')
             return redirect('register')
         
-        # VALIDACIÓN MÁS AMPLIA DE CARACTERES ESPECIALES - AQUÍ ESTÁ EL CAMBIO PRINCIPAL
         if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>/?~`]', password):
             messages.error(request, 'La contraseña debe contener al menos un carácter especial.')
             return redirect('register')
         
-        # Opcional: Evitar algunos caracteres problemáticos (puedes comentar esta línea si quieres permitir TODO)
-        # if re.search(r'[\'\"\\]', password):
-        #     messages.error(request, 'La contraseña no puede contener comillas simples, comillas dobles o barras invertidas.')
-        #     return redirect('register')
-        
-        # 9. Validar teléfono chileno
+        # 11. Validar teléfono chileno
         if not re.match(r'^9\d{8}$', telefono):
             messages.error(request, 'El número de teléfono debe tener 9 dígitos y comenzar con 9 (formato chileno).')
             return redirect('register')
@@ -598,6 +615,7 @@ def register_view(request):
 
             print(">>> Creando el objeto Cliente...")
             nuevo_cliente = Cliente(
+                rut=rut,
                 nombre=nombre,
                 apellidos=apellido,
                 email=correo,
@@ -612,7 +630,9 @@ def register_view(request):
         
         except IntegrityError as e:
             print(f"Error de integridad en la base de datos: {e}")
-            if 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
+            if 'rut' in str(e).lower():
+                messages.error(request, 'El RUT ya está en uso.')
+            elif 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
                 messages.error(request, 'El correo electrónico ya está en uso.')
             else:
                 messages.error(request, 'Error al crear la cuenta. Por favor, intenta de nuevo.')
@@ -624,14 +644,31 @@ def register_view(request):
             return redirect('register')
 
 def logout_view(request):
-    if 'cliente_id' in request.session:
-        try:
-            request.session.flush()
-            messages.success(request, 'Has cerrado sesión exitosamente.')
-        except Exception as e:
-            print(f"Error al cerrar sesión: {e}")
-            messages.error(request, 'Ocurrió un error al cerrar sesión.')
-    
+    if request.method == 'POST':
+        # Limpiar manualmente las variables de sesión personalizadas
+        request.session.pop('empleado_id', None)
+        request.session.pop('empleado_nombre', None)
+        request.session.pop('empleado_cargo', None)
+        request.session.pop('cliente_id', None)
+        request.session.pop('cliente_nombre', None)
+        request.session.pop('user_type', None)
+        
+        # Llamar al logout de Django
+        logout(request)
+        
+        # IMPORTANTE: Forzar guardado de sesión modificada
+        request.session.modified = True
+        
+        messages.success(request, '¡Has cerrado sesión exitosamente!')
+        
+        # Redirigir con parámetro para evitar caché
+        from django.http import HttpResponseRedirect
+        response = HttpResponseRedirect('/')
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+        
     return redirect('home')
 
 @admin_required
@@ -1167,15 +1204,287 @@ def search_results_view(request):
             Q(nombre__icontains=query) |
             Q(marca__nombre__icontains=query)
         ).distinct()
-        if products:
-            for product in products:
-                product.precio_transferencia = product.precio * Decimal('0.97')
+
     context = {
         'products': products,
         'search_query': query,
     }
     return render(request, 'store/search_results.html', context)
 
+# store/views.py
+
+def checkout_view(request):
+    """
+    Muestra la página de checkout, rellenando los datos si el usuario está logueado.
+    """
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, 'Tu carro está vacío.')
+        return redirect('view_cart')
+
+    # (Lógica para calcular items y totales - sin cambios)
+    product_ids = cart.keys()
+    products_in_cart = Producto.objects.filter(id__in=product_ids)
+    cart_items = []
+    total_transferencia = Decimal('0.00')
+    total_otros_medios = Decimal('0.00')
+    for product in products_in_cart:
+        product_id_str = str(product.id)
+        quantity = cart[product_id_str]['quantity']
+        precio_transferencia_unitario = product.precio * Decimal('0.97')
+        cart_items.append({
+            'product': product,
+            'quantity': quantity,
+            'subtotal_transferencia': precio_transferencia_unitario * quantity,
+            'subtotal_otros_medios': product.precio * quantity,
+        })
+        total_transferencia += precio_transferencia_unitario * quantity
+        total_otros_medios += product.precio * quantity
+
+    # --- LÓGICA MEJORADA PARA RELLENAR EL FORMULARIO ---
+    initial_data = {}
+    user_type = request.session.get('user_type')
+    user = None # Variable para guardar el objeto Cliente o Empleado
+
+    print(f"DEBUG: User type in session: {user_type}") # Para depurar
+
+    if user_type == 'cliente':
+        cliente_id = request.session.get('cliente_id')
+        if cliente_id:
+            try:
+                user = get_object_or_404(Cliente, id_cliente=cliente_id)
+                print(f"DEBUG: Cliente encontrado: {user}") # Para depurar
+            except Exception as e:
+                print(f"Error buscando Cliente ID {cliente_id}: {e}")
+                request.session.flush() # Limpiar sesión si el ID es inválido
+
+    elif user_type == 'empleado':
+        empleado_id = request.session.get('empleado_id')
+        if empleado_id:
+            try:
+                user = get_object_or_404(Empleado, id_empleado=empleado_id)
+                print(f"DEBUG: Empleado encontrado: {user}") # Para depurar
+            except Exception as e:
+                print(f"Error buscando Empleado ID {empleado_id}: {e}")
+                request.session.flush() # Limpiar sesión si el ID es inválido
+
+    # Si encontramos un usuario (Cliente o Empleado), llenamos initial_data
+    if user:
+        initial_data = {
+            'nombre': user.nombre,
+            'apellidos': user.apellidos,
+            'rut': getattr(user, 'rut', ''), # Usamos getattr por si algún modelo no tuviera rut (aunque ambos lo tienen)
+            'email': user.email,
+            'telefono': user.telefono,
+        }
+        print(f"DEBUG: Initial data set: {initial_data}") # Para depurar
+    else:
+         print("DEBUG: No user found in session or DB, form will be empty.") # Para depurar
+
+
+    # Pasamos los datos iniciales al formulario
+    # Si initial_data está vacío, el formulario aparecerá en blanco
+    form = CheckoutForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'cart_items': cart_items,
+        'total_transferencia': total_transferencia,
+        'total_otros_medios': total_otros_medios,
+    }
+    return render(request, 'store/checkout.html', context)
+
+
+# --- VISTA PARA PROCESAR EL PEDIDO (SIN CAMPOS *_cliente) ---
+@transaction.atomic
+def procesar_pedido_view(request):
+    """
+    Recibe el POST del checkout, valida, crea Pedido/Detalles/Direccion (SOLO con campos existentes),
+    descuenta stock y redirige al PDF.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
+
+    cart = request.session.get('cart', {})
+    if not cart:
+        return JsonResponse({'success': False, 'message': 'Tu carro está vacío.'})
+
+    form = CheckoutForm(request.POST)
+
+    if form.is_valid():
+        cleaned_data = form.cleaned_data
+        metodo_pago = cleaned_data.get('metodo_pago')
+        tipo_entrega = cleaned_data.get('tipo_entrega')
+
+        # --- OBTENER DATOS DEL CARRITO Y VALIDAR STOCK (Sin cambios) ---
+        product_ids = cart.keys()
+        products_in_cart = Producto.objects.select_for_update().filter(id__in=product_ids)
+        cart_items_details = []
+        subtotal_calculado = Decimal('0.00')
+        product_map = {str(p.id): p for p in products_in_cart}
+        for product_id_str, item_data in cart.items():
+            product = product_map.get(product_id_str)
+            if not product: return JsonResponse({'success': False, 'message': f'Producto ID {product_id_str} no disponible.'})
+            quantity = item_data['quantity']
+            if product.stock < quantity: return JsonResponse({'success': False, 'message': f'Stock insuficiente para "{product.nombre}".'})
+            precio_unitario_a_guardar = product.precio * Decimal('0.97') if metodo_pago == 'transferencia' else product.precio
+            cart_items_details.append({'producto': product, 'cantidad': quantity, 'precio_unitario': precio_unitario_a_guardar})
+            subtotal_calculado += precio_unitario_a_guardar * quantity
+
+        # --- BUSCAR CLIENTE LOGUEADO (Sin cambios) ---
+        cliente_obj = None
+        if request.session.get('user_type') == 'cliente':
+            try:
+                cliente_obj = Cliente.objects.get(id_cliente=request.session.get('cliente_id'))
+            except Cliente.DoesNotExist:
+                request.session.flush()
+
+        # --- MANEJAR DIRECCIÓN Y COSTO DE ENVÍO (Sin cambios) ---
+        direccion_obj = None
+        costo_envio_calculado = Decimal('0.00')
+        if tipo_entrega == 'delivery':
+            costo_envio_calculado = Decimal('4500')
+            if cliente_obj:
+                 try:
+                     direccion_obj = Direccion.objects.create(
+                        cliente=cliente_obj,
+                        calle=cleaned_data.get('calle'),
+                        numero=cleaned_data.get('numero', ''),
+                        ciudad='Santiago', # Temporal
+                        region='Metropolitana', # Temporal
+                        codigo_postal=cleaned_data.get('codigo_postal', '')
+                     )
+                 except Exception as e:
+                      print(f"Error al crear dirección: {e}")
+                      direccion_obj = None
+
+        # --- CALCULAR TOTAL FINAL (Sin cambios) ---
+        total_final = subtotal_calculado + costo_envio_calculado
+
+        # --- CREAR EL OBJETO Pedido (CORREGIDO: SIN CAMPOS EXTRA) ---
+        try:
+            # Quitamos los campos nombre_cliente, apellidos_cliente, rut_cliente,
+            # email_cliente, telefono_cliente, metodo_pago, tipo_entrega, costo_envio
+            # porque NO existen en el modelo Pedido actual.
+            pedido_data = {
+                'cliente': cliente_obj,        # Clave foránea a Cliente (puede ser None)
+                'direccion_envio': direccion_obj, # Clave foránea a Direccion (puede ser None)
+                'total': total_final,          # DecimalField
+                'estado': 'procesando',        # CharField
+                # 'fecha_pedido' se añade automáticamente (auto_now_add=True)
+            }
+            nuevo_pedido = Pedido.objects.create(**pedido_data)
+            # El ID se genera automáticamente
+
+        except Exception as e:
+             # Si aún da error aquí, será por otra razón (ej: tipo de dato incorrecto)
+             print(f"ERROR AL CREAR PEDIDO: {e}")
+             # Mensaje de error genérico para el usuario
+             return JsonResponse({'success': False, 'message': 'Hubo un error al registrar tu pedido. Intenta de nuevo más tarde.'})
+
+
+        # --- CREAR LOS OBJETOS DetallePedido Y DESCONTAR STOCK (Sin cambios) ---
+        for item in cart_items_details:
+            try:
+                DetallePedido.objects.create(
+                    pedido=nuevo_pedido,
+                    producto=item['producto'],
+                    cantidad=item['cantidad'],
+                    precio_unitario=item['precio_unitario']
+                )
+                producto_a_actualizar = item['producto']
+                producto_a_actualizar.stock -= item['cantidad']
+                producto_a_actualizar.save(update_fields=['stock', 'activo'])
+            except Exception as e:
+                print(f"Error al crear DetallePedido o actualizar stock para {item['producto'].nombre}: {e}")
+                raise e # Re-lanzar para rollback
+
+        # --- LIMPIAR CARRITO (Sin cambios) ---
+        request.session['cart'] = {}
+        request.session.modified = True
+
+        # --- REDIRIGIR AL PDF (Sin cambios) ---
+        redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
+        return JsonResponse({
+            'success': True,
+            'message': '¡Pedido recibido con éxito! Generando recibo...',
+            'redirect_url': redirect_url
+        })
+
+    else:
+        # El formulario NO es válido (Sin cambios)
+        error_message = "Error en el formulario. Por favor, revisa tus datos."
+        if form.errors:
+            first_error_field = next(iter(form.errors))
+            first_error_msg = form.errors[first_error_field][0]
+            error_message = f"Error en '{first_error_field.replace('_',' ').title()}': {first_error_msg}"
+        return JsonResponse({ 'success': False, 'message': error_message })
+
+def generar_recibo_pdf(request, pedido_id):
+    """
+    Genera un recibo en PDF para un pedido REAL desde la BD.
+    Obtiene datos del cliente SÓLO si hay un Cliente asociado.
+    """
+    try:
+        # Buscamos el pedido y precargamos datos relacionados
+        pedido = Pedido.objects.select_related('cliente', 'direccion_envio').get(id=pedido_id)
+        detalles = pedido.detalles.select_related('producto').all()
+    except Pedido.DoesNotExist:
+        raise Http404("Pedido no encontrado")
+
+    # --- OBTENER DATOS DEL CLIENTE (CORREGIDO: SÓLO DESDE pedido.cliente) ---
+    # Valores por defecto si no hay cliente asociado
+    cliente_nombre_completo = 'Cliente no registrado'
+    cliente_email = 'No disponible'
+    cliente_rut = 'No disponible'
+
+    # Si SÍ hay un objeto Cliente asociado al pedido, usamos sus datos
+    if pedido.cliente:
+        cliente_nombre_completo = f"{pedido.cliente.nombre} {pedido.cliente.apellidos}"
+        cliente_email = pedido.cliente.email
+        # Asumiendo que tu modelo Cliente tiene el campo 'rut'
+        cliente_rut = getattr(pedido.cliente, 'rut', 'No disponible') # Usamos getattr por seguridad
+
+
+    # --- CÁLCULOS (sin cambios) ---
+    subtotal = sum(d.precio_unitario * d.cantidad for d in detalles)
+    total_iva = subtotal * Decimal('0.19') # Asumiendo IVA 19%
+    # Inferimos costo envío basado en si hay dirección guardada
+    costo_envio = Decimal('4500') if pedido.direccion_envio else Decimal('0.00')
+    total_pagado = pedido.total # Usamos el total guardado
+
+    logo_path = request.build_absolute_uri(settings.STATIC_URL + 'img/new_black.png')
+
+    context = {
+        'pedido': pedido, # Objeto Pedido completo
+        'detalles': detalles, # Lista de DetallePedido reales
+        'cliente_nombre_completo': cliente_nombre_completo, # Dato corregido
+        'cliente_email': cliente_email, # Dato corregido
+        'cliente_rut': cliente_rut, # Dato corregido
+        'subtotal': subtotal,
+        'total_iva': total_iva,
+        'costo_envio': costo_envio, # Costo inferido
+        'total_pagado': total_pagado, # Total del pedido
+        'logo_path': logo_path,
+        'fecha_actual': timezone.now()
+    }
+
+    # --- GENERACIÓN PDF (sin cambios) ---
+    template = get_template('store/recibo_pdf.html')
+    html = template.render(context)
+    result = BytesIO()
+    pdf = pisa.CreatePDF(html, dest=result)
+
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="recibo_techtop_{pedido.id}.pdf"'
+        return response
+    else:
+        print(f"xhtml2pdf error: {pdf.err}")
+        return HttpResponse(f"Error al generar el PDF: {pdf.err}. Revisa los logs.", status=500)
+
+
+# ==================== CHATBOT INTELIGENTE ====================
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -1302,7 +1611,7 @@ def generate_chatbot_response(message):
         productos = Producto.objects.filter(stock__gt=0).order_by('-precio')[:6]
         return crear_respuesta_productos(productos, "productos premium")
     
-    # 12. BÚSQUEDA POR CATEGORÍA O MARCA (mejorada)
+    # 12. BÚSQUEDA POR CATEGORÍA O MARCA
     categorias = Categoria.objects.all()
     for categoria in categorias:
         cat_lower = categoria.nombre.lower()
@@ -1355,7 +1664,7 @@ def generate_chatbot_response(message):
                 'data': {'type': 'marcas', 'marcas': [m.nombre for m in marcas]}
             }
     
-    # 16. BÚSQUEDA INTELIGENTE DE PRODUCTOS (solo si hay intención explícita)
+    # 16. BÚSQUEDA INTELIGENTE DE PRODUCTOS
     if is_explicit_search and len(words) >= 1:
         productos_encontrados = buscar_productos_inteligente(original_message, words)
         if productos_encontrados and len(productos_encontrados) > 0:
@@ -1364,18 +1673,6 @@ def generate_chatbot_response(message):
     # ========== RESPUESTA POR DEFECTO ==========
     return {
         'message': '🤔 <strong>No estoy seguro de cómo ayudarte con eso</strong><br><br>Pero puedo ayudarte con:<br><br>💬 <strong>Búsqueda de productos:</strong><br>• "Quiero ver parlantes Bluetooth"<br>• "Necesito un medidor láser"<br>• "Mostrar radios Android"<br><br>🔍 <strong>Explorar catálogo:</strong><br>• "Ver todas las categorías"<br>• "Productos más baratos"<br>• "¿Qué me recomiendas?"<br><br>ℹ️ <strong>Información:</strong><br>• "Métodos de pago"<br>• "Seguimiento de pedido"<br>• "Garantías"<br><br><em>Escribe "ayuda" para ver más opciones</em>',
-        'data': None
-    }
-    # 15. RESPUESTA POR DEFECTO (búsqueda general)
-    # Si llegamos aquí y hay palabras clave, intentar una última búsqueda
-    if words:
-        productos_encontrados = buscar_productos_inteligente(original_message, words)
-        if productos_encontrados:
-            return crear_respuesta_productos(productos_encontrados, "productos que podrían interesarte")
-    
-    # RESPUESTA FINAL SI NO SE ENCONTRÓ NADA
-    return {
-        'message': '🤔 No estoy seguro de entender exactamente qué buscas.<br><br>Puedes buscar por:<br><br><strong>Tipo de producto:</strong><br>• "Parlantes" / "Bocinas"<br>• "Medidores láser"<br>• "Radios Android"<br>• "Cargadores"<br>• "Compresores"<br>• "Scanners automotrices"<br><br><strong>Por marca:</strong><br>• "Productos Toyota"<br>• "Productos Xiaomi"<br><br>O escribe <strong>"ayuda"</strong> para ver más ejemplos.',
         'data': None
     }
 
@@ -1411,20 +1708,17 @@ def buscar_productos_inteligente(mensaje_original, palabras_clave):
         cat_nombre_lower = categoria.nombre.lower()
         cat_words = cat_nombre_lower.split()
         
-        # Verificar coincidencia directa con la categoría
         if cat_nombre_lower in mensaje_limpio:
             productos = Producto.objects.filter(categoria=categoria)[:6]
             if productos:
                 return productos
         
-        # Verificar coincidencia con palabras de la categoría
         for cat_word in cat_words:
             if len(cat_word) > 3 and cat_word in mensaje_limpio:
                 productos = Producto.objects.filter(categoria=categoria)[:6]
                 if productos:
                     return productos
         
-        # Verificar con palabras clave expandidas
         for palabra in palabras_expandidas:
             if palabra.lower() in cat_nombre_lower or cat_nombre_lower in palabra.lower():
                 productos = Producto.objects.filter(categoria=categoria)[:6]
@@ -1440,31 +1734,27 @@ def buscar_productos_inteligente(mensaje_original, palabras_clave):
             if productos:
                 return productos
     
-    # PASO 3: Búsqueda general por palabras clave expandidas
+    # PASO 3: Búsqueda general por palabras clave
     query = Q()
-    
-    # Buscar por cada palabra clave (OR entre todas las condiciones)
     for palabra in palabras_expandidas:
-        if len(palabra) > 1:  # Aceptar palabras de 2 caracteres o más
+        if len(palabra) > 1:
             query |= Q(nombre__icontains=palabra)
             query |= Q(descripcion__icontains=palabra)
     
-    # También buscar por frase completa
     if mensaje_limpio:
         query |= Q(nombre__icontains=mensaje_limpio)
         query |= Q(descripcion__icontains=mensaje_limpio)
     
-    # Si hay query, ejecutarla
     if query:
         productos = Producto.objects.filter(query).distinct()[:6]
         if productos:
             return productos
     
-    # PASO 4: Si no hay resultados, búsqueda muy flexible
+    # PASO 4: Búsqueda flexible
     if palabras_clave:
         query_flexible = Q()
         for palabra in palabras_clave:
-            if len(palabra) > 2:  # Solo palabras de 3+ caracteres para evitar ruido
+            if len(palabra) > 2:
                 query_flexible |= Q(nombre__icontains=palabra)
         
         if query_flexible:
@@ -1472,7 +1762,6 @@ def buscar_productos_inteligente(mensaje_original, palabras_clave):
             if productos:
                 return productos
     
-    # PASO 5: Retornar productos aleatorios si no se encontró nada
     return Producto.objects.all()[:6]
 
 
@@ -1489,8 +1778,6 @@ def crear_respuesta_productos(productos, contexto="productos"):
     productos_data = []
     for p in productos:
         precio_transferencia = float(p.precio * Decimal('0.97'))
-        
-        # Obtener URL de la imagen
         imagen_url = p.imagen.url if p.imagen else '/static/img/no-image.png'
         
         productos_data.append({
@@ -1505,12 +1792,7 @@ def crear_respuesta_productos(productos, contexto="productos"):
         })
     
     count = len(productos)
-    
-    # Determinar el mensaje de encabezado
-    if count == 1:
-        header = f'🎯 <strong>Encontré 1 producto:</strong><br><br>'
-    else:
-        header = f'🎯 <strong>Encontré {count} productos:</strong><br><br>'
+    header = f'🎯 <strong>Encontré {count} producto{"s" if count > 1 else ""}:</strong><br><br>'
     
     response_text = header
     response_text += '<div class="chatbot-products-grid">'

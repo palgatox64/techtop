@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Objeto para rastrear el estado de validación de cada campo
     const validationState = {
+        rut: false,
         nombre: false,
         apellido: false,
         correo: false,
@@ -57,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Manejar tooltips con eventos de focus/blur
     function setupTooltipEvents() {
-        const inputs = ['nombre', 'apellido', 'correo', 'telefono', 'password', 'password2'];
+        const inputs = ['rut', 'nombre', 'apellido', 'correo', 'telefono', 'password', 'password2'];
         
         inputs.forEach(inputId => {
             const input = document.getElementById(inputId);
@@ -95,6 +96,83 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Validaciones en tiempo real
+    
+    // Función para validar RUT chileno
+    function validarRUT(rut) {
+        // Limpiar el RUT (eliminar puntos y guiones)
+        rut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+        
+        // Verificar formato básico (7-8 dígitos + 1 dígito verificador)
+        if (!/^\d{7,8}[0-9K]$/.test(rut)) {
+            return false;
+        }
+        
+        // Separar número y dígito verificador
+        const numero = rut.slice(0, -1);
+        const dvIngresado = rut.slice(-1);
+        
+        // Calcular dígito verificador
+        let suma = 0;
+        let multiplicador = 2;
+        
+        for (let i = numero.length - 1; i >= 0; i--) {
+            suma += parseInt(numero[i]) * multiplicador;
+            multiplicador++;
+            if (multiplicador > 7) {
+                multiplicador = 2;
+            }
+        }
+        
+        const resto = suma % 11;
+        let dvCalculado = 11 - resto;
+        
+        // Convertir a string según las reglas
+        if (dvCalculado === 11) {
+            dvCalculado = '0';
+        } else if (dvCalculado === 10) {
+            dvCalculado = 'K';
+        } else {
+            dvCalculado = dvCalculado.toString();
+        }
+        
+        // Validar
+        return dvIngresado === dvCalculado;
+    }
+    
+    // Función para formatear RUT mientras se escribe
+    function formatearRUT(rut) {
+        // Eliminar todo excepto números y K
+        rut = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+        
+        // Limitar a 9 caracteres (8 dígitos + 1 DV)
+        if (rut.length > 9) {
+            rut = rut.slice(0, 9);
+        }
+        
+        // Agregar guión antes del último carácter si hay más de 1 carácter
+        if (rut.length > 1) {
+            rut = rut.slice(0, -1) + '-' + rut.slice(-1);
+        }
+        
+        return rut;
+    }
+    
+    document.getElementById('rut').addEventListener('input', function() {
+        // Formatear el RUT mientras se escribe
+        const cursorPosition = this.selectionStart;
+        const oldLength = this.value.length;
+        
+        this.value = formatearRUT(this.value);
+        
+        const newLength = this.value.length;
+        const newCursorPosition = cursorPosition + (newLength - oldLength);
+        this.setSelectionRange(newCursorPosition, newCursorPosition);
+        
+        const value = this.value.trim();
+        const isValid = validarRUT(value);
+        setFieldValidation('rut', isValid, value.length > 0);
+    });
+
     document.getElementById('nombre').addEventListener('input', function() {
         const value = this.value.trim();
         const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
@@ -152,6 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(event) {
         event.preventDefault();
 
+        const rut = document.getElementById('rut').value.trim();
         const nombre = document.getElementById('nombre').value.trim();
         const apellido = document.getElementById('apellido').value.trim();
         const correo = document.getElementById('correo').value.trim();

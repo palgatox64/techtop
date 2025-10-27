@@ -33,9 +33,12 @@
                             <a href="{% url 'panel_gestion' %}">
                                 <i class='bx bx-cog'></i> Panel de Gestión
                             </a>
-                            <a href="{% url 'logout' %}">
-                                <i class='bx bx-log-out'></i> Cerrar Sesión
-                            </a>
+                            <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
+                                {% csrf_token %}
+                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px;">
+                                    <i class='bx bx-log-out'></i> Cerrar Sesión
+                                </button>
+                            </form>
                         </div>
                     </div>
                     <span style="margin-left: 8px; font-size: 0.9rem; color: #666;">
@@ -50,7 +53,12 @@
                             <i class='bx bx-user'></i>
                         </div>
                         <div id="user-menu-dropdown-loggedin" class="dropdown-content">
-                            <a href="{% url 'logout' %}">Cerrar Sesión</a>
+                            <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
+                                {% csrf_token %}
+                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px;">
+                                    <i class='bx bx-log-out'></i> Cerrar Sesión
+                                </button>
+                            </form>
                         </div>
                     </div>
                     <span style="margin-left: 8px; font-size: 0.9rem;">
