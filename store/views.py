@@ -19,7 +19,6 @@ from django.views.decorators.http import require_http_methods
 # Third-party imports
 from decimal import Decimal
 from io import BytesIO
-from weasyprint import HTML
 from xhtml2pdf import pisa
 import re
 import csv
@@ -1204,7 +1203,9 @@ def search_results_view(request):
             Q(nombre__icontains=query) |
             Q(marca__nombre__icontains=query)
         ).distinct()
-
+        if products:
+            for product in products:
+                product.precio_transferencia = product.precio * Decimal('0.97')
     context = {
         'products': products,
         'search_query': query,
