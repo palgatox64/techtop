@@ -50,5 +50,16 @@ urlpatterns = [
     path('checkout/', views.checkout_view, name='checkout'),
     path('procesar-pedido/', views.procesar_pedido_view, name='procesar_pedido'),
     path('pedido/recibo/<int:pedido_id>/', views.generar_recibo_pdf, name='generar_recibo_pdf'),
+    
+    # Rutas para Webpay Plus (Transbank)
+    path('webpay/iniciar/<int:pedido_id>/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
+    path('webpay/retorno/', views.retorno_webpay, name='retorno_webpay'),
+    path('webpay/anular/<int:transaccion_id>/', views.anular_transaccion_webpay, name='anular_transaccion_webpay'),
+    
+    # Rutas para Mercado Pago
+    path('mercadopago/iniciar/<int:pedido_id>/', views.iniciar_pago_mercadopago, name='iniciar_pago_mercadopago'),
+    path('mercadopago/success/', views.retorno_mercadopago_success, name='retorno_mercadopago_success'),
+    path('mercadopago/failure/', views.retorno_mercadopago_failure, name='retorno_mercadopago_failure'),
+    path('mercadopago/pending/', views.retorno_mercadopago_pending, name='retorno_mercadopago_pending'),
 ]
 
