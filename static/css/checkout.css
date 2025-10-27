@@ -281,3 +281,119 @@
 .address-form-hidden {
     display: none;
 }
+
+/* ========================================
+   NUEVOS ESTILOS PARA MÉTODOS DE PAGO
+   ======================================== */
+
+.payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.payment-method-card {
+    position: relative;
+    display: block;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 120px;
+}
+
+.payment-method-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.payment-method-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.payment-method-card input[type="radio"]:checked ~ .payment-method-content {
+    border-color: #6366f1;
+}
+
+.payment-method-card input[type="radio"]:checked ~ .payment-method-content .payment-check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.payment-method-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.payment-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.payment-logo-img {
+    max-width: 100%;
+    max-height: 50px;
+    object-fit: contain;
+    filter: grayscale(0.3);
+    transition: filter 0.3s ease;
+}
+
+.payment-method-card input[type="radio"]:checked ~ .payment-method-content .payment-logo-img {
+    filter: grayscale(0);
+}
+
+.payment-check-icon {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 28px;
+    height: 28px;
+    background: #6366f1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.payment-check-icon svg {
+    width: 16px;
+    height: 16px;
+    color: white;
+}
+
+/* Responsive para métodos de pago */
+@media (max-width: 992px) {
+    .payment-methods-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .payment-methods-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .payment-method-card {
+        min-height: 100px;
+        padding: 1rem;
+    }
+}

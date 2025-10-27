@@ -111,25 +111,30 @@
 
             <section class="checkout-section">
                 <h3>3. Método de Pago*</h3>
-                <div class="radio-options payment-options">
+                <div class="payment-methods-grid">
                     {% for choice in form.metodo_pago.field.choices %}
-                        <label class="radio-label" for="id_metodo_pago_{{ forloop.counter0 }}">
+                        <label class="payment-method-card" for="id_metodo_pago_{{ forloop.counter0 }}">
                             <input type="radio"
                                    name="{{ form.metodo_pago.name }}"
                                    id="id_metodo_pago_{{ forloop.counter0 }}"
                                    value="{{ choice.0 }}"
                                    {% if form.metodo_pago.value == choice.0 or not form.metodo_pago.value and form.metodo_pago.field.initial == choice.0 %}checked{% endif %}>
-
-                            <div class="radio-content">
-                                {% if choice.0 == 'webpay' %}
-                                    <img src="{% static 'img/logo_webpay.png' %}" alt="Webpay" class="payment-logo">
-                                {% elif choice.0 == 'mercadopago' %}
-                                    <img src="{% static 'img/logo_mercadopago.png' %}" alt="Mercado Pago" class="payment-logo">
-                                {% elif choice.0 == 'transferencia' %}
-                                     <img src="{% static 'img/logo_servipag.png' %}" alt="Transferencia" class="payment-logo">
-                                {% else %}
-                                    <span class="radio-title">{{ choice.1 }}</span>
-                                {% endif %}
+                            
+                            <div class="payment-method-content">
+                                <div class="payment-logo-container">
+                                    {% if choice.0 == 'webpay' %}
+                                        <img src="{% static 'img/logo_webpay.png' %}" alt="Webpay" class="payment-logo-img">
+                                    {% elif choice.0 == 'mercadopago' %}
+                                        <img src="{% static 'img/logo_mercadopago.png' %}" alt="Mercado Pago" class="payment-logo-img">
+                                    {% elif choice.0 == 'transferencia' %}
+                                        <img src="{% static 'img/logo_servipag.png' %}" alt="Transferencia" class="payment-logo-img">
+                                    {% endif %}
+                                </div>
+                                <div class="payment-check-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                    </svg>
+                                </div>
                             </div>
                         </label>
                     {% endfor %}
@@ -139,6 +144,51 @@
                         <small class="error-text">{{ form.metodo_pago.errors.0 }}</small>
                     </div>
                  {% endif %}
+
+                <!-- Información de Webpay (se muestra al seleccionar) -->
+                <div id="webpay-info" style="display: none; margin-top: 20px; background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px; color: #3b82f6;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <h4 style="margin: 0; color: #1e40af; font-size: 16px;">✅ Pago Seguro con Transbank WebPay Plus</h4>
+                    </div>
+                    <p style="margin: 5px 0; color: #1e40af; font-size: 14px;">
+                        🔒 Tu pago será procesado de forma segura a través de <strong>Transbank</strong>, la plataforma de pagos más confiable de Chile.
+                    </p>
+                    <p style="margin: 5px 0; color: #1e40af; font-size: 14px;">
+                        💳 Acepta tarjetas: <strong>Visa, Mastercard, American Express, Diners Club</strong> y más.
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #1e40af; font-size: 13px; font-weight: 600;">
+                        ⚡ Después de hacer clic en "Finalizar Compra", serás redirigido a la página segura de Transbank para completar tu pago.
+                    </p>
+                </div>
+
+                <!-- Información de Transferencia (se muestra al seleccionar) -->
+                <div id="transferencia-info" style="display: none; margin-top: 20px; background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px 20px; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px; color: #10b981;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 style="margin: 0; color: #065f46; font-size: 16px;">💸 ¡Ahorra 3% con Transferencia Bancaria!</h4>
+                    </div>
+                    <p style="margin: 5px 0; color: #065f46; font-size: 14px;">
+                        📋 Después de finalizar tu compra, recibirás los datos bancarios para realizar la transferencia.
+                    </p>
+                    <p style="margin: 5px 0; color: #065f46; font-size: 14px;">
+                        ⏱️ Tu pedido se procesará una vez confirmemos el pago (24-48 hrs).
+                    </p>
+                </div>
+
+                <!-- Información de Mercado Pago (se muestra al seleccionar) -->
+                <div id="mercadopago-info" style="display: none; margin-top: 20px; background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #92400e; font-size: 16px;">💳 Mercado Pago</h4>
+                    </div>
+                    <p style="margin: 5px 0; color: #92400e; font-size: 14px;">
+                        Paga de forma segura con Mercado Pago. Acepta tarjetas de crédito y débito.
+                    </p>
+                </div>
             </section>
 
         </form>
@@ -206,6 +256,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const paymentOptions = document.querySelectorAll('input[name="metodo_pago"]'); // <-- NUEVA REFERENCIA
     const addressForm = document.getElementById('delivery-address-form');
 
+    // --- NODOS PARA INFO DE MÉTODOS DE PAGO ---
+    const webpayInfo = document.getElementById('webpay-info');
+    const transferenciaInfo = document.getElementById('transferencia-info');
+    const mercadopagoInfo = document.getElementById('mercadopago-info');
+
     // --- NODOS PARA LEER PRECIOS Y MOSTRAR TOTAL ---
     const subtotalTransferenciaElement = document.getElementById('subtotal-transferencia');
     const subtotalOtrosMediosElement = document.getElementById('subtotal-otros-medios');
@@ -264,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
             currentSubtotal = basePrices.otrosMedios;
         }
         console.log("Subtotal base:", currentSubtotal); // Debug
+        console.log("Subtotal base:", currentSubtotal); // Debug
 
         // Determinar costo de envío y mostrar/ocultar fila
         if (selectedDeliveryOption) {
@@ -288,6 +344,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Actualizar el HTML
         summaryTotalValueElement.textContent = formatCurrency(finalTotal);
+    }
+
+    // --- FUNCIÓN PARA MOSTRAR INFO DE MÉTODO DE PAGO ---
+    function updatePaymentInfo() {
+        const selectedPaymentOption = document.querySelector('input[name="metodo_pago"]:checked');
+        
+        // Ocultar todas primero
+        webpayInfo.style.display = 'none';
+        transferenciaInfo.style.display = 'none';
+        mercadopagoInfo.style.display = 'none';
+        
+        // Mostrar la correspondiente
+        if (selectedPaymentOption) {
+            if (selectedPaymentOption.value === 'webpay') {
+                webpayInfo.style.display = 'block';
+            } else if (selectedPaymentOption.value === 'transferencia') {
+                transferenciaInfo.style.display = 'block';
+            } else if (selectedPaymentOption.value === 'mercadopago') {
+                mercadopagoInfo.style.display = 'block';
+            }
+        }
     }
 
 
@@ -352,11 +429,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     paymentOptions.forEach(option => {
         option.addEventListener('change', updateTotal); // Actualiza total al cambiar pago
+        option.addEventListener('change', updatePaymentInfo); // Actualiza info de pago al cambiar
     });
     updateTotal(); // Llamada inicial para calcular el total al cargar la página
+    updatePaymentInfo(); // Llamada inicial para mostrar info del método seleccionado por defecto
 
 
-    // --- MANEJO DEL ENVÍO DEL FORMULARIO CON VALIDACIÓN (Sin cambios) ---
+    // --- MANEJO DEL ENVÍO DEL FORMULARIO CON VALIDACIÓN ---
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         submitBtn.disabled = true;
@@ -364,18 +443,80 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
         form.querySelectorAll('.error-text').forEach(el => el.textContent = '');
         if (!validateForm()) { return; }
+        
         console.log("Validación JS exitosa, enviando al backend...");
         submitBtn.textContent = 'Procesando...';
+        
         const formData = new FormData(form);
-        fetch(form.action, { method: 'POST', body: formData, headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' } })
+        const selectedPayment = document.querySelector('input[name="metodo_pago"]:checked');
+        const isWebpay = selectedPayment && selectedPayment.value === 'webpay';
+        const isMercadoPago = selectedPayment && selectedPayment.value === 'mercadopago';
+        
+        fetch(form.action, { 
+            method: 'POST', 
+            body: formData, 
+            headers: { 
+                'X-CSRFToken': '{{ csrf_token }}', 
+                'X-Requested-With': 'XMLHttpRequest' 
+            } 
+        })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                Swal.fire({ icon: 'success', title: '¡Compra Exitosa!', text: data.message, timer: 3000, showConfirmButton: false, allowOutsideClick: false })
-                .then(() => { window.location.href = data.redirect_url; });
-            } else { showErrorAlert(data.message || 'Ocurrió un error en el servidor. Intenta de nuevo.'); }
+                if (isWebpay) {
+                    // Para Webpay, mostrar mensaje diferente y redirigir inmediatamente
+                    Swal.fire({ 
+                        icon: 'info', 
+                        title: 'Redirigiendo a Webpay...', 
+                        text: 'Serás redirigido a la plataforma segura de Transbank para completar tu pago.', 
+                        timer: 2000, 
+                        showConfirmButton: false, 
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    })
+                    .then(() => { 
+                        window.location.href = data.redirect_url; 
+                    });
+                } else if (isMercadoPago) {
+                    // Para Mercado Pago, mostrar mensaje específico
+                    Swal.fire({ 
+                        icon: 'info', 
+                        title: 'Redirigiendo a Mercado Pago...', 
+                        text: 'Serás redirigido a Mercado Pago para completar tu pago de forma segura.', 
+                        timer: 2000, 
+                        showConfirmButton: false, 
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    })
+                    .then(() => { 
+                        window.location.href = data.redirect_url; 
+                    });
+                } else {
+                    // Para otros métodos, mensaje de éxito normal
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: '¡Compra Exitosa!', 
+                        text: data.message, 
+                        timer: 3000, 
+                        showConfirmButton: false, 
+                        allowOutsideClick: false 
+                    })
+                    .then(() => { 
+                        window.location.href = data.redirect_url; 
+                    });
+                }
+            } else { 
+                showErrorAlert(data.message || 'Ocurrió un error en el servidor. Intenta de nuevo.'); 
+            }
         })
-        .catch(error => { console.error('Error en la petición Fetch:', error); showErrorAlert('No se pudo conectar con el servidor. Intenta más tarde.'); });
+        .catch(error => { 
+            console.error('Error en la petición Fetch:', error); 
+            showErrorAlert('No se pudo conectar con el servidor. Intenta más tarde.'); 
+        });
     });
 });
 </script>

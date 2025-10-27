@@ -25,7 +25,7 @@ import csv
 import json
 
 # Local imports
-from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago
 from .decorators import admin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
 from .validators import validate_chilean_rut
@@ -1400,17 +1400,38 @@ def procesar_pedido_view(request):
                 print(f"Error al crear DetallePedido o actualizar stock para {item['producto'].nombre}: {e}")
                 raise e # Re-lanzar para rollback
 
-        # --- LIMPIAR CARRITO (Sin cambios) ---
-        request.session['cart'] = {}
-        request.session.modified = True
+        # --- LIMPIAR CARRITO ---
+        # IMPORTANTE: Solo limpiar el carrito si NO es pago con Webpay o Mercado Pago
+        # Para estos métodos, se limpiará después de confirmar el pago
+        if metodo_pago not in ['webpay', 'mercadopago']:
+            request.session['cart'] = {}
+            request.session.modified = True
 
-        # --- REDIRIGIR AL PDF (Sin cambios) ---
-        redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
-        return JsonResponse({
-            'success': True,
-            'message': '¡Pedido recibido con éxito! Generando recibo...',
-            'redirect_url': redirect_url
-        })
+        # --- REDIRIGIR SEGÚN EL MÉTODO DE PAGO ---
+        if metodo_pago == 'webpay':
+            # Redirigir a la vista de inicio de pago de Webpay
+            redirect_url = reverse('iniciar_pago_webpay', args=[nuevo_pedido.id])
+            return JsonResponse({
+                'success': True,
+                'message': 'Redirigiendo a Webpay para completar el pago...',
+                'redirect_url': redirect_url
+            })
+        elif metodo_pago == 'mercadopago':
+            # Redirigir a la vista de inicio de pago de Mercado Pago
+            redirect_url = reverse('iniciar_pago_mercadopago', args=[nuevo_pedido.id])
+            return JsonResponse({
+                'success': True,
+                'message': 'Redirigiendo a Mercado Pago para completar el pago...',
+                'redirect_url': redirect_url
+            })
+        else:
+            # Para otros métodos de pago, ir directo al PDF
+            redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
+            return JsonResponse({
+                'success': True,
+                'message': '¡Pedido recibido con éxito! Generando recibo...',
+                'redirect_url': redirect_url
+            })
 
     else:
         # El formulario NO es válido (Sin cambios)
@@ -1822,3 +1843,507 @@ def crear_respuesta_productos(productos, contexto="productos"):
             'productos': productos_data
         }
     }
+
+
+# ==================== INTEGRACIÓN CON TRANSBANK WEBPAY PLUS ====================
+
+from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.common.integration_type import IntegrationType
+import uuid
+
+def _configurar_transbank():
+    """Configura el SDK de Transbank según el ambiente (integración/producción)"""
+    if settings.TRANSBANK_ENVIRONMENT == 'PRODUCCION':
+        Transaction.commerce_code = settings.TRANSBANK_COMMERCE_CODE
+        Transaction.api_key = settings.TRANSBANK_API_KEY
+        Transaction.integration_type = IntegrationType.LIVE
+    else:
+        # Ambiente de integración (pruebas)
+        Transaction.commerce_code = settings.TRANSBANK_COMMERCE_CODE
+        Transaction.api_key = settings.TRANSBANK_API_KEY
+        Transaction.integration_type = IntegrationType.TEST
+
+
+@transaction.atomic
+def iniciar_pago_webpay(request, pedido_id):
+    """
+    Inicia el proceso de pago con Webpay Plus.
+    Crea el token y redirige al usuario a Transbank.
+    """
+    print(f"=== INICIANDO PAGO WEBPAY PARA PEDIDO {pedido_id} ===")
+    try:
+        # Obtener el pedido
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        print(f"Pedido encontrado: ID={pedido.id}, Total={pedido.total}")
+        
+        # Verificar que no exista ya una transacción autorizada para este pedido
+        transaccion_existente = TransaccionWebpay.objects.filter(
+            pedido=pedido, 
+            estado='AUTORIZADO'
+        ).first()
+        
+        if transaccion_existente:
+            print(f"Transacción ya existe y está autorizada")
+            messages.warning(request, 'Este pedido ya fue pagado.')
+            return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+        
+        # Configurar Transbank
+        print("Configurando Transbank...")
+        _configurar_transbank()
+        
+        # Generar un buy_order único
+        buy_order = f"ORD-{pedido.id}-{uuid.uuid4().hex[:8].upper()}"
+        print(f"Buy Order generado: {buy_order}")
+        
+        # Obtener el monto (convertir a entero, Transbank no acepta decimales)
+        monto = int(pedido.total)
+        print(f"Monto a cobrar: {monto}")
+        
+        # URLs de retorno
+        return_url = request.build_absolute_uri(reverse('retorno_webpay'))
+        print(f"URL de retorno: {return_url}")
+        
+        # Crear la transacción en Webpay
+        print("Creando transacción en Transbank...")
+        # El SDK v4.0.0 usa esta firma: create(buy_order, session_id, amount, return_url)
+        tx = Transaction()
+        response = tx.create(buy_order, str(request.session.session_key or 'SESSION'), monto, return_url)
+        print(f"Respuesta de Transbank: {response}")
+        
+        # Guardar la transacción en la base de datos
+        transaccion = TransaccionWebpay.objects.create(
+            pedido=pedido,
+            token=response['token'],
+            buy_order=buy_order,
+            monto=pedido.total,
+            estado='PENDIENTE'
+        )
+        print(f"Transacción guardada en BD: ID={transaccion.id}")
+        
+        # Guardar el token en la sesión para validar posteriormente
+        request.session[f'webpay_token_{pedido.id}'] = response['token']
+        
+        # Construir la URL de Webpay
+        webpay_url = response['url'] + '?token_ws=' + response['token']
+        print(f"Redirigiendo a: {webpay_url}")
+        
+        # Redirigir al usuario a Webpay
+        return redirect(webpay_url)
+        
+    except Exception as e:
+        print(f"Error al iniciar pago Webpay: {e}")
+        messages.error(request, f'Error al procesar el pago: {str(e)}')
+        return redirect('checkout')
+
+
+@transaction.atomic
+def retorno_webpay(request):
+    """
+    Vista que recibe el retorno desde Webpay después del pago.
+    Confirma la transacción y actualiza el estado del pedido.
+    """
+    token_ws = request.GET.get('token_ws') or request.POST.get('token_ws')
+    
+    print(f"=== RETORNO DE WEBPAY ===")
+    print(f"Token recibido: {token_ws}")
+    
+    if not token_ws:
+        messages.error(request, 'Token de transacción no válido.')
+        return redirect('home')
+    
+    try:
+        # Configurar Transbank
+        _configurar_transbank()
+        
+        # Confirmar la transacción con Transbank
+        print("Confirmando transacción con Transbank...")
+        tx = Transaction()
+        response = tx.commit(token_ws)
+        print(f"Respuesta de confirmación: {response}")
+        
+        # Buscar la transacción en la base de datos
+        transaccion = TransaccionWebpay.objects.filter(token=token_ws).first()
+        
+        if not transaccion:
+            print("ERROR: Transacción no encontrada en BD")
+            messages.error(request, 'Transacción no encontrada.')
+            return redirect('home')
+        
+        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={transaccion.pedido.id}")
+        
+        # Actualizar la transacción con los datos de respuesta
+        transaccion.response_code = str(response.get('response_code', ''))
+        transaccion.authorization_code = response.get('authorization_code', '')
+        transaccion.payment_type_code = response.get('payment_type_code', '')
+        
+        # Obtener últimos 4 dígitos de la tarjeta si están disponibles
+        if 'card_detail' in response and 'card_number' in response['card_detail']:
+            transaccion.card_number = response['card_detail']['card_number']
+        
+        # Verificar si el pago fue aprobado
+        print(f"Estado de respuesta: response_code={response.get('response_code')}, status={response.get('status')}")
+        if response.get('response_code') == 0 and response.get('status') == 'AUTHORIZED':
+            print("¡PAGO APROBADO!")
+            transaccion.estado = 'AUTORIZADO'
+            transaccion.save()
+            
+            # Actualizar el estado del pedido
+            pedido = transaccion.pedido
+            pedido.estado = 'procesando'
+            pedido.save()
+            
+            # Limpiar el carrito
+            if 'cart' in request.session:
+                del request.session['cart']
+            
+            messages.success(request, '¡Pago realizado exitosamente!')
+            
+            # Renderizar página de confirmación
+            context = {
+                'pedido': pedido,
+                'transaccion': transaccion,
+                'exito': True,
+                'response': response
+            }
+            return render(request, 'store/confirmacion_pago.html', context)
+        else:
+            # Pago rechazado
+            transaccion.estado = 'RECHAZADO'
+            transaccion.save()
+            
+            # Opcional: Actualizar estado del pedido
+            pedido = transaccion.pedido
+            pedido.estado = 'cancelado'
+            pedido.save()
+            
+            # Restaurar el stock de los productos
+            for detalle in pedido.detalles.all():
+                producto = detalle.producto
+                producto.stock += detalle.cantidad
+                producto.save()
+            
+            messages.error(request, 'El pago fue rechazado. Por favor, intenta nuevamente.')
+            
+            context = {
+                'pedido': pedido,
+                'transaccion': transaccion,
+                'exito': False,
+                'response': response
+            }
+            return render(request, 'store/confirmacion_pago.html', context)
+            
+    except Exception as e:
+        print(f"Error en retorno Webpay: {e}")
+        messages.error(request, f'Error al procesar el pago: {str(e)}')
+        return redirect('home')
+
+
+def anular_transaccion_webpay(request, transaccion_id):
+    """
+    Vista para anular una transacción de Webpay (solo para usuarios autorizados).
+    """
+    if request.session.get('user_type') != 'empleado':
+        messages.error(request, 'No tienes permisos para realizar esta acción.')
+        return redirect('home')
+    
+    try:
+        transaccion = get_object_or_404(TransaccionWebpay, id=transaccion_id)
+        
+        if transaccion.estado != 'AUTORIZADO':
+            messages.warning(request, 'Solo se pueden anular transacciones autorizadas.')
+            return redirect('panel_gestion')
+        
+        # Configurar Transbank
+        _configurar_transbank()
+        
+        # Anular la transacción
+        tx = Transaction()
+        response = tx.refund(transaccion.token, int(transaccion.monto))
+        
+        if response.get('type') == 'REVERSED':
+            transaccion.estado = 'ANULADO'
+            transaccion.save()
+            
+            # Actualizar el pedido
+            pedido = transaccion.pedido
+            pedido.estado = 'cancelado'
+            pedido.save()
+            
+            # Restaurar stock
+            for detalle in pedido.detalles.all():
+                producto = detalle.producto
+                producto.stock += detalle.cantidad
+                producto.save()
+            
+            messages.success(request, 'Transacción anulada exitosamente.')
+        else:
+            messages.error(request, 'No se pudo anular la transacción.')
+        
+    except Exception as e:
+        print(f"Error al anular transacción: {e}")
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('panel_gestion')
+
+
+# ==================== INTEGRACIÓN CON MERCADO PAGO ====================
+
+import mercadopago
+
+def _configurar_mercadopago():
+    """Configura el SDK de Mercado Pago según el ambiente"""
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    return sdk
+
+
+@transaction.atomic
+def iniciar_pago_mercadopago(request, pedido_id):
+    """
+    Crea una preferencia de pago en Mercado Pago y redirige al usuario.
+    """
+    print(f"=== INICIANDO PAGO MERCADO PAGO PARA PEDIDO {pedido_id} ===")
+    try:
+        # Obtener el pedido
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        print(f"Pedido encontrado: ID={pedido.id}, Total={pedido.total}")
+        
+        # Verificar que no exista ya una transacción aprobada
+        transaccion_existente = TransaccionMercadoPago.objects.filter(
+            pedido=pedido,
+            estado='approved'
+        ).first()
+        
+        if transaccion_existente:
+            print(f"Transacción ya existe y está aprobada")
+            messages.warning(request, 'Este pedido ya fue pagado.')
+            return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+        
+        # Configurar Mercado Pago
+        print("Configurando Mercado Pago...")
+        sdk = _configurar_mercadopago()
+        
+        # Preparar items del pedido
+        items = []
+        for detalle in pedido.detalles.all():
+            items.append({
+                "title": detalle.producto.nombre,
+                "quantity": detalle.cantidad,
+                "unit_price": float(detalle.precio_unitario),
+                "currency_id": "CLP"
+            })
+        
+        print(f"Items preparados: {len(items)} productos")
+        
+        # URLs de retorno
+        success_url = request.build_absolute_uri(reverse('retorno_mercadopago_success'))
+        failure_url = request.build_absolute_uri(reverse('retorno_mercadopago_failure'))
+        pending_url = request.build_absolute_uri(reverse('retorno_mercadopago_pending'))
+        
+        print(f"URLs configuradas:")
+        print(f"  - Success: {success_url}")
+        print(f"  - Failure: {failure_url}")
+        print(f"  - Pending: {pending_url}")
+        
+        # Crear preferencia de pago (sin auto_return por ahora)
+        preference_data = {
+            "items": items,
+            "back_urls": {
+                "success": success_url,
+                "failure": failure_url,
+                "pending": pending_url
+            },
+            "external_reference": str(pedido.id),
+            "statement_descriptor": "TechTop"
+        }
+        
+        print("Creando preferencia en Mercado Pago...")
+        preference_response = sdk.preference().create(preference_data)
+        print(f"Respuesta completa: {preference_response}")
+        
+        # Verificar si hay error en la respuesta
+        if preference_response.get('status') != 201:
+            error_msg = preference_response.get('response', {}).get('message', 'Error desconocido')
+            print(f"ERROR en API de Mercado Pago: {error_msg}")
+            raise Exception(f"Error de Mercado Pago: {error_msg}")
+        
+        # La respuesta exitosa viene en preference_response["response"]
+        preference = preference_response["response"]
+        
+        print(f"Preferencia creada exitosamente: {preference['id']}")
+        
+        # Guardar la transacción en la base de datos
+        transaccion = TransaccionMercadoPago.objects.create(
+            pedido=pedido,
+            preference_id=preference['id'],
+            monto=pedido.total,
+            estado='pending'
+        )
+        print(f"Transacción guardada en BD: ID={transaccion.id}")
+        
+        # Obtener la URL de inicio de pago (usar sandbox para ambiente de pruebas)
+        init_point = preference.get('sandbox_init_point') or preference.get('init_point')
+        print(f"Redirigiendo a: {init_point}")
+        print(f"NOTA: Las back_urls pueden no funcionar con localhost. Considera usar ngrok para pruebas.")
+        
+        # Redirigir al usuario a Mercado Pago
+        return redirect(init_point)
+        
+    except Exception as e:
+        print(f"Error al iniciar pago Mercado Pago: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'Error al procesar el pago: {str(e)}')
+        return redirect('checkout')
+
+
+@transaction.atomic
+def retorno_mercadopago_success(request):
+    """Maneja el retorno exitoso desde Mercado Pago"""
+    print(f"=== RETORNO EXITOSO DE MERCADO PAGO ===")
+    return _procesar_retorno_mercadopago(request, 'approved')
+
+
+@transaction.atomic
+def retorno_mercadopago_failure(request):
+    """Maneja el retorno fallido desde Mercado Pago"""
+    print(f"=== RETORNO FALLIDO DE MERCADO PAGO ===")
+    return _procesar_retorno_mercadopago(request, 'rejected')
+
+
+@transaction.atomic
+def retorno_mercadopago_pending(request):
+    """Maneja el retorno pendiente desde Mercado Pago"""
+    print(f"=== RETORNO PENDIENTE DE MERCADO PAGO ===")
+    return _procesar_retorno_mercadopago(request, 'pending')
+
+
+def _procesar_retorno_mercadopago(request, estado_esperado):
+    """
+    Procesa el retorno desde Mercado Pago.
+    """
+    payment_id = request.GET.get('payment_id')
+    status = request.GET.get('status')
+    external_reference = request.GET.get('external_reference')
+    preference_id = request.GET.get('preference_id')
+    
+    print(f"Parámetros recibidos: payment_id={payment_id}, status={status}, external_reference={external_reference}")
+    
+    try:
+        # Buscar la transacción por preference_id o external_reference
+        if preference_id:
+            transaccion = TransaccionMercadoPago.objects.filter(preference_id=preference_id).first()
+        elif external_reference:
+            pedido = Pedido.objects.get(id=external_reference)
+            transaccion = TransaccionMercadoPago.objects.filter(pedido=pedido).first()
+        else:
+            messages.error(request, 'No se pudo identificar la transacción.')
+            return redirect('home')
+        
+        if not transaccion:
+            print("ERROR: Transacción no encontrada en BD")
+            messages.error(request, 'Transacción no encontrada.')
+            return redirect('home')
+        
+        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={transaccion.pedido.id}")
+        
+        # Si hay payment_id, consultar detalles del pago
+        if payment_id:
+            sdk = _configurar_mercadopago()
+            payment_info = sdk.payment().get(payment_id)
+            
+            if payment_info["status"] == 200:
+                payment_data = payment_info["response"]
+                
+                # Actualizar transacción con datos del pago
+                transaccion.payment_id = str(payment_id)
+                transaccion.estado = payment_data.get('status', status)
+                transaccion.status_detail = payment_data.get('status_detail', '')
+                transaccion.payment_method_id = payment_data.get('payment_method_id', '')
+                transaccion.payment_type_id = payment_data.get('payment_type_id', '')
+                
+                if 'card' in payment_data and payment_data['card']:
+                    transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
+                
+                if 'payer' in payment_data:
+                    transaccion.payer_email = payment_data['payer'].get('email', '')
+                    if 'identification' in payment_data['payer']:
+                        transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
+                
+                transaccion.save()
+                
+                # Si fue aprobado
+                if payment_data.get('status') == 'approved':
+                    print("¡PAGO APROBADO!")
+                    pedido = transaccion.pedido
+                    pedido.estado = 'procesando'
+                    pedido.save()
+                    
+                    # Limpiar el carrito
+                    if 'cart' in request.session:
+                        del request.session['cart']
+                    
+                    messages.success(request, '¡Pago realizado exitosamente con Mercado Pago!')
+                    
+                    context = {
+                        'pedido': pedido,
+                        'transaccion': transaccion,
+                        'exito': True,
+                        'response': payment_data,
+                        'es_mercadopago': True
+                    }
+                    return render(request, 'store/confirmacion_pago.html', context)
+                
+                elif payment_data.get('status') in ['rejected', 'cancelled']:
+                    print(f"PAGO {payment_data.get('status').upper()}")
+                    pedido = transaccion.pedido
+                    pedido.estado = 'cancelado'
+                    pedido.save()
+                    
+                    # Restaurar stock
+                    for detalle in pedido.detalles.all():
+                        producto = detalle.producto
+                        producto.stock += detalle.cantidad
+                        producto.save()
+                    
+                    messages.error(request, 'El pago fue rechazado. Por favor, intenta nuevamente.')
+                    
+                    context = {
+                        'pedido': pedido,
+                        'transaccion': transaccion,
+                        'exito': False,
+                        'response': payment_data,
+                        'es_mercadopago': True
+                    }
+                    return render(request, 'store/confirmacion_pago.html', context)
+                
+                else:  # pending, in_process, etc.
+                    print(f"PAGO EN ESTADO: {payment_data.get('status')}")
+                    messages.info(request, 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.')
+                    return redirect('home')
+        
+        # Si no hay payment_id pero hay status
+        elif status:
+            transaccion.estado = status
+            transaccion.save()
+            
+            if status == 'approved':
+                pedido = transaccion.pedido
+                pedido.estado = 'procesando'
+                pedido.save()
+                
+                if 'cart' in request.session:
+                    del request.session['cart']
+                
+                messages.success(request, '¡Pago realizado exitosamente!')
+                return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+            else:
+                messages.warning(request, 'El pago no se completó correctamente.')
+                return redirect('checkout')
+        
+    except Exception as e:
+        print(f"Error en retorno Mercado Pago: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'Error al procesar el pago: {str(e)}')
+        return redirect('home')
+

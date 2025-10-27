@@ -131,3 +131,80 @@ class DetallePedido(models.Model):
 
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre}"
+
+# --- Modelo para transacciones de Webpay ---
+class TransaccionWebpay(models.Model):
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('AUTORIZADO', 'Autorizado'),
+        ('RECHAZADO', 'Rechazado'),
+        ('ANULADO', 'Anulado'),
+    ]
+    
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='transacciones_webpay')
+    token = models.CharField(max_length=255, unique=True, help_text='Token generado por Transbank')
+    buy_order = models.CharField(max_length=100, unique=True, help_text='Orden de compra única')
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    
+    # Datos de respuesta de Transbank
+    response_code = models.CharField(max_length=10, blank=True, null=True, help_text='Código de respuesta')
+    authorization_code = models.CharField(max_length=10, blank=True, null=True, help_text='Código de autorización')
+    payment_type_code = models.CharField(max_length=10, blank=True, null=True, help_text='Tipo de pago')
+    card_number = models.CharField(max_length=20, blank=True, null=True, help_text='Últimos 4 dígitos de la tarjeta')
+    
+    # Fechas
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Transacción Webpay'
+        verbose_name_plural = 'Transacciones Webpay'
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"Transacción {self.buy_order} - {self.estado}"
+
+# --- Modelo para transacciones de Mercado Pago ---
+class TransaccionMercadoPago(models.Model):
+    ESTADO_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('approved', 'Aprobado'),
+        ('authorized', 'Autorizado'),
+        ('in_process', 'En Proceso'),
+        ('in_mediation', 'En Mediación'),
+        ('rejected', 'Rechazado'),
+        ('cancelled', 'Cancelado'),
+        ('refunded', 'Reembolsado'),
+        ('charged_back', 'Contracargo'),
+    ]
+    
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='transacciones_mercadopago')
+    preference_id = models.CharField(max_length=255, unique=True, help_text='ID de preferencia de MercadoPago')
+    payment_id = models.CharField(max_length=255, blank=True, null=True, help_text='ID del pago confirmado')
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pending')
+    
+    # Datos de respuesta de MercadoPago
+    status_detail = models.CharField(max_length=100, blank=True, null=True, help_text='Detalle del estado')
+    payment_method_id = models.CharField(max_length=50, blank=True, null=True, help_text='Método de pago')
+    payment_type_id = models.CharField(max_length=50, blank=True, null=True, help_text='Tipo de pago')
+    card_last_four_digits = models.CharField(max_length=4, blank=True, null=True, help_text='Últimos 4 dígitos')
+    
+    # Datos del pagador
+    payer_email = models.EmailField(blank=True, null=True, help_text='Email del pagador')
+    payer_identification = models.CharField(max_length=50, blank=True, null=True, help_text='Identificación')
+    
+    # Fechas
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    fecha_aprobacion = models.DateTimeField(blank=True, null=True, help_text='Fecha de aprobación')
+    
+    class Meta:
+        verbose_name = 'Transacción Mercado Pago'
+        verbose_name_plural = 'Transacciones Mercado Pago'
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"MP-{self.preference_id[:8]} - {self.estado}"
+

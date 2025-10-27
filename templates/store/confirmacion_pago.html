@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+    <style>
+        .confirmacion-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .confirmacion-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .confirmacion-header.exito .icono {
+            font-size: 80px;
+            color: #10b981;
+            margin-bottom: 20px;
+        }
+        
+        .confirmacion-header.error .icono {
+            font-size: 80px;
+            color: #ef4444;
+            margin-bottom: 20px;
+        }
+        
+        .confirmacion-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .confirmacion-header.exito h1 {
+            color: #10b981;
+        }
+        
+        .confirmacion-header.error h1 {
+            color: #ef4444;
+        }
+        
+        .confirmacion-detalle {
+            background: #f9fafb;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .detalle-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .detalle-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detalle-item label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .detalle-item span {
+            color: #6b7280;
+        }
+        
+        .total-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #10b981;
+        }
+        
+        .confirmacion-acciones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .btn-primary, .btn-secondary {
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        
+        .info-adicional {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .info-adicional p {
+            margin: 5px 0;
+            color: #1e40af;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {% if exito %}Pago Exitoso{% else %}Error en el Pago{% endif %} - Techtop
+{% endblock %}
+
+{% block content %}
+<div class="confirmacion-container">
+    {% if exito %}
+    <!-- PAGO EXITOSO -->
+    <div class="confirmacion-header exito">
+        <div class="icono">✓</div>
+        <h1>¡Pago Realizado con Éxito!</h1>
+        <p>Tu transacción ha sido procesada correctamente</p>
+    </div>
+    
+    <div class="confirmacion-detalle">
+        <div class="detalle-item">
+            <label>Número de Pedido:</label>
+            <span>#{{ pedido.id }}</span>
+        </div>
+        {% if es_mercadopago %}
+        <div class="detalle-item">
+            <label>ID de Preferencia:</label>
+            <span>{{ transaccion.preference_id|slice:":20" }}...</span>
+        </div>
+        {% if transaccion.payment_id %}
+        <div class="detalle-item">
+            <label>ID de Pago:</label>
+            <span>{{ transaccion.payment_id }}</span>
+        </div>
+        {% endif %}
+        {% if transaccion.payment_method_id %}
+        <div class="detalle-item">
+            <label>Método de Pago:</label>
+            <span>{{ transaccion.payment_method_id|upper }}</span>
+        </div>
+        {% endif %}
+        {% if transaccion.card_last_four_digits %}
+        <div class="detalle-item">
+            <label>Tarjeta:</label>
+            <span>**** **** **** {{ transaccion.card_last_four_digits }}</span>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="detalle-item">
+            <label>Orden de Compra:</label>
+            <span>{{ transaccion.buy_order }}</span>
+        </div>
+        <div class="detalle-item">
+            <label>Código de Autorización:</label>
+            <span>{{ transaccion.authorization_code }}</span>
+        </div>
+        {% if transaccion.card_number %}
+        <div class="detalle-item">
+            <label>Tarjeta:</label>
+            <span>**** **** **** {{ transaccion.card_number }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
+        <div class="detalle-item">
+            <label>Fecha de Transacción:</label>
+            <span>{{ transaccion.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="detalle-item">
+            <label>Monto Total:</label>
+            <span class="total-amount">${{ pedido.total|floatformat:0|dot_thousands }}</span>
+        </div>
+    </div>
+    
+    <div class="info-adicional">
+        <p><strong>📧 Hemos enviado un correo de confirmación a tu email.</strong></p>
+        <p>Puedes descargar tu comprobante de pago en el siguiente botón.</p>
+    </div>
+    
+    <div class="confirmacion-acciones">
+        <a href="{% url 'generar_recibo_pdf' pedido.id %}" class="btn-primary" target="_blank">
+            📄 Descargar Comprobante
+        </a>
+        <a href="{% url 'home' %}" class="btn-secondary">
+            🏠 Volver al Inicio
+        </a>
+    </div>
+    
+    {% else %}
+    <!-- PAGO RECHAZADO -->
+    <div class="confirmacion-header error">
+        <div class="icono">✕</div>
+        <h1>Pago Rechazado</h1>
+        <p>No se pudo procesar tu transacción</p>
+    </div>
+    
+    <div class="confirmacion-detalle">
+        <div class="detalle-item">
+            <label>Número de Pedido:</label>
+            <span>#{{ pedido.id }}</span>
+        </div>
+        <div class="detalle-item">
+            <label>Orden de Compra:</label>
+            <span>{{ transaccion.buy_order }}</span>
+        </div>
+        {% if response.response_code %}
+        <div class="detalle-item">
+            <label>Código de Respuesta:</label>
+            <span>{{ response.response_code }}</span>
+        </div>
+        {% endif %}
+        <div class="detalle-item">
+            <label>Monto:</label>
+            <span class="total-amount" style="color: #ef4444;">${{ pedido.total|floatformat:0|dot_thousands }}</span>
+        </div>
+    </div>
+    
+    <div class="info-adicional" style="background: #fee; border-left-color: #ef4444;">
+        <p style="color: #991b1b;"><strong>⚠️ El pedido ha sido cancelado y el stock ha sido restaurado.</strong></p>
+        <p style="color: #991b1b;">Puedes intentar nuevamente con otro método de pago.</p>
+    </div>
+    
+    <div class="confirmacion-acciones">
+        <a href="{% url 'checkout' %}" class="btn-primary">
+            🔄 Intentar Nuevamente
+        </a>
+        <a href="{% url 'home' %}" class="btn-secondary">
+            🏠 Volver al Inicio
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
