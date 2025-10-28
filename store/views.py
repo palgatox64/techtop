@@ -238,7 +238,7 @@ def accesorios_catalog(request):
     return render(request, 'store/tienda.html', context)
 
 def product_catalog(request, brand_name=None):
-    products = Producto.objects.all()
+    products = Producto.objects.filter(activo=True)
     if brand_name:
         products = products.filter(marca__nombre__iexact=brand_name)
 
@@ -298,18 +298,50 @@ def product_detail(request, product_id):
     descuento_porcentaje = 3
     imagenes_adicionales = product.imagenes_adicionales.all()
     
+    # Verificar si el producto está activo y tiene stock
+    producto_disponible = product.activo and product.stock > 0
+    
     context = {
         'product': product,
         'precio_transferencia': precio_transferencia,
         'precio_normal': precio_normal,
         'descuento_porcentaje': descuento_porcentaje,
         'imagenes_adicionales': imagenes_adicionales,
+        'producto_disponible': producto_disponible,
     }
     return render(request, 'store/product_detail.html', context)
 
 
 def add_to_cart(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
+    
+    # Validar si el producto está activo y tiene stock
+    if not product.activo:
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        error_message = 'Este producto no está disponible actualmente.'
+        
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': error_message
+            })
+        else:
+            messages.error(request, error_message)
+            return redirect('product_detail', product_id=product_id)
+    
+    if product.stock <= 0:
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        error_message = 'Este producto está agotado.'
+        
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': error_message
+            })
+        else:
+            messages.error(request, error_message)
+            return redirect('product_detail', product_id=product_id)
+    
     quantity = int(request.POST.get('quantity', 1))
     cart = request.session.get('cart', {})
     product_id_str = str(product.id)

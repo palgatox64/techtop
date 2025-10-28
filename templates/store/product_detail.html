@@ -59,16 +59,22 @@
         </div>
 
         <div class="product-actions">
-            <form action="{% url 'add_to_cart' product.id %}" method="POST">
+            <form action="{% url 'add_to_cart' product.id %}" method="POST" id="add-to-cart-form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-secondary">Agregar al carro</button>
+                <button type="submit" class="btn btn-secondary" {% if not producto_disponible %}disabled{% endif %}>
+                    Agregar al carro
+                </button>
             </form>
-            <button class="btn btn-primary">Comprar ahora</button>
+            <button class="btn btn-primary" id="buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
+                Comprar ahora
+            </button>
         </div>
 
         <div class="stock-info">
             <p><i class='bx bx-package'></i> Stock online: 
-                {% if product.stock > 0 %}
+                {% if not product.activo %}
+                    <strong style="color: #e74c3c;">Producto no disponible</strong>
+                {% elif product.stock > 0 %}
                     <strong>{{ product.stock }} unidades</strong>
                 {% else %}
                     <strong>Agotado</strong>
@@ -85,11 +91,15 @@
 
 <div class="sticky-actions-bar">
     <div class="sticky-actions-content">
-        <form action="{% url 'add_to_cart' product.id %}" method="POST" class="sticky-form">
+        <form action="{% url 'add_to_cart' product.id %}" method="POST" class="sticky-form" id="sticky-add-to-cart-form">
             {% csrf_token %}
-            <button type="submit" class="btn btn-secondary">Agregar al carro</button>
+            <button type="submit" class="btn btn-secondary" {% if not producto_disponible %}disabled{% endif %}>
+                Agregar al carro
+            </button>
         </form>
-        <button class="btn btn-primary">Comprar ahora</button>
+        <button class="btn btn-primary" id="sticky-buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
+            Comprar ahora
+        </button>
     </div>
 </div>
 
@@ -142,6 +152,58 @@
             container.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
             container.style.backgroundSize = '250%'; // 2.5x zoom
         });
+
+        // ========== VALIDACIÓN DE PRODUCTO NO DISPONIBLE ==========
+        {% if not producto_disponible %}
+        // Mostrar SweetAlert automáticamente cuando el producto no está disponible
+        Swal.fire({
+            icon: 'warning',
+            title: 'Producto no disponible',
+            html: {% if not product.activo %}
+                '<p>Este producto actualmente <strong>no está disponible</strong> para la venta.</p><p>Por favor, revisa nuestro catálogo para ver otros productos disponibles.</p>'
+            {% else %}
+                '<p>Este producto está <strong>agotado</strong> temporalmente.</p><p>Te invitamos a revisar nuestros otros productos.</p>'
+            {% endif %},
+            confirmButtonText: 'Ver catálogo',
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar',
+            confirmButtonColor: '#667eea',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '/radios/';
+            }
+        });
+
+        // Prevenir envío de formularios y clicks en botones deshabilitados
+        const allForms = document.querySelectorAll('#add-to-cart-form, #sticky-add-to-cart-form');
+        const allBuyButtons = document.querySelectorAll('#buy-now-btn, #sticky-buy-now-btn');
+        
+        allForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Producto no disponible',
+                    text: 'Este producto no está disponible para agregar al carrito.',
+                    confirmButtonColor: '#667eea'
+                });
+            });
+        });
+
+        allBuyButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Producto no disponible',
+                    text: 'Este producto no está disponible para comprar en este momento.',
+                    confirmButtonColor: '#667eea'
+                });
+            });
+        });
+        {% endif %}
+        // ========== FIN VALIDACIÓN ==========
     });
 </script>
 {% endblock %}
