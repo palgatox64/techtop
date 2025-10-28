@@ -11,6 +11,7 @@ class GestionModal {
         console.log('🚀 Inicializando GestionModal...');
         this.createModal();
         this.attachEditButtonListeners();
+        this.attachAddButtonListeners(); // 👈 Nueva línea
         this.attachOutsideClickListener();
         console.log('✅ GestionModal inicializado correctamente');
     }
@@ -86,11 +87,82 @@ class GestionModal {
         console.log('✅ Listeners configurados');
     }
 
+    // 👇 NUEVA FUNCIÓN PARA BOTONES DE AGREGAR
+    attachAddButtonListeners() {
+        console.log('🎯 Configurando listeners para botones de agregar...');
+        
+        // Interceptar clics en enlaces de agregar
+        document.addEventListener('click', (e) => {
+            // Buscar el enlace de agregar más cercano
+            const addLink = e.target.closest('a[href*="/agregar"], a[href*="/nuevo"], a[href*="/crear"]');
+            
+            if (addLink && addLink.href.includes('/gestion/')) {
+                console.log('🎯 ¡ENLACE DE AGREGAR INTERCEPTADO!', addLink.href);
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const itemType = this.getItemTypeFromUrl(addLink.href);
+                this.openAddModal(addLink.href, itemType);
+                return false;
+            }
+        });
+
+        console.log('✅ Listeners de agregar configurados');
+    }
+
     getItemTypeFromUrl(url) {
         if (url.includes('/productos/')) return 'Producto';
         if (url.includes('/categorias/')) return 'Categoría';
         if (url.includes('/marcas/')) return 'Marca';
         return 'Item';
+    }
+
+    // 👇 NUEVA FUNCIÓN PARA ABRIR MODAL DE AGREGAR
+    async openAddModal(addUrl, itemType) {
+        console.log('🔓 Abriendo modal para agregar:', addUrl, 'tipo:', itemType);
+        
+        this.modal.classList.add('show');
+        document.getElementById('modal-title').textContent = `Agregar ${itemType}`;
+        document.getElementById('modal-loading').style.display = 'block';
+        document.getElementById('modal-form-container').style.display = 'none';
+
+        try {
+            console.log('📡 Haciendo fetch a:', addUrl);
+            const response = await fetch(addUrl);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const html = await response.text();
+            console.log('📄 HTML recibido, longitud:', html.length);
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const formElement = doc.querySelector('.gestion-form');
+            
+            console.log('🔍 Formulario encontrado:', formElement);
+            
+            if (formElement) {
+                document.getElementById('modal-loading').style.display = 'none';
+                document.getElementById('modal-form-container').style.display = 'block';
+                document.getElementById('modal-form-container').innerHTML = formElement.outerHTML;
+                
+                const modalForm = document.querySelector('#modal-form-container .gestion-form');
+                modalForm.classList.add('modal-form');
+                
+                console.log('✅ Formulario de agregar cargado en modal');
+                this.setupModalFormButtons(modalForm, addUrl);
+            } else {
+                throw new Error('No se encontró el formulario .gestion-form en la respuesta');
+            }
+        } catch (error) {
+            console.error('❌ Error al cargar el formulario:', error);
+            document.getElementById('modal-loading').innerHTML = `
+                <i class='bx bx-error' style="font-size: 2rem; color: #dc3545;"></i>
+                <p>Error al cargar el formulario: ${error.message}</p>
+            `;
+        }
     }
 
     async openEditModal(editUrl, itemType) {
@@ -182,10 +254,13 @@ class GestionModal {
 
             if (response.ok) {
                 console.log('✅ Formulario enviado exitosamente');
+                const isAdding = editUrl.includes('/agregar') || editUrl.includes('/nuevo') || editUrl.includes('/crear');
+                const successMessage = isAdding ? 'creado' : 'actualizado';
+                
                 await Swal.fire({
                     icon: 'success',
-                    title: '¡Actualizado!',
-                    text: 'Los cambios se han guardado exitosamente.',
+                    title: `¡${isAdding ? 'Creado' : 'Actualizado'}!`,
+                    text: `Los cambios se han ${successMessage} exitosamente.`,
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -251,11 +326,16 @@ class GestionModal {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🏁 DOM listo, inicializando GestionModal...');
     
-    // Verificar si existen los enlaces de editar
+    // Verificar si existen los enlaces de editar y agregar
     const editLinks = document.querySelectorAll('a[href*="/editar/"]');
+    const addLinks = document.querySelectorAll('a[href*="/agregar"], a[href*="/nuevo"], a[href*="/crear"]');
     console.log('🔍 Enlaces de editar encontrados:', editLinks.length);
+    console.log('🔍 Enlaces de agregar encontrados:', addLinks.length);
     editLinks.forEach((link, index) => {
         console.log(`  ${index + 1}. ${link.href}`);
+    });
+    addLinks.forEach((link, index) => {
+        console.log(`  Agregar ${index + 1}. ${link.href}`);
     });
     
     // Crear instancia del modal
