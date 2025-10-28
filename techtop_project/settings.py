@@ -67,6 +67,7 @@ DATABASES = {
         'PORT': '1433',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
+            'extra_params': 'Connection Timeout=60;Login Timeout=60;',
         },
     }
 }
