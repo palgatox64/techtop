@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Detalle Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    .order-summary { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .summary-item h4 { color: #666; margin-bottom: 5px; font-size: 0.9rem; }
+    .summary-item p { font-size: 1.1rem; font-weight: 600; color: #333; margin: 0; }
+    .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; color: white; font-size: 0.9rem; }
+    .status-pendiente { background: #ffc107; color: #333; }
+    .status-procesando { background: #17a2b8; }
+    .status-enviado { background: #007bff; }
+    .status-entregado { background: #28a745; }
+    .status-cancelado { background: #dc3545; }
+</style>
+
+<div class="gestion-page">
+    <header class="gestion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h1 style="margin-bottom: 10px;">Pedido #{{ pedido.id }}</h1>
+            <a href="{% url 'historial_compras' %}" class="btn-back-panel" style="position: static;"><i class='bx bx-arrow-back'></i> Volver al Historial</a>
+        </div>
+        
+        <a href="{% url 'generar_recibo_pdf' pedido.id %}" class="btn-action" style="background-color: #28a745; color: white; padding: 12px 25px; font-size: 1rem; display: flex; align-items: center; gap: 8px;" target="_blank">
+            <i class='bx bxs-file-pdf' style="font-size: 1.2rem;"></i> Descargar Boleta
+        </a>
+    </header>
+
+    <div class="order-summary">
+        <div class="summary-item">
+            <h4>Fecha del Pedido</h4>
+            <p>{{ pedido.fecha_pedido|date:"d \d\e F Y, H:i" }}</p>
+        </div>
+        <div class="summary-item">
+            <h4>Estado</h4>
+            <p><span class="status-badge status-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></p>
+        </div>
+        <div class="summary-item">
+            <h4>Total</h4>
+            <p style="color: #6a0dad; font-size: 1.3rem;">${{ pedido.total|floatformat:0|dot_thousands }}</p>
+        </div>
+        <div class="summary-item">
+            <h4>Dirección de Envío</h4>
+            <p>{% if pedido.direccion_envio %}{{ pedido.direccion_envio.calle }}, {{ pedido.direccion_envio.ciudad }}{% else %}Retiro en Tienda{% endif %}</p>
+        </div>
+    </div>
+
+    <h3>Productos</h3>
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unitario</th>
+                    <th>Cantidad</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in pedido.detalles.all %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            {% if detalle.producto.imagen %}
+                                <img src="{{ detalle.producto.imagen.url }}" alt="{{ detalle.producto.nombre }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                            {% endif %}
+                            <span>{{ detalle.producto.nombre }}</span>
+                        </div>
+                    </td>
+                    <td>${{ detalle.precio_unitario|floatformat:0|dot_thousands }}</td>
+                    <td>{{ detalle.cantidad }}</td>
+                    <td style="font-weight: bold;">${% widthratio detalle.precio_unitario 1 detalle.cantidad as total_linea %}{{ total_linea|floatformat:0|dot_thousands }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pedido.estado == 'pendiente' and pedido.pago_transferencia.estado == 'PENDIENTE' %}
+         <div style="margin-top: 30px; text-align: center;">
+             <a href="{% url 'subir_comprobante' pedido.id %}" class="btn-submit" style="background-color: #ffc107; color: #333; text-decoration: none; display: inline-block;">
+                 <i class='bx bx-upload'></i> Subir Comprobante de Pago
+             </a>
+         </div>
+    {% endif %}
+</div>
+{% endblock %}

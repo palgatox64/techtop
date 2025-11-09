@@ -23,7 +23,7 @@
             </form>
         <div class="header-actions">
             {% if request.session.user_type == 'empleado' %}
-                {# Menú para EMPLEADOS #}
+                {# === Menú para EMPLEADOS === #}
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
@@ -32,6 +32,9 @@
                         <div id="user-menu-dropdown-loggedin" class="dropdown-content">
                             <a href="{% url 'panel_gestion' %}">
                                 <i class='bx bx-cog'></i> Panel de Gestión
+                            </a>
+                            <a href="{% url 'perfil_usuario' %}">
+                                <i class='bx bx-user'></i> Mi Cuenta
                             </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
@@ -45,14 +48,18 @@
                         {{ request.session.empleado_nombre }} ({{ request.session.empleado_cargo }})
                     </span>
                 </div>
+
             {% elif request.session.user_type == 'cliente' %}
-                {# Menú para CLIENTES #}
+                {# === Menú para CLIENTES === #}
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
                             <i class='bx bx-user'></i>
                         </div>
                         <div id="user-menu-dropdown-loggedin" class="dropdown-content">
+                            <a href="{% url 'perfil_usuario' %}">
+                                <i class='bx bx-user-circle'></i> Mi Cuenta
+                            </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
                                 <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px;">
@@ -65,8 +72,9 @@
                         {{ request.session.cliente_nombre }}
                     </span>
                 </div>
+
             {% else %}
-                {# Menú para visitantes NO logueados #}
+                {# === Menú para VISITANTES NO LOGUEADOS === #}
                 <div class="user-menu">
                     <div id="user-menu-button" class="action-item">
                         <i class='bx bx-user'></i>
@@ -209,11 +217,13 @@
         <div class="cart-offcanvas-footer">
     <div class="cart-total">
         <span>Subtotal:</span>
-        <span id="cart-subtotal">$0</span>
-    </div>
+        <span id="cart-subtotal">${{ request.session.cart_total|default:"0" }}</span> </div>
+    
     <a href="{% url 'view_cart' %}" class="btn-view-cart">Ir al Carro</a>
+    
     <a href="{% url 'checkout' %}" class="btn-checkout">Finalizar Compra</a>
 </div>
+
 
     
 <script src="{% static 'js/main.js' %}"></script>

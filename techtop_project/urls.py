@@ -66,5 +66,10 @@ urlpatterns = [
     path('mercadopago/success/', views.retorno_mercadopago_success, name='retorno_mercadopago_success'),
     path('mercadopago/failure/', views.retorno_mercadopago_failure, name='retorno_mercadopago_failure'),
     path('mercadopago/pending/', views.retorno_mercadopago_pending, name='retorno_mercadopago_pending'),
+    
+    path('mi-cuenta/', views.perfil_usuario_view, name='perfil_usuario'),
+    path('mi-cuenta/editar/', views.editar_perfil_view, name='editar_perfil'),
+    path('mi-cuenta/compras/', views.historial_compras_view, name='historial_compras'),
+    path('mi-cuenta/compras/<int:pedido_id>/', views.detalle_compra_view, name='detalle_compra'),
 ]
 

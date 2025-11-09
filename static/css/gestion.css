@@ -871,3 +871,36 @@
         font-size: 0.9rem;
     }
 }
+
+/* --- AÑADIR O ACTUALIZAR EN static/css/gestion.css --- */
+
+/* ... estilos existentes ... */
+
+/* Clase auxiliar para filas con 2 columnas iguales */
+.charts-row.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas de igual ancho */
+    gap: 25px;
+}
+
+/* Aseguramos que en la fila de dos columnas, los small-chart ocupen todo su espacio de grid */
+.charts-row.two-columns .small-chart {
+    flex: unset; /* Anulamos el flex para que funcione el grid */
+    width: auto;
+    min-width: 0; /* Evita desbordamientos en grid */
+}
+
+/* Ajuste responsive para que vuelvan a ser una sola columna en móvil */
+@media (max-width: 768px) {
+    .charts-row.two-columns {
+        grid-template-columns: 1fr; /* Una sola columna en móvil */
+    }
+}
+
+/* Asegúrate de que .chart-wrapper-small esté bien definido para centrar las tortas */
+.chart-wrapper-small {
+    width: 100%;
+    max-width: 300px; /* Un poco más grande para que se vean bien las dos */
+    height: 300px;
+    margin: 0 auto; /* Centrado horizontal */
+}

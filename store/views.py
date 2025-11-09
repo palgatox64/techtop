@@ -20,7 +20,7 @@ from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
 import datetime
-from .forms import ComprobantePagoForm
+from .forms import ComprobantePagoForm, PerfilUsuarioForm
 from .models import PagoTransferencia, ComprobanteTransferencia
 from django.db.models import Case, When, Value, IntegerField # Agrega Value e IntegerField por si acaso
 from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField
@@ -388,6 +388,9 @@ def add_to_cart(request, product_id):
             'subtotal': float(total_price) 
         })
     else:
+        if request.POST.get('next') == 'checkout':
+            return redirect('checkout')
+        
         return redirect('view_cart')
 
 def view_cart(request):
@@ -2497,6 +2500,32 @@ def obtener_metricas_envio(fecha_inicio):
         'pickup': stats['retiro'] or 0,
         'delivery': stats['delivery'] or 0
     }
+    
+def obtener_metricas_pago(fecha_inicio):
+    """
+    Cuenta cuántos pedidos pagados se hicieron con cada método.
+    Se basa en las relaciones inversas y los estados de éxito de cada transacción.
+    """
+    estados_validos = ['procesando', 'enviado', 'entregado']
+    
+    # Filtramos los pedidos válidos en el rango de fecha
+    pedidos = Pedido.objects.filter(
+        fecha_pedido__gte=fecha_inicio,
+        estado__in=estados_validos
+    )
+    
+    # Usamos aggregate con filtros condicionales sobre las relaciones
+    stats = pedidos.aggregate(
+        webpay=Count('id', filter=Q(transacciones_webpay__estado='AUTORIZADO')),
+        mercadopago=Count('id', filter=Q(transacciones_mercadopago__estado='approved')),
+        transferencia=Count('id', filter=Q(pago_transferencia__estado='APROBADO'))
+    )
+    
+    return {
+        'webpay': stats['webpay'] or 0,
+        'mercadopago': stats['mercadopago'] or 0,
+        'transferencia': stats['transferencia'] or 0
+    }
 
 # =========================================
 # VISTA PRINCIPAL DE MÉTRICAS
@@ -2508,34 +2537,34 @@ def obtener_metricas_envio(fecha_inicio):
 def ver_metricas(request):
     now = timezone.now()
     
-    # 1. Definir rangos de fechas
     hace_una_semana = now - datetime.timedelta(days=7)
     hace_un_mes = now - datetime.timedelta(days=30)
     hace_un_ano = now - datetime.timedelta(days=365)
-    
-    # --- CORRECCIÓN AQUÍ: Usamos datetime.timezone.utc ---
     inicio_de_los_tiempos = datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc)
 
-    # 2. Generar datos para cada período usando las funciones auxiliares
     metrics_data = {
         'weekly': {
             'sales_over_time': obtener_ventas_en_tiempo(hace_una_semana, TruncDay),
             'shipping': obtener_metricas_envio(hace_una_semana),
+            'payment': obtener_metricas_pago(hace_una_semana), # <--- NUEVO
             'top_products': obtener_top_productos(hace_una_semana)
         },
         'monthly': {
             'sales_over_time': obtener_ventas_en_tiempo(hace_un_mes, TruncDay),
             'shipping': obtener_metricas_envio(hace_un_mes),
+            'payment': obtener_metricas_pago(hace_un_mes), # <--- NUEVO
             'top_products': obtener_top_productos(hace_un_mes)
         },
         'yearly': {
             'sales_over_time': obtener_ventas_en_tiempo(hace_un_ano, TruncMonth),
             'shipping': obtener_metricas_envio(hace_un_ano),
+            'payment': obtener_metricas_pago(hace_un_ano), # <--- NUEVO
             'top_products': obtener_top_productos(hace_un_ano)
         },
         'all_time': {
             'sales_over_time': obtener_ventas_en_tiempo(inicio_de_los_tiempos, TruncYear),
             'shipping': obtener_metricas_envio(inicio_de_los_tiempos),
+            'payment': obtener_metricas_pago(inicio_de_los_tiempos), # <--- NUEVO
             'top_products': obtener_top_productos(inicio_de_los_tiempos)
         }
     }
@@ -2706,3 +2735,116 @@ def cancelar_pedido_transferencia(request, pedido_id):
         messages.error(request, 'Hubo un error al intentar cancelar el pedido.')
 
     return redirect('home') 
+
+# --- Decorador mejorado para permitir Clientes Y Empleados ---
+def usuario_logueado_required(view_func):
+    """Decorador que permite acceso a Clientes y Empleados."""
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.session.get('user_type'):
+            messages.error(request, 'Debes iniciar sesión para acceder a esta página.')
+            return redirect('login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+# --- Vistas de Perfil Adaptadas ---
+
+@usuario_logueado_required
+def perfil_usuario_view(request):
+    user_type = request.session.get('user_type')
+    
+    if user_type == 'cliente':
+        cliente = get_object_or_404(Cliente, id_cliente=request.session.get('cliente_id'))
+        ultimas_compras = Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')[:5]
+        context = {'cliente': cliente, 'ultimas_compras': ultimas_compras, 'es_cliente': True}
+    
+    elif user_type == 'empleado':
+        empleado = get_object_or_404(Empleado, id_empleado=request.session.get('empleado_id'))
+        # Los empleados no suelen tener compras asociadas en este modelo, 
+        # pero podríamos mostrar las últimas ventas generales si quisieras.
+        # Por ahora, lo dejamos simple.
+        context = {'cliente': empleado, 'es_cliente': False} # Usamos 'cliente' en el template para reutilizarlo
+        
+    return render(request, 'usuario/perfil.html', context)
+
+@usuario_logueado_required
+def editar_perfil_view(request):
+    user_type = request.session.get('user_type')
+    usuario = None
+    direccion = None
+
+    if user_type == 'cliente':
+        usuario = get_object_or_404(Cliente, id_cliente=request.session.get('cliente_id'))
+        direccion = Direccion.objects.filter(cliente=usuario).last()
+    elif user_type == 'empleado':
+        usuario = get_object_or_404(Empleado, id_empleado=request.session.get('empleado_id'))
+        # Empleados no tienen dirección en este modelo por ahora
+
+    if request.method == 'POST':
+        form = PerfilUsuarioForm(request.POST)
+        if form.is_valid():
+            # Actualizar datos comunes
+            usuario.nombre = form.cleaned_data['nombre']
+            usuario.apellidos = form.cleaned_data['apellidos']
+            usuario.telefono = form.cleaned_data['telefono']
+            usuario.save()
+            
+            # Solo actualizar dirección si es cliente
+            if user_type == 'cliente' and form.cleaned_data['calle']:
+                if not direccion:
+                    direccion = Direccion(cliente=usuario)
+                direccion.calle = form.cleaned_data['calle']
+                direccion.ciudad = form.cleaned_data.get('ciudad', '')
+                direccion.region = form.cleaned_data.get('region', '')
+                direccion.save()
+                
+            messages.success(request, 'Perfil actualizado correctamente.')
+            return redirect('perfil_usuario')
+    else:
+        initial_data = {
+            'nombre': usuario.nombre,
+            'apellidos': usuario.apellidos,
+            'email': usuario.email,
+            'telefono': usuario.telefono,
+        }
+        if user_type == 'cliente' and direccion:
+            initial_data.update({
+                'calle': direccion.calle,
+                'ciudad': direccion.ciudad,
+                'region': direccion.region,
+            })
+        form = PerfilUsuarioForm(initial=initial_data)
+
+    return render(request, 'usuario/editar_perfil.html', {'form': form, 'es_cliente': (user_type == 'cliente')})
+
+@usuario_logueado_required
+def historial_compras_view(request):
+    user_type = request.session.get('user_type')
+    
+    if user_type == 'empleado':
+        # Opcional: Permitir que el admin vea TODAS las compras aquí, o redirigirlo.
+        # Por ahora, redirigimos al panel de gestión que es más apropiado para ellos.
+        messages.info(request, 'Como administrador, puedes ver todas las transacciones en el Panel de Gestión.')
+        return redirect('panel_gestion')
+
+    cliente = get_object_or_404(Cliente, id_cliente=request.session.get('cliente_id'))
+    pedidos = Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')
+    
+    paginator = Paginator(pedidos, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'usuario/historial_compras.html', {'page_obj': page_obj})
+
+@usuario_logueado_required
+def detalle_compra_view(request, pedido_id):
+    user_type = request.session.get('user_type')
+    
+    if user_type == 'empleado':
+         # Permitir al admin ver cualquier pedido
+         pedido = get_object_or_404(Pedido, id=pedido_id)
+    else:
+         # Cliente solo ve SUS pedidos
+         cliente_id = request.session.get('cliente_id')
+         pedido = get_object_or_404(Pedido, id=pedido_id, cliente__id_cliente=cliente_id)
+    
+    return render(request, 'usuario/detalle_compra.html', {'pedido': pedido})

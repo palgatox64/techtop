@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Mis Compras - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Historial de Compras</h1>
+        <a href="{% url 'perfil_usuario' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Perfil</a>
+    </header>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>Pedido #</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Detalles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in page_obj %}
+                <tr>
+                    <td>#{{ pedido.id }}</td>
+                    <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
+                    <td>${{ pedido.total|floatformat:0|dot_thousands }}</td>
+                    <td><span class="badge status-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
+                    <td>
+                        <a href="{% url 'detalle_compra' pedido.id %}" class="btn-action" style="background:#6a0dad; color:white;">Ver</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align: center; padding: 30px;">No tienes pedidos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+{% endblock %}
