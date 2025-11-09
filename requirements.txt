@@ -52,3 +52,4 @@ transbank-sdk==4.0.0
 mercadopago==2.3.0
 xhtml2pdf==0.2.17
 zopfli==0.2.3.post1
+requests>=2.31.0
