@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Finalizar Transferencia - Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+<style>
+    .transfer-page-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .transfer-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    .transfer-header h1 {
+        color: #333;
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+    }
+    .transfer-header p {
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .total-amount-box {
+        background: linear-gradient(135deg, #6a0dad 0%, #9c27b0 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 25px rgba(106, 13, 173, 0.2);
+    }
+    .total-amount-label {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+    }
+    .total-amount-value {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    .info-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid #eee;
+        overflow: hidden;
+    }
+
+    .info-card-header {
+        background: #f8f9fa;
+        padding: 15px 25px;
+        border-bottom: 1px solid #eee;
+    }
+    .info-card-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .info-card-header h3 i {
+        color: #6a0dad;
+    }
+
+    .info-card-body {
+        padding: 25px;
+    }
+
+    /* Estilos de Cuentas Bancarias */
+    .bank-account-item {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px dashed #eee;
+    }
+    .bank-account-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    .bank-name {
+        font-weight: 700;
+        color: #6a0dad;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+    .account-detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    .detail-label {
+        color: #666;
+        font-weight: 500;
+    }
+    .detail-value {
+        color: #333;
+        font-weight: 600;
+        text-align: right;
+    }
+    .copy-btn {
+        background: none;
+        border: none;
+        color: #6a0dad;
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 0 5px;
+    }
+
+    /* Estilos del Formulario */
+    .upload-form .form-group {
+        margin-bottom: 20px;
+    }
+    .upload-form label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    .upload-form textarea.form-control,
+    .upload-form input[type="file"].form-control {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+    .upload-form textarea.form-control:focus,
+    .upload-form input[type="file"].form-control:focus {
+        border-color: #6a0dad;
+        outline: none;
+    }
+    
+    /* Botones de Acción */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    .btn-confirm-upload {
+        background-color: #6a0dad;
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+    .btn-confirm-upload:hover {
+        background-color: #5a099a;
+    }
+    .btn-cancel-order {
+        background-color: transparent;
+        color: #dc3545;
+        border: 2px solid #dc3545;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+    }
+    .btn-cancel-order:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        .total-amount-value {
+            font-size: 2.8rem;
+        }
+    }
+</style>
+
+<div class="transfer-page-container">
+    <div class="transfer-header">
+        <h1>¡Casi listo! Completa tu pago</h1>
+        <p>Tu pedido <strong>#{{ pedido.id }}</strong> ha sido reservado. Realiza la transferencia para confirmarlo.</p>
+    </div>
+
+    <div class="total-amount-box">
+        <div class="total-amount-label">Total a Transferir</div>
+        <div class="total-amount-value">${{ pedido.total|floatformat:0|dot_thousands }}</div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-card-header">
+                <h3><i class='bx bxs-bank'></i> Datos de Transferencia</h3>
+            </div>
+            <div class="info-card-body">
+                {% for cuenta in cuentas %}
+                <div class="bank-account-item">
+                    <div class="bank-name">{{ cuenta.banco }}</div>
+                    <div class="account-detail-row">
+                        <span class="detail-label">Tipo de Cuenta:</span>
+                        <span class="detail-value">{{ cuenta.tipo_cuenta }}</span>
+                    </div>
+                    <div class="account-detail-row">
+                        <span class="detail-label">Número:</span>
+                        <span class="detail-value">{{ cuenta.numero }}</span>
+                    </div>
+                    <div class="account-detail-row">
+                        <span class="detail-label">Nombre:</span>
+                        <span class="detail-value">{{ cuenta.nombre }}</span>
+                    </div>
+                    <div class="account-detail-row">
+                        <span class="detail-label">RUT:</span>
+                        <span class="detail-value">{{ cuenta.rut }}</span>
+                    </div>
+                    <div class="account-detail-row">
+                        <span class="detail-label">Correo:</span>
+                        <span class="detail-value">{{ cuenta.correo }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-header">
+                <h3><i class='bx bx-upload'></i> Confirmar Pago</h3>
+            </div>
+            <div class="info-card-body">
+                <form method="POST" enctype="multipart/form-data" class="upload-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.imagenes.id_for_label }}">
+                            <i class='bx bx-images'></i> Subir Comprobante(s)
+                        </label>
+                        {{ form.imagenes }}
+                        {% if form.imagenes.errors %}
+                            <small style="color: #dc3545; display: block; margin-top: 5px;">
+                                {{ form.imagenes.errors.0 }}
+                            </small>
+                        {% endif %}
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Puedes seleccionar múltiples imágenes si es necesario.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.comentario.id_for_label }}">
+                            <i class='bx bx-comment-detail'></i> Comentario Adicional (Opcional)
+                        </label>
+                        {{ form.comentario }}
+                        {% if form.comentario.errors %}
+                            <small style="color: #dc3545;">{{ form.comentario.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="action-buttons">
+                        <button type="submit" class="btn-confirm-upload">
+                            <i class='bx bx-check-circle'></i> Enviar Comprobante
+                        </button>
+                        
+                        <a href="#" 
+                           id="btn-cancelar-pedido"
+                           class="btn-cancel-order"
+                           data-url="{% url 'cancelar_pedido_transferencia' pedido.id %}">
+                            <i class='bx bx-x-circle'></i> Cancelar Pedido
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnCancelar = document.getElementById('btn-cancelar-pedido');
+        
+        if (btnCancelar) {
+            btnCancelar.addEventListener('click', function(e) {
+                e.preventDefault(); // Evita que el enlace navegue inmediatamente
+                
+                const cancelUrl = this.getAttribute('data-url');
+                
+                Swal.fire({
+                    title: '¿Cancelar pedido?',
+                    text: "Si cancelas ahora, el stock reservado será liberado y tendrás que volver a empezar.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545', // Rojo para la acción destructiva
+                    cancelButtonColor: '#6c757d', // Gris para cancelar
+                    confirmButtonText: 'Sí, cancelar pedido',
+                    cancelButtonText: 'No, volver',
+                    reverseButtons: true // Pone el botón de cancelar a la izquierda (opcional)
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Mostrar feedback de carga mientras se procesa
+                        Swal.fire({
+                            title: 'Cancelando...',
+                            text: 'Por favor espera un momento.',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        // Redirigir a la URL de cancelación
+                        window.location.href = cancelUrl;
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

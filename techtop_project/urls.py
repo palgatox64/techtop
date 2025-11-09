@@ -52,7 +52,10 @@ urlpatterns = [
     path('procesar-pedido/', views.procesar_pedido_view, name='procesar_pedido'),
     path('pedido/recibo/<int:pedido_id>/', views.generar_recibo_pdf, name='generar_recibo_pdf'),
     path('gestion/metricas/', views.ver_metricas, name='ver_metricas'),
-    
+    path('pago/transferencia/<int:pedido_id>/', views.subir_comprobante, name='subir_comprobante'),
+    path('gestion/transferencias/', views.listar_transferencias_view, name='listar_transferencias'),
+    path('gestion/transferencias/<int:pago_id>/', views.gestionar_transferencia_view, name='gestionar_transferencia'),
+    path('pago/cancelar/<int:pedido_id>/', views.cancelar_pedido_transferencia, name='cancelar_pedido_transferencia'),
     # Rutas para Webpay Plus (Transbank)
     path('webpay/iniciar/<int:pedido_id>/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
     path('webpay/retorno/', views.retorno_webpay, name='retorno_webpay'),
