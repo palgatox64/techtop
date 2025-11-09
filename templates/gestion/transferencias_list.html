@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}Validar Transferencias{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Validar Transferencias</h1>
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Panel</a>
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th>Fecha Subida</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pago in page_obj %}
+                <tr>
+                    <td>#{{ pago.pedido.id }}</td>
+                    <td>
+                        {% if pago.pedido.cliente %}
+                            {{ pago.pedido.cliente.nombre }} {{ pago.pedido.cliente.apellidos }}<br>
+                            <small>{{ pago.pedido.cliente.rut }}</small>
+                        {% else %}
+                            Cliente Anónimo
+                        {% endif %}
+                    </td>
+                    <td>${{ pago.pedido.total|floatformat:0|dot_thousands }}</td>
+                    <td>{{ pago.fecha_subida|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if pago.estado == 'PENDIENTE' %}
+                            <span class="badge bg-warning" style="background:#ffc107; padding: 5px 10px; border-radius: 15px;">Pendiente</span>
+                        {% elif pago.estado == 'APROBADO' %}
+                            <span class="badge bg-success" style="background:#28a745; color:white; padding: 5px 10px; border-radius: 15px;">Aprobado</span>
+                        {% else %}
+                            <span class="badge bg-danger" style="background:#dc3545; color:white; padding: 5px 10px; border-radius: 15px;">Rechazado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'gestionar_transferencia' pago.id %}" class="btn-action" style="background-color: #6a0dad; color: white;">
+                            Revisar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align: center; padding: 20px;">No hay transferencias registradas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+{% endblock %}

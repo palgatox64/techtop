@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from .validators import validate_chilean_phone, validate_name, validate_email_extended, validate_chilean_rut
+import os
 
 # --- Modelo para la tabla CATEGORIAS ---
 class Categoria(models.Model):
@@ -208,3 +209,34 @@ class TransaccionMercadoPago(models.Model):
     def __str__(self):
         return f"MP-{self.preference_id[:8]} - {self.estado}"
 
+# --- FUNCIÓN PARA LA RUTA DE AZURE ---
+def transferencia_upload_path(instance, filename):
+    # Esta función define la ruta: transferencias/ID_PEDIDO/nombre_archivo
+    return f'transferencias/{instance.pago.pedido.id}/{filename}'
+
+# --- NUEVOS MODELOS AL FINAL DEL ARCHIVO ---
+
+class PagoTransferencia(models.Model):
+    ESTADOS_PAGO = [
+        ('PENDIENTE', 'Pendiente de Revisión'),
+        ('APROBADO', 'Pago Aprobado'),
+        ('RECHAZADO', 'Pago Rechazado'),
+    ]
+    
+    pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE, related_name='pago_transferencia')
+    comentario_usuario = models.TextField(blank=True, null=True, help_text="Comentario dejado por el cliente")
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS_PAGO, default='PENDIENTE')
+    fecha_revision = models.DateTimeField(null=True, blank=True)
+    comentario_admin = models.TextField(blank=True, null=True, help_text="Comentario interno del administrador")
+
+    def __str__(self):
+        return f"Transferencia Pedido #{self.pedido.id} - {self.estado}"
+
+class ComprobanteTransferencia(models.Model):
+    pago = models.ForeignKey(PagoTransferencia, on_delete=models.CASCADE, related_name='comprobantes')
+    imagen = models.ImageField(upload_to=transferencia_upload_path)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comprobante {self.id} para Pedido #{self.pago.pedido.id}"

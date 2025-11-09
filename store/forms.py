@@ -103,3 +103,35 @@ class CheckoutForm(forms.Form):
                 self.add_error('tipo_vivienda', 'Debes seleccionar un tipo de vivienda.')
         
         return cleaned_data
+    
+# Widget personalizado para permitir múltiples archivos
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
+
+class ComprobantePagoForm(forms.Form):
+    comentario = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3, 
+            'placeholder': 'Ej: Pago realizado desde cuenta RUT de Juan Pérez...'
+        }),
+        label="Comentario adicional (Opcional)"
+    )
+    imagenes = MultipleFileField(
+        label="Subir Comprobantes (Puedes seleccionar varias)",
+        widget=MultipleFileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
+    )

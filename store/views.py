@@ -20,7 +20,10 @@ from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
 import datetime
-
+from .forms import ComprobantePagoForm
+from .models import PagoTransferencia, ComprobanteTransferencia
+from django.db.models import Case, When, Value, IntegerField # Agrega Value e IntegerField por si acaso
+from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField
 # Third-party imports
 from decimal import Decimal
 from io import BytesIO
@@ -1473,6 +1476,15 @@ def procesar_pedido_view(request):
                 'message': 'Redirigiendo a Mercado Pago para completar el pago...',
                 'redirect_url': redirect_url
             })
+        elif metodo_pago == 'transferencia':
+            # --- CAMBIO AQUÍ ---
+            # Redirigir a la nueva vista de subida de comprobantes
+            redirect_url = reverse('subir_comprobante', args=[nuevo_pedido.id])
+            return JsonResponse({
+                'success': True,
+                'message': 'Pedido creado. Redirigiendo para subir comprobante...',
+                'redirect_url': redirect_url
+            })
         else:
             # Para otros métodos de pago, ir directo al PDF
             redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
@@ -2518,3 +2530,168 @@ def ver_metricas(request):
     }
 
     return render(request, 'gestion/metrics.html', {'metrics_data': metrics_data})
+
+def subir_comprobante(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    
+    # Evitar que suban comprobantes a pedidos que no son de transferencia o ya pagados
+    if pedido.estado != 'procesando' and pedido.estado != 'pendiente': # Ajusta según tus estados iniciales
+         messages.error(request, 'Este pedido no requiere subida de comprobantes actualmente.')
+         return redirect('home')
+
+    # Verificar si ya existe un pago en revisión
+    if hasattr(pedido, 'pago_transferencia'):
+        if pedido.pago_transferencia.estado == 'PENDIENTE':
+             messages.info(request, 'Ya has subido un comprobante para este pedido. Está en revisión.')
+             return redirect('home') # O a una página de "gracias"
+
+    if request.method == 'POST':
+        form = ComprobantePagoForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # 1. Crear el registro de PagoTransferencia
+                    pago_transferencia = PagoTransferencia.objects.create(
+                        pedido=pedido,
+                        comentario_usuario=form.cleaned_data['comentario'],
+                        estado='PENDIENTE'
+                    )
+                    
+                    # 2. Guardar cada imagen subida (se van directo a Azure por el modelo)
+                    imagenes = request.FILES.getlist('imagenes')
+                    for imagen in imagenes:
+                        ComprobanteTransferencia.objects.create(
+                            pago=pago_transferencia,
+                            imagen=imagen
+                        )
+                    
+                    # 3. Actualizar estado del pedido (opcional, para indicar que espera revisión)
+                    # pedido.estado = 'esperando_validacion' 
+                    # pedido.save()
+
+                messages.success(request, 'Comprobante subido exitosamente. Te notificaremos cuando sea aprobado.')
+                return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+
+            except Exception as e:
+                print(f"Error al subir comprobantes: {e}")
+                messages.error(request, 'Hubo un error al guardar tus comprobantes. Intenta de nuevo.')
+    else:
+        form = ComprobantePagoForm()
+
+    # Datos de cuentas bancarias ficticias
+    cuentas_bancarias = [
+        {
+            'banco': 'Banco de Chile',
+            'tipo_cuenta': 'Cuenta Corriente',
+            'numero': '987654321',
+            'nombre': 'TechTop SpA',
+            'rut': '76.543.210-K',
+            'correo': 'pagos@techtop.cl'
+        },
+        {
+            'banco': 'Banco Santander',
+            'tipo_cuenta': 'Cuenta Vista',
+            'numero': '123456789',
+            'nombre': 'TechTop SpA',
+            'rut': '76.543.210-K',
+            'correo': 'pagos@techtop.cl'
+        }
+    ]
+
+    context = {
+        'pedido': pedido,
+        'form': form,
+        'cuentas': cuentas_bancarias
+    }
+    return render(request, 'store/subir_comprobante.html', context)
+
+# --- NUEVAS VISTAS PARA EL ADMINISTRADOR ---
+
+@admin_required
+def listar_transferencias_view(request):
+    # Listar solo las pendientes primero, luego las revisadas
+    transferencias = PagoTransferencia.objects.all().order_by(
+        Case(When(estado='PENDIENTE', then=0), default=1),
+        '-fecha_subida'
+    )
+    
+    paginator = Paginator(transferencias, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'gestion/transferencias_list.html', {'page_obj': page_obj})
+
+@admin_required
+def gestionar_transferencia_view(request, pago_id):
+    pago = get_object_or_404(PagoTransferencia, id=pago_id)
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        
+        if accion == 'aprobar':
+            pago.estado = 'APROBADO'
+            pago.fecha_revision = timezone.now()
+            pago.save()
+            
+            # Actualizar el pedido a 'procesando' (pagado)
+            pago.pedido.estado = 'procesando'
+            pago.pedido.save()
+            
+            messages.success(request, f'Pago del pedido #{pago.pedido.id} APROBADO.')
+            return redirect('listar_transferencias')
+            
+        elif accion == 'rechazar':
+            pago.estado = 'RECHAZADO'
+            pago.fecha_revision = timezone.now()
+            pago.save()
+            
+            # Actualizar pedido a cancelado y devolver stock
+            pedido = pago.pedido
+            pedido.estado = 'cancelado'
+            pedido.save()
+            
+            for detalle in pedido.detalles.all():
+                producto = detalle.producto
+                producto.stock += detalle.cantidad
+                producto.save()
+                
+            messages.warning(request, f'Pago del pedido #{pago.pedido.id} RECHAZADO y stock restaurado.')
+            return redirect('listar_transferencias')
+
+    return render(request, 'gestion/transferencia_detail.html', {'pago': pago})
+
+
+def cancelar_pedido_transferencia(request, pedido_id):
+    """
+    Permite al usuario cancelar un pedido pendiente de transferencia.
+    Restaura el stock de los productos.
+    """
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+
+    if pedido.estado not in ['procesando', 'pendiente']: 
+        messages.error(request, 'No se puede cancelar este pedido.')
+        return redirect('home')
+
+    try:
+        with transaction.atomic():
+            for detalle in pedido.detalles.select_for_update():
+                producto = detalle.producto
+                producto.stock += detalle.cantidad
+                if not producto.activo and producto.stock > 0:
+                    producto.activo = True
+                producto.save()
+
+            pedido.estado = 'cancelado'
+            pedido.save()
+
+            if hasattr(pedido, 'pago_transferencia'):
+                pedido.pago_transferencia.estado = 'RECHAZADO' 
+                pedido.pago_transferencia.save()
+
+        messages.info(request, 'El pedido ha sido cancelado correctamente.')
+
+    except Exception as e:
+        print(f"Error al cancelar pedido {pedido_id}: {e}")
+        messages.error(request, 'Hubo un error al intentar cancelar el pedido.')
+
+    return redirect('home') 
