@@ -356,6 +356,21 @@ ul {
     color: #888;
 }
 
+.clear-cart-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #d32f2f;
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    transition: color 0.2s;
+}
+
+.clear-cart-btn:hover {
+    color: #b71c1c;
+}
+
 .cart-offcanvas-body {
     flex-grow: 1;
     overflow-y: auto;

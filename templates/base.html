@@ -198,7 +198,10 @@
     <div id="cart-offcanvas" class="cart-offcanvas">
         <div class="cart-offcanvas-header">
             <h3>Tu Carrito</h3>
-            <button id="close-cart-btn" class="close-cart-btn">&times;</button>
+            <div>
+                <button id="clear-cart-btn" class="clear-cart-btn" title="Vaciar Carrito"><i class='bx bx-trash'></i></button>
+                <button id="close-cart-btn" class="close-cart-btn">&times;</button>
+            </div>
         </div>
         <div id="cart-offcanvas-body" class="cart-offcanvas-body">
             <p>Tu carrito está vacío.</p>
@@ -209,8 +212,9 @@
         <span id="cart-subtotal">$0</span>
     </div>
     <a href="{% url 'view_cart' %}" class="btn-view-cart">Ir al Carro</a>
-    <a href="#" class="btn-checkout">Finalizar Compra</a>
+    <a href="{% url 'checkout' %}" class="btn-checkout">Finalizar Compra</a>
 </div>
+
     
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/chatbot.js' %}"></script>
