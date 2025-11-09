@@ -420,3 +420,454 @@
         width: 100%;
     }
 }
+
+/* Estilos para la página de Métricas */
+.metrics-page .metrics-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+.metrics-controls {
+    margin-bottom: 2rem;
+    text-align: right;
+}
+
+.metrics-controls select {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.chart-card, .table-card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.chart-card h3, .table-card h3 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.metrics-table th, .metrics-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.metrics-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.btn-volver {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #eee;
+    color: #333;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 1rem;
+    transition: background-color 0.3s;
+}
+
+.btn-volver:hover {
+    background-color: #ddd;
+}
+
+.btn-volver i {
+    margin-right: 0.5rem;
+}
+
+/* --- Agrega esto al final de gestion.css --- */
+
+/* Contenedor principal de métricas */
+.metrics-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.metrics-controls {
+    margin-bottom: 30px;
+    text-align: right;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.metrics-controls select {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+    margin-left: 10px;
+}
+
+/* Sistema de filas y grids para gráficos */
+.charts-row {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.chart-card {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border: 1px solid #e0e0e0;
+}
+
+.chart-card h3 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+/* Tamaños específicos de gráficos */
+.main-chart {
+    flex: 2;      /* Ocupa más espacio (66%) */
+    min-height: 400px;
+}
+
+.small-chart {
+    flex: 1;      /* Ocupa menos espacio (33%) */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Contenedor para forzar el tamaño pequeño de la torta */
+.chart-wrapper-small {
+    width: 100%;
+    max-width: 250px; /* Límite máximo de ancho para la torta */
+    height: 250px;    /* Altura fija para la torta */
+    position: relative;
+}
+
+.full-width {
+    flex-basis: 100%; /* Ocupa todo el ancho */
+    height: 500px;    /* Altura mayor para que entren los nombres */
+}
+
+/* Estilos de la tabla */
+.table-card {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border: 1px solid #e0e0e0;
+}
+
+.metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.metrics-table th, 
+.metrics-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.metrics-table th {
+    background-color: #f8f9fa;
+    color: #333;
+    font-weight: 600;
+}
+
+.metrics-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Botón volver (estilo consistente) */
+.btn-volver {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #e9ecef;
+    color: #333;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+    margin-top: 15px;
+}
+.btn-volver:hover {
+    background-color: #dde2e6;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .charts-row {
+        flex-direction: column;
+    }
+    .main-chart, .small-chart, .full-width {
+        flex: 1 1 100%;
+        min-height: 350px;
+    }
+    .full-width {
+         height: auto;
+         min-height: 400px;
+    }
+}
+
+/* --- ACTUALIZACIÓN EN static/css/gestion.css --- */
+
+/* ... (estilos anteriores de metrics-container, metrics-controls, etc.) ... */
+
+.charts-row {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    align-items: stretch; /* Para que las tarjetas de una misma fila tengan la misma altura */
+}
+
+.chart-card {
+    background: #fff;
+    padding: 20px; /* Reducido un poco el padding */
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    /* IMPORTANTE: overflow hidden evita que el contenido expanda la tarjeta */
+    overflow: hidden; 
+}
+
+.chart-card h3 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.1rem;
+    text-align: center;
+    flex-shrink: 0; /* Evita que el título se encoja */
+}
+
+/* Contenedor relativo para el canvas. CRUCIAL para Chart.js responsive */
+.chart-container-wrapper {
+    position: relative;
+    flex-grow: 1;
+    width: 100%;
+    min-height: 0; /* Permite que el flex item se encoja si es necesario */
+}
+
+/* Tamaños específicos de las tarjetas */
+.main-chart {
+    flex: 2;
+    min-width: 300px; /* Ancho mínimo para evitar colapso en pantallas pequeñas */
+    height: 400px;    /* Altura fija para controlar el layout */
+}
+
+.small-chart {
+    flex: 1;
+    min-width: 250px;
+    height: 400px;    /* Misma altura que main-chart para alineación */
+}
+
+.full-width {
+    flex-basis: 100%;
+    height: 500px;    /* Altura mayor para el gráfico de barras horizontales */
+}
+
+/* Ajuste específico para el gráfico de torta para que no sea gigante */
+.small-chart .chart-container-wrapper {
+    max-height: 300px; /* Limitar altura máxima de la torta */
+    margin: auto;      /* Centrar verticalmente si sobra espacio */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .charts-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .main-chart, 
+    .small-chart, 
+    .full-width {
+        flex: 1 1 auto;
+        width: 100%;     /* Ocupar todo el ancho en móvil */
+        height: auto;    /* Altura automática */
+        min-height: 350px; /* Altura mínima razonable */
+    }
+
+    /* En móvil, permitimos que la torta ocupe más si es necesario, pero con límite */
+    .small-chart .chart-container-wrapper {
+        max-height: 350px;
+    }
+}
+
+/* --- SELECTOR DE PERÍODO MODERNO --- */
+.metrics-controls {
+    margin-bottom: 30px;
+    text-align: right;
+    background: transparent; /* Quitamos el fondo gris del contenedor */
+    padding: 0; /* Quitamos el padding */
+}
+
+.metrics-controls label {
+    font-weight: 600;
+    color: #555;
+    margin-right: 12px;
+    font-size: 1rem;
+}
+
+.metrics-controls select {
+    appearance: none; /* Elimina el estilo nativo del navegador */
+    background-color: #fff;
+    border: 2px solid #6a0dad; /* Color principal */
+    border-radius: 25px; /* Bordes muy redondeados */
+    padding: 10px 40px 10px 20px; /* Espacio para el texto y la flecha */
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6a0dad;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(106, 13, 173, 0.1);
+    
+    /* Flecha personalizada usando SVG en background-image */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' style='fill:%236a0dad;'%3E%3Cpath d='M16.293 9.293 12 13.586 7.707 9.293l-1.414 1.414L12 16.414l5.707-5.707z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+}
+
+.metrics-controls select:hover {
+    background-color: #6a0dad;
+    color: #fff;
+    /* Cambiamos el color de la flecha a blanco al hacer hover */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' style='fill:%23ffffff;'%3E%3Cpath d='M16.293 9.293 12 13.586 7.707 9.293l-1.414 1.414L12 16.414l5.707-5.707z'/%3E%3C/svg%3E");
+}
+
+.metrics-controls select:focus {
+    box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.3);
+}
+
+
+/* --- TABLA MODERNA Y COLORIDA --- */
+.table-card {
+    /* ... (mantener estilos de fondo, padding, shadow del contenedor) ... */
+    border: none; /* Quitamos borde del card para un look más limpio */
+    overflow: hidden; /* Para que el header redondeado no se salga */
+}
+
+.table-card h3 {
+    /* ... (mantener estilos del título) ... */
+    color: #6a0dad; /* Título en color principal */
+    font-weight: 700;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 12px; /* Redondear la tabla completa */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.metrics-table {
+    width: 100%;
+    border-collapse: separate; /* Necesario para border-radius en celdas */
+    border-spacing: 0;
+    margin-top: 0; /* Quitamos margen superior porque el contenedor ya tiene padding */
+}
+
+.metrics-table th {
+    background: linear-gradient(135deg, #6a0dad, #9c27b0); /* Degradado vibrante */
+    color: white;
+    padding: 18px 15px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+/* Redondear esquinas superiores del header */
+.metrics-table th:first-child { border-top-left-radius: 12px; }
+.metrics-table th:last-child { border-top-right-radius: 12px; }
+
+.metrics-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+}
+
+/* Filas alternas con color muy suave */
+.metrics-table tbody tr:nth-child(even) {
+    background-color: #fbfbfb;
+}
+
+/* Hover effect en filas */
+.metrics-table tbody tr:hover {
+    background-color: #f5eefc; /* Color lavanda muy suave al pasar el mouse */
+    transform: scale(1.01); /* Liguero efecto de zoom */
+    box-shadow: 0 4px 10px rgba(106, 13, 173, 0.1);
+}
+
+/* Estilos específicos para columnas */
+.metrics-table td:first-child { /* Columna Ranking */
+    font-weight: bold;
+    color: #6a0dad;
+    text-align: center;
+}
+.metrics-table th:first-child { text-align: center; } /* Centrar header de ranking */
+
+.metrics-table td:nth-child(2) { /* Columna Producto */
+    font-weight: 500;
+    color: #333;
+}
+
+.metrics-table td:last-child { /* Columna Ingresos */
+    font-weight: 700;
+    color: #28a745; /* Verde para dinero */
+}
+
+/* Badges para el top 3 */
+.top-1-badge, .top-2-badge, .top-3-badge {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    color: white;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.top-1-badge { background: linear-gradient(45deg, #FFD700, #FFA500); } /* Dorado */
+.top-2-badge { background: linear-gradient(45deg, #C0C0C0, #A9A9A9); } /* Plateado */
+.top-3-badge { background: linear-gradient(45deg, #CD7F32, #8B4513); } /* Bronce */
+
+/* Responsive para la tabla */
+@media (max-width: 768px) {
+    .metrics-table th, .metrics-table td {
+        padding: 12px 10px;
+        font-size: 0.9rem;
+    }
+}

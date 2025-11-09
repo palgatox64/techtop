@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Métricas de Ventas - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="gestion-page metrics-page">
+    <header class="gestion-header">
+        <h1>Métricas de Ventas</h1>
+        <p>Analiza el rendimiento de tu tienda.</p>
+        <a href="{% url 'panel_gestion' %}" class="btn-volver"><i class='bx bx-arrow-back'></i> Volver al Panel</a>
+    </header>
+
+    <main class="metrics-container">
+        <div class="metrics-controls">
+            <label for="time-period">Período de Análisis:</label>
+            <select id="time-period" onchange="updateCharts(this.value)">
+                <option value="weekly">Última Semana</option>
+                <option value="monthly" selected>Último Mes</option>
+                <option value="yearly">Último Año</option>
+                <option value="all_time">Histórico Completo</option>
+            </select>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card main-chart">
+                <h3>Ingresos en el Tiempo</h3>
+                <div class="chart-container-wrapper">
+                    <canvas id="timeSalesChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card small-chart">
+                <h3>Preferencias de Envío</h3>
+                <div class="chart-container-wrapper">
+                    <canvas id="shippingChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card full-width">
+                <h3>Top 10 Productos Más Vendidos</h3>
+                <div class="chart-container-wrapper">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <h3>Detalle de Top Productos</h3>
+            <div class="table-responsive">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Ranking</th>
+                            <th>Producto</th>
+                            <th>Unidades Vendidas</th>
+                            <th>Ingresos Generados</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-products-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+{{ metrics_data|json_script:"metrics-data" }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const metricsData = JSON.parse(document.getElementById('metrics-data').textContent);
+        let timeSalesChart, shippingChart, topProductsChart;
+
+        function initCharts() {
+            // 1. Gráfico de Línea (Ventas en el tiempo) - Renombrado para claridad
+            const ctxTime = document.getElementById('timeSalesChart').getContext('2d');
+            timeSalesChart = new Chart(ctxTime, {
+                type: 'line', // Cambiado a línea para mejor visualización del tiempo
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Ingresos ($)',
+                        data: [],
+                        borderColor: '#6a0dad',
+                        backgroundColor: 'rgba(106, 13, 173, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Gráfico de Torta (Envíos) - Se hará pequeño por CSS
+            const ctxShipping = document.getElementById('shippingChart').getContext('2d');
+            shippingChart = new Chart(ctxShipping, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Retiro en Tienda', 'Delivery'],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#6a0dad', '#ffb703']
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // 3. NUEVO Gráfico de Barras Horizontales (Top Productos)
+            const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+            topProductsChart = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Unidades Vendidas',
+                        data: [],
+                        backgroundColor: '#2c2c2c',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Hace que las barras sean horizontales
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+
+            updateCharts('monthly'); // Cargar datos iniciales
+        }
+
+        window.updateCharts = function(period) {
+            const data = metricsData[period];
+            
+            // Actualizar Gráfico 1: Tiempo
+            timeSalesChart.data.labels = data.sales_over_time.labels;
+            timeSalesChart.data.datasets[0].data = data.sales_over_time.values;
+            timeSalesChart.update();
+
+            // Actualizar Gráfico 2: Envíos
+            shippingChart.data.datasets[0].data = [data.shipping.pickup, data.shipping.delivery];
+            shippingChart.update();
+
+            // Actualizar Gráfico 3: Top Productos (NUEVO)
+            // Extraemos los nombres y cantidades de la lista de productos
+            topProductsChart.data.labels = data.top_products.map(p => p.name);
+            topProductsChart.data.datasets[0].data = data.top_products.map(p => p.quantity);
+            topProductsChart.update();
+
+            // Actualizar Tabla
+            const tbody = document.getElementById('top-products-body');
+            tbody.innerHTML = '';
+            data.top_products.forEach((prod, index) => {
+                // Formatear dinero
+                const revenueFormatted = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(prod.revenue);
+                
+                // Determinar el badge del ranking
+                let rankingDisplay = `#${index + 1}`;
+                if (index === 0) {
+                    rankingDisplay = '<span class="top-1-badge">1</span>';
+                } else if (index === 1) {
+                    rankingDisplay = '<span class="top-2-badge">2</span>';
+                } else if (index === 2) {
+                    rankingDisplay = '<span class="top-3-badge">3</span>';
+                }
+
+                const row = `<tr>
+                    <td>${rankingDisplay}</td>
+                    <td>${prod.name}</td>
+                    <td>${prod.quantity} un.</td>
+                    <td>${revenueFormatted}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        };
+
+        initCharts();
+    });
+</script>
+{% endblock %}

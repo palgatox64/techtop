@@ -15,6 +15,11 @@ from django.utils import timezone
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Sum, Count, F, Q
+from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.utils import timezone
+import datetime
 
 # Third-party imports
 from decimal import Decimal
@@ -2379,3 +2384,125 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
         messages.error(request, f'Error al procesar el pago: {str(e)}')
         return redirect('home')
 
+def obtener_ventas_en_tiempo(fecha_inicio, agrupador):
+    """
+    Obtiene las ventas agregadas por tiempo (día, mes o año).
+    Filtra solo pedidos confirmados (no pendientes ni cancelados).
+    """
+    # Definimos qué estados consideramos como "ventas reales"
+    estados_validos = ['procesando', 'enviado', 'entregado']
+    
+    ventas = Pedido.objects.filter(
+        fecha_pedido__gte=fecha_inicio,
+        estado__in=estados_validos
+    ).annotate(
+        periodo=agrupador('fecha_pedido')
+    ).values('periodo').annotate(
+        total_ventas=Sum('total')
+    ).order_by('periodo')
+
+    # Formatear para Chart.js
+    labels = []
+    values = []
+    for venta in ventas:
+        # Formato de fecha dependiendo del agrupador
+        if isinstance(agrupador, type(TruncDay)):
+            fecha_fmt = venta['periodo'].strftime("%d/%m") # Ej: 25/10
+        elif isinstance(agrupador, type(TruncMonth)):
+            fecha_fmt = venta['periodo'].strftime("%m/%Y") # Ej: 10/2025
+        else:
+            fecha_fmt = venta['periodo'].strftime("%Y") # Ej: 2025
+            
+        labels.append(fecha_fmt)
+        values.append(float(venta['total_ventas']))
+
+    return {'labels': labels, 'values': values}
+
+def obtener_top_productos(fecha_inicio):
+    """
+    Obtiene el top 10 de productos más vendidos en un período.
+    Ordena primero por cantidad vendida (descendente) y luego por ingresos generados (descendente) para desempatar.
+    """
+    estados_validos = ['procesando', 'enviado', 'entregado']
+    
+    top = DetallePedido.objects.filter(
+        pedido__fecha_pedido__gte=fecha_inicio,
+        pedido__estado__in=estados_validos
+    ).values(
+        'producto__nombre'
+    ).annotate(
+        cantidad_total=Sum('cantidad'),
+        ingresos_totales=Sum(F('cantidad') * F('precio_unitario'))
+    ).order_by('-cantidad_total', '-ingresos_totales')[:10]  # <-- AQUÍ ESTÁ EL CAMBIO CLAVE
+
+    return [
+        {
+            'name': item['producto__nombre'],
+            'quantity': item['cantidad_total'],
+            'revenue': float(item['ingresos_totales'])
+        }
+        for item in top
+    ]
+
+def obtener_metricas_envio(fecha_inicio):
+    """
+    Cuenta cuántos pedidos fueron con retiro vs delivery.
+    """
+    estados_validos = ['procesando', 'enviado', 'entregado']
+    
+    stats = Pedido.objects.filter(
+        fecha_pedido__gte=fecha_inicio,
+        estado__in=estados_validos
+    ).aggregate(
+        retiro=Count('id', filter=Q(direccion_envio__isnull=True)),
+        delivery=Count('id', filter=Q(direccion_envio__isnull=False))
+    )
+    
+    return {
+        'pickup': stats['retiro'] or 0,
+        'delivery': stats['delivery'] or 0
+    }
+
+# =========================================
+# VISTA PRINCIPAL DE MÉTRICAS
+# =========================================
+
+@admin_required
+# @user_passes_test... (si usas este decorador también, mantenlo)
+@admin_required
+def ver_metricas(request):
+    now = timezone.now()
+    
+    # 1. Definir rangos de fechas
+    hace_una_semana = now - datetime.timedelta(days=7)
+    hace_un_mes = now - datetime.timedelta(days=30)
+    hace_un_ano = now - datetime.timedelta(days=365)
+    
+    # --- CORRECCIÓN AQUÍ: Usamos datetime.timezone.utc ---
+    inicio_de_los_tiempos = datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc)
+
+    # 2. Generar datos para cada período usando las funciones auxiliares
+    metrics_data = {
+        'weekly': {
+            'sales_over_time': obtener_ventas_en_tiempo(hace_una_semana, TruncDay),
+            'shipping': obtener_metricas_envio(hace_una_semana),
+            'top_products': obtener_top_productos(hace_una_semana)
+        },
+        'monthly': {
+            'sales_over_time': obtener_ventas_en_tiempo(hace_un_mes, TruncDay),
+            'shipping': obtener_metricas_envio(hace_un_mes),
+            'top_products': obtener_top_productos(hace_un_mes)
+        },
+        'yearly': {
+            'sales_over_time': obtener_ventas_en_tiempo(hace_un_ano, TruncMonth),
+            'shipping': obtener_metricas_envio(hace_un_ano),
+            'top_products': obtener_top_productos(hace_un_ano)
+        },
+        'all_time': {
+            'sales_over_time': obtener_ventas_en_tiempo(inicio_de_los_tiempos, TruncYear),
+            'shipping': obtener_metricas_envio(inicio_de_los_tiempos),
+            'top_products': obtener_top_productos(inicio_de_los_tiempos)
+        }
+    }
+
+    return render(request, 'gestion/metrics.html', {'metrics_data': metrics_data})

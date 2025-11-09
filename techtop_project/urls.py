@@ -50,6 +50,7 @@ urlpatterns = [
     path('checkout/', views.checkout_view, name='checkout'),
     path('procesar-pedido/', views.procesar_pedido_view, name='procesar_pedido'),
     path('pedido/recibo/<int:pedido_id>/', views.generar_recibo_pdf, name='generar_recibo_pdf'),
+    path('gestion/metricas/', views.ver_metricas, name='ver_metricas'),
     
     # Rutas para Webpay Plus (Transbank)
     path('webpay/iniciar/<int:pedido_id>/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
