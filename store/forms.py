@@ -20,6 +20,12 @@ class MarcaForm(forms.ModelForm):
         }
 
 class ProductoForm(forms.ModelForm):
+    publicar_redes = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='¿Publicar en redes sociales?',
+        help_text='Si está marcado, el producto se compartirá automáticamente en Facebook e Instagram'
+    )
     class Meta:
         model = Producto
         fields = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria', 'marca', 'activo']

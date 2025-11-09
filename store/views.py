@@ -764,7 +764,18 @@ def crear_producto_view(request):
         # Para formularios con archivos, se usa request.POST y request.FILES
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            # Guardar temporalmente el valor antes de guardar el formulario
+            publicar_redes = form.cleaned_data.get('publicar_redes', False)
+            
+            # Guardar el producto SIN commit para asignar el flag primero
+            producto = form.save(commit=False)
+            
+            # Almacenar el flag en el objeto ANTES de guardarlo
+            producto._publicar_redes = publicar_redes
+            
+            # Ahora sí guardar (esto dispara el signal CON el flag ya asignado)
+            producto.save()
+            
             messages.success(request, '¡Producto creado exitosamente!')
             return redirect('panel_gestion')
     else:
