@@ -174,4 +174,74 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error al cargar el carrito inicial:', error));
     }
     loadInitialCart();
+
+    // Función para obtener la cookie CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Botón para vaciar carrito
+    const clearCartBtn = document.getElementById('clear-cart-btn');
+    if (clearCartBtn) {
+        clearCartBtn.addEventListener('click', function() {
+            const cartItemCount = document.getElementById('cart-item-count');
+            const itemCount = parseInt(cartItemCount?.textContent) || 0;
+
+            // Verificar si hay productos en el carrito
+            if (itemCount === 0) {
+                Swal.fire({
+                    title: 'Carrito Vacío',
+                    text: 'Necesitas tener al menos un producto en el carrito para vaciarlo.',
+                    icon: 'info',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Se eliminarán todos los productos de tu carrito.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, vaciar carrito',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/limpiar-carro/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadInitialCart();
+                            Swal.fire(
+                                '¡Vaciado!',
+                                'Tu carrito ha sido vaciado.',
+                                'success'
+                            );
+                        }
+                    })
+                    .catch(error => console.error('Error al vaciar el carrito:', error));
+                }
+            });
+        });
+    }
 });

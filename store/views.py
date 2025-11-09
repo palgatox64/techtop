@@ -445,6 +445,18 @@ def remove_from_cart(request, product_id):
     request.session['cart'] = cart
     return redirect('view_cart')
 
+def clear_cart(request):
+    """
+    Elimina todos los productos del carrito de la sesión.
+    Responde a una petición AJAX.
+    """
+    if request.method == 'POST':
+        if 'cart' in request.session:
+            del request.session['cart']
+            request.session.modified = True
+        return JsonResponse({'success': True, 'message': 'El carrito ha sido vaciado.'})
+    return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
+
 
 def login_view(request):
     """
