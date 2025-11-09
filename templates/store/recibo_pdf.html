@@ -24,8 +24,9 @@
             overflow: auto;
             zoom: 1;
         }
+        /* LOGO MÁS PEQUEÑO */
         .header img {
-            max-width: 180px;
+            max-width: 120px; /* Reducido de 180px a 120px */
             float: left;
             margin-right: 20px;
         }
@@ -125,7 +126,7 @@
         <div class="header-info">
             <h1>RECIBO DE COMPRA</h1>
             <p><strong>Pedido N°:</strong> {{ pedido.id }}</p>
-            <p><strong>Fecha:</strong> {{ pedido.fecha }}</p>
+            <p><strong>Fecha:</strong> {{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
         </div>
     </div>
 
@@ -134,8 +135,12 @@
         <p>
             <strong>Nombre:</strong> {{ cliente_nombre_completo }}<br>
             <strong>Email:</strong> {{ cliente_email }} <br>
-            {# Mostramos RUT si existe #}
-            {% if cliente_rut != 'No disponible' %}<strong>RUT:</strong> {{ cliente_rut }}{% endif %}
+            {% if cliente_rut != 'No disponible' %}<strong>RUT:</strong> {{ cliente_rut }}<br>{% endif %}
+            {% if pedido.direccion_envio %}
+                <strong>Dirección:</strong> {{ pedido.direccion_envio.calle }} {{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}
+            {% else %}
+                <strong>Retiro en Tienda</strong>
+            {% endif %}
         </p>
     </div>
 
@@ -150,13 +155,11 @@
         </thead>
         <tbody>
             {% for item in detalles %}
-            {# *** CORRECCIÓN AQUÍ: Usamos {% widthratio %} para multiplicar *** #}
             {% widthratio item.precio_unitario 1 item.cantidad as item_total %}
             <tr>
-                <td class="product-name">{{ item.nombre }}</td>
+                <td class="product-name">{{ item.producto.nombre }}</td>
                 <td class="numeric">{{ item.cantidad }}</td>
                 <td class="numeric">${{ item.precio_unitario|floatformat:0|dot_thousands }}</td>
-                {# Mostramos la variable calculada 'item_total' #}
                 <td class="numeric">${{ item_total|floatformat:0|dot_thousands }}</td>
             </tr>
             {% empty %}

@@ -26,23 +26,32 @@
         </div>
 
         <div class="charts-row">
-            <div class="chart-card main-chart">
+            <div class="chart-card full-width">
                 <h3>Ingresos en el Tiempo</h3>
                 <div class="chart-container-wrapper">
                     <canvas id="timeSalesChart"></canvas>
                 </div>
             </div>
+        </div>
+
+        <div class="charts-row two-columns">
             <div class="chart-card small-chart">
                 <h3>Preferencias de Envío</h3>
-                <div class="chart-container-wrapper">
+                <div class="chart-container-wrapper chart-wrapper-small">
                     <canvas id="shippingChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card small-chart">
+                <h3>Métodos de Pago</h3>
+                <div class="chart-container-wrapper chart-wrapper-small">
+                    <canvas id="paymentChart"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="charts-row">
             <div class="chart-card full-width">
-                <h3>Top 10 Productos Más Vendidos</h3>
+                <h3>Top 10 Productos Más Vendidos (Unidades)</h3>
                 <div class="chart-container-wrapper">
                     <canvas id="topProductsChart"></canvas>
                 </div>
@@ -74,7 +83,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const metricsData = JSON.parse(document.getElementById('metrics-data').textContent);
-        let timeSalesChart, shippingChart, topProductsChart;
+        let timeSalesChart, shippingChart, paymentChart, topProductsChart;
 
         function initCharts() {
             // 1. Gráfico de Línea (Ventas en el tiempo) - Renombrado para claridad
@@ -114,7 +123,25 @@
                     }
                 }
             });
-
+            const ctxPayment = document.getElementById('paymentChart').getContext('2d');
+            paymentChart = new Chart(ctxPayment, {
+                type: 'doughnut', // Tipo torta (con agujero, igual que el de envíos)
+                data: {
+                    labels: ['Webpay', 'Mercado Pago', 'Transferencia'],
+                    datasets: [{
+                        data: [],
+                        // Colores diferentes para distinguir: Azul, Celeste, Verde
+                        backgroundColor: ['#0d6efd', '#0dcaf0', '#198754']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
             // 3. NUEVO Gráfico de Barras Horizontales (Top Productos)
             const ctxTop = document.getElementById('topProductsChart').getContext('2d');
             topProductsChart = new Chart(ctxTop, {
@@ -153,6 +180,13 @@
             shippingChart.data.datasets[0].data = [data.shipping.pickup, data.shipping.delivery];
             shippingChart.update();
 
+            paymentChart.data.datasets[0].data = [
+                data.payment.webpay,
+                data.payment.mercadopago,
+                data.payment.transferencia
+            ];
+            paymentChart.update();
+            
             // Actualizar Gráfico 3: Top Productos (NUEVO)
             // Extraemos los nombres y cantidades de la lista de productos
             topProductsChart.data.labels = data.top_products.map(p => p.name);

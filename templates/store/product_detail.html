@@ -65,9 +65,16 @@
                     Agregar al carro
                 </button>
             </form>
-            <button class="btn btn-primary" id="buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
-                Comprar ahora
-            </button>
+
+            <form action="{% url 'add_to_cart' product.id %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="checkout">
+                <input type="hidden" name="quantity" value="1">
+                
+                <button type="submit" class="btn btn-primary" id="buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
+                    Comprar ahora
+                </button>
+            </form>
         </div>
 
         <div class="stock-info">

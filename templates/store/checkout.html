@@ -51,7 +51,7 @@
             </section>
 
             <section class="checkout-section">
-                <h3>2. Método de Entrega*</h3>
+                <h3>2. Método de Entrega</h3>
                 <div class="radio-options" id="delivery-options-container">
                     {% for choice in form.tipo_entrega.field.choices %}
                         <label class="radio-label" for="id_tipo_entrega_{{ forloop.counter0 }}">
@@ -110,7 +110,7 @@
             </section>
 
             <section class="checkout-section">
-                <h3>3. Método de Pago*</h3>
+                <h3>3. Método de Pago</h3>
                 <div class="payment-methods-grid">
                     {% for choice in form.metodo_pago.field.choices %}
                         <label class="payment-method-card" for="id_metodo_pago_{{ forloop.counter0 }}">
@@ -127,7 +127,7 @@
                                     {% elif choice.0 == 'mercadopago' %}
                                         <img src="{% static 'img/logo_mercadopago.png' %}" alt="Mercado Pago" class="payment-logo-img">
                                     {% elif choice.0 == 'transferencia' %}
-                                        <img src="{% static 'img/logo_servipag.png' %}" alt="Transferencia" class="payment-logo-img">
+                                        <img src="{% static 'img/transferencia.webp' %}" alt="Transferencia" class="payment-logo-img">
                                     {% endif %}
                                 </div>
                                 <div class="payment-check-icon">

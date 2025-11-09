@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Mi Perfil - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}"> <div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Hola, {{ cliente.nombre }}</h1>
+        <p>Bienvenido a tu panel de cliente.</p>
+    </header>
+
+    <div class="gestion-menu">
+        <a href="{% url 'editar_perfil' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bx-user-circle'></i></div>
+            <h3>Mis Datos Personales</h3>
+            <p>Ver y editar tu información de contacto y envío.</p>
+        </a>
+        <a href="{% url 'historial_compras' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bx-shopping-bag'></i></div>
+            <h3>Mis Compras</h3>
+            <p>Revisa el historial y estado de tus pedidos.</p>
+        </a>
+    </div>
+
+    <div style="margin-top: 50px;">
+        <h2>Últimos Pedidos</h2>
+        {% if ultimas_compras %}
+            <div class="table-responsive">
+                <table class="crud-table">
+                    <thead>
+                        <tr>
+                            <th>Pedido #</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in ultimas_compras %}
+                        <tr>
+                            <td>#{{ pedido.id }}</td>
+                            <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
+                            <td>${{ pedido.total|floatformat:0|dot_thousands }}</td>
+                            <td>
+                                <span class="badge status-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'detalle_compra' pedido.id %}" class="btn-action" style="background:#6a0dad; color:white;">Ver Detalle</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <a href="{% url 'historial_compras' %}" style="color: #6a0dad; font-weight: 600;">Ver todo el historial →</a>
+            </div>
+        {% else %}
+            <p style="text-align: center; padding: 20px; background: #f9f9f9; border-radius: 8px;">Aún no has realizado ninguna compra.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

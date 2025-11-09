@@ -1,6 +1,7 @@
 from django import forms
 from .models import Categoria, Marca, Producto
 from django.core.exceptions import ValidationError 
+from .models import Cliente, Direccion # Asegúrate de importar los modelos
 
 class CategoriaForm(forms.ModelForm):
     class Meta:
@@ -141,3 +142,16 @@ class ComprobantePagoForm(forms.Form):
         label="Subir Comprobantes (Puedes seleccionar varias)",
         widget=MultipleFileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
     )
+    
+class PerfilUsuarioForm(forms.Form):
+    # Datos del Cliente
+    nombre = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    apellidos = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control', 'readonly': 'readonly'})) # Email suele ser solo lectura para no romper login
+    telefono = forms.CharField(max_length=9, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    # Datos de Dirección (Opcionales si no ha comprado, pero buenos para tener)
+    calle = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    numero = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    ciudad = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    region = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
