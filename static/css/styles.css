@@ -531,3 +531,16 @@ ul {
         height: 300px;
     }
 }
+
+/* --- Arreglo para Mega-Menú de Columna Única --- */
+
+.mega-menu-column.full-width {
+    /* Le indica al contenedor de la columna que "crezca" para llenar el espacio sobrante */
+    flex-grow: 1; 
+
+    /* Asegura que use todo el ancho posible */
+    width: 100%; 
+
+    /* Resetea la altura para evitar conflictos con .full-width de gestion.css */
+    height: auto;
+}

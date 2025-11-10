@@ -22,8 +22,8 @@ from django.utils import timezone
 import datetime
 from .forms import ComprobantePagoForm, PerfilUsuarioForm
 from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia
-from django.db.models import Case, When, Value, IntegerField # Agrega Value e IntegerField por si acaso
-from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField
+from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg # Agrega Value e IntegerField por si acaso
+from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg
 # Third-party imports
 from decimal import Decimal
 from io import BytesIO
@@ -33,7 +33,7 @@ import csv
 import json
 
 # Local imports
-from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario
 from .decorators import admin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
 from .validators import validate_chilean_rut
@@ -298,7 +298,6 @@ def get_cart_data(request):
         'subtotal': float(total_price)
     })
 
-
 def product_detail(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
     precio_transferencia = product.precio * Decimal('0.97')
@@ -309,6 +308,16 @@ def product_detail(request, product_id):
     # Verificar si el producto está activo y tiene stock
     producto_disponible = product.activo and product.stock > 0
     
+    # Obtener comentarios para este producto desde la base de datos
+    comentarios = product.comentarios.all()
+    
+    # Calcular el promedio de estrellas y el total de reseñas
+    total_reseñas = comentarios.count()
+    promedio_estrellas = 0
+    if total_reseñas > 0:
+        # Usamos aggregate para calcular el promedio en la BD
+        promedio_estrellas = comentarios.aggregate(Avg('estrellas'))['estrellas__avg']
+
     context = {
         'product': product,
         'precio_transferencia': precio_transferencia,
@@ -316,6 +325,9 @@ def product_detail(request, product_id):
         'descuento_porcentaje': descuento_porcentaje,
         'imagenes_adicionales': imagenes_adicionales,
         'producto_disponible': producto_disponible,
+        'comentarios': comentarios,
+        'total_reseñas': total_reseñas,
+        'promedio_estrellas': round(promedio_estrellas, 1) if promedio_estrellas else 0,
     }
     return render(request, 'store/product_detail.html', context)
 

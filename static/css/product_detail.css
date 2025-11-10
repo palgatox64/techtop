@@ -27,7 +27,7 @@
     cursor: pointer;
     overflow: hidden;
     transition: border-color 0.3s ease, transform 0.2s ease;
-    flex-shrink: 0; /* Evita que las miniaturas se redimensionen */
+    flex-shrink: 0; 
 }
 
 .thumb-item:hover {
@@ -43,7 +43,7 @@
 .thumb-item img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Mantiene la proporción y recorta si es necesario */
+    object-fit: cover; 
 }
 
 .gallery-main-image {
@@ -70,7 +70,7 @@
     display: block;
 }
 
-/* Cuando está en modo zoom, ocultar la imagen y mostrar el background */
+
 .gallery-main-image.zooming img {
     opacity: 0;
 }
@@ -79,7 +79,7 @@
     cursor: zoom-in;
 }
 
-/* Estilos para la lupa */
+
 .zoom-lens {
     position: absolute;
     border: 2px solid #000;
@@ -91,7 +91,7 @@
     z-index: 10;
 }
 
-/* Resultado del zoom */
+
 .zoom-result {
     position: absolute;
     left: 105%;
@@ -188,7 +188,7 @@
     transition: opacity 0.3s ease, background-color 0.3s ease;
 }
 
-/* Estilos para botones deshabilitados */
+
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -317,13 +317,13 @@
         display: flex;
     }
     
-    /* Ocultar zoom en móviles */
+    
     .zoom-lens,
     .zoom-result {
         display: none !important;
     }
     
-    /* Desactivar zoom en móviles */
+    
     .gallery-main-image {
         cursor: default;
     }
@@ -335,5 +335,133 @@
     .gallery-main-image.zooming {
         cursor: default;
         background-image: none !important;
+    }
+}
+
+/* --- ESTILOS PARA LA SECCIÓN DE RESEÑAS --- */
+.product-reviews-container {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 1rem;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 2rem;
+}
+
+.product-reviews-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.reviews-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.summary-stars {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1.5rem;
+    color: #ffc107;
+}
+
+.summary-stars span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-left: 0.75rem;
+}
+
+.reviews-summary p {
+    font-size: 1rem;
+    color: #666;
+}
+
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.review-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #fff;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.review-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.review-stars {
+    font-size: 1rem;
+    color: #ffc107;
+}
+
+.review-date {
+    font-size: 0.85rem;
+    color: #777;
+}
+
+.review-body p {
+    line-height: 1.6;
+    color: #444;
+}
+
+.review-body p:first-child {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .product-reviews-container {
+        margin: 2rem auto;
+    }
+
+    .product-reviews-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .review-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .review-meta {
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
     }
 }
