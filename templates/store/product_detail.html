@@ -14,14 +14,12 @@
     
     <div class="product-gallery">
         <div class="gallery-thumbnails">
-            <!-- Imagen principal -->
             {% if product.imagen %}
             <div class="thumb-item active" data-image="{{ product.imagen.url }}">
                 <img src="{{ product.imagen.url }}" alt="Miniatura de {{ product.nombre }}">
             </div>
             {% endif %}
             
-            <!-- Imágenes adicionales -->
             {% for imagen in imagenes_adicionales %}
             <div class="thumb-item" data-image="{{ imagen.imagen.url }}">
                 <img src="{{ imagen.imagen.url }}" alt="Miniatura adicional de {{ product.nombre }}">
@@ -96,7 +94,6 @@
     </div>
 </div>
 
-<!-- Sección de Reseñas y Comentarios -->
 <div class="product-reviews-container">
     <h2>Reseñas de Clientes</h2>
     <div class="reviews-summary">
@@ -124,12 +121,42 @@
         <p>Basado en {{ total_reseñas }} reseña{{ total_reseñas|pluralize }}</p>
     </div>
 
+    {% if cliente_logueado %}
+        <div class="review-form-container">
+            <h3>Escribe tu propia reseña</h3>
+            <form method="POST" class="review-form">
+                {% csrf_token %}
+                <div class="form-group-stars">
+                    <label>{{ form_comentario.estrellas.label }}</label>
+                    <div class="star-rating">
+                        {% for radio in form_comentario.estrellas %}
+                            {{ radio.tag }}
+                            <label for="{{ radio.id_for_label }}"><i class='bx bxs-star'></i></label>
+                        {% endfor %}
+                    </div>
+                    {{ form_comentario.estrellas.errors }}
+                </div>
+                <div class="form-group-content">
+                    <label for="{{ form_comentario.contenido.id_for_label }}">{{ form_comentario.contenido.label }}</label>
+                    {{ form_comentario.contenido }}
+                    {{ form_comentario.contenido.errors }}
+                </div>
+                <button type="submit" name="submit_comentario" class="btn btn-primary" style="margin-top: 15px;">
+                    Enviar Reseña
+                </button>
+            </form>
+        </div>
+    {% else %}
+        <div class="review-form-login-prompt">
+            <p>Debes <a href="{% url 'login' %}?next={{ request.path }}"><b>iniciar sesión</b></a> para dejar una reseña.</p>
+        </div>
+    {% endif %}
     <div class="review-list">
         {% for comentario in comentarios %}
         <div class="review-item">
             <div class="review-header">
                 <div class="reviewer-info">
-                    <span class="reviewer-name">{{ comentario.autor }}</span>
+                    <span class="reviewer-name">{{ comentario.cliente.nombre }} {{ comentario.cliente.apellidos }}</span>
                 </div>
                 <div class="review-meta">
                     <div class="review-stars">
@@ -151,7 +178,7 @@
         {% empty %}
         <div class="review-item">
             <div class="review-body">
-                <p>Aún no hay comentarios para este producto. ¡Sé el primero en dejar una reseña!</p>
+                <p>Aún no hay comentarios aprobados para este producto. ¡Sé el primero en dejar una reseña!</p>
             </div>
         </div>
         {% endfor %}

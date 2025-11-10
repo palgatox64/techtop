@@ -338,7 +338,10 @@
     }
 }
 
-/* --- ESTILOS PARA LA SECCIÓN DE RESEÑAS --- */
+/* ========================================
+   SECCIÓN DE RESEÑAS Y COMENTARIOS
+   ======================================== */
+
 .product-reviews-container {
     max-width: 1200px;
     margin: 4rem auto;
@@ -353,6 +356,7 @@
     text-align: center;
 }
 
+/* --- Resumen de Estrellas --- */
 .reviews-summary {
     display: flex;
     flex-direction: column;
@@ -362,6 +366,10 @@
     background-color: #f9f9f9;
     padding: 1.5rem;
     border-radius: 8px;
+    /* Ancho máximo para centrarlo */
+    max-width: 800px; 
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .summary-stars {
@@ -382,12 +390,135 @@
 .reviews-summary p {
     font-size: 1rem;
     color: #666;
+    margin: 0;
 }
 
+/* --- Formulario para Escribir Reseña --- */
+.review-form-container, .review-form-login-prompt {
+    background-color: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2.5rem;
+    /* Centrado y con ancho máximo */
+    max-width: 800px; 
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.review-form-login-prompt {
+    padding: 2rem;
+}
+
+.review-form-login-prompt p {
+    margin: 0;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.review-form-login-prompt a {
+    color: #6a0dad; /* Color principal */
+    text-decoration: none;
+    font-weight: 600;
+}
+.review-form-login-prompt a:hover {
+    text-decoration: underline;
+}
+
+.review-form h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.review-form .form-group-stars {
+    margin-bottom: 1.5rem;
+}
+
+.review-form label { /* Etiqueta general */
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 1.1rem;
+}
+
+.review-form .form-group-content textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 1rem;
+    min-height: 120px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.review-form .form-group-content textarea:focus {
+    outline: none;
+    border-color: #6a0dad;
+    box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.1);
+}
+
+/* --- Sistema de Estrellas Interactivo --- */
+.star-rating {
+    display: flex;
+    flex-direction: row-reverse; /* Invierte el orden de los elementos */
+    justify-content: flex-end; /* Los alinea a la derecha */
+    width: fit-content; /* Evita que ocupe todo el ancho */
+}
+
+/* Oculta los botones de radio originales */
+.star-rating input[type="radio"] {
+    display: none;
+}
+
+/* Estilo de las estrellas (íconos) */
+.star-rating label {
+    font-size: 2.5rem; /* Tamaño de las estrellas */
+    color: #ccc;      /* Color de estrella apagada */
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0 0.1em;
+}
+
+/* Esto colorea las estrellas al pasar el mouse */
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: #ffc107;
+}
+
+/* Esto colorea las estrellas que están seleccionadas (checked) */
+.star-rating input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+
+/* --- Botón de Enviar Reseña --- */
+.review-form .btn-primary {
+    background-color: #000;
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.review-form .btn-primary:hover {
+    background-color: #333;
+}
+
+
+/* --- Lista de Reseñas (Comentarios) --- */
 .review-list {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    /* Centrado y con ancho máximo */
+    max-width: 800px; 
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .review-item {
@@ -421,6 +552,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 0.25rem;
+    flex-shrink: 0; /* Evita que se encoja */
 }
 
 .review-stars {
@@ -436,13 +568,12 @@
 .review-body p {
     line-height: 1.6;
     color: #444;
+    margin: 0;
+    word-break: break-word; /* Evita que el texto largo rompa el layout */
 }
 
-.review-body p:first-child {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
 
+/* --- RESPONSIVIDAD (Móviles) --- */
 @media (max-width: 768px) {
     .product-reviews-container {
         margin: 2rem auto;
@@ -452,6 +583,16 @@
         font-size: 1.5rem;
     }
 
+    .review-form-container, .review-form-login-prompt {
+        padding: 1.5rem;
+    }
+    .review-form h3 {
+        font-size: 1.3rem;
+    }
+    .star-rating label {
+        font-size: 2.2rem; 
+    }
+    
     .review-header {
         flex-direction: column;
         align-items: flex-start;
@@ -463,5 +604,21 @@
         align-items: center;
         gap: 1rem;
         width: 100%;
+        justify-content: flex-start; 
+    }
+}
+
+@media (max-width: 480px) {
+    .review-form-container, .review-form-login-prompt {
+        padding: 1rem;
+    }
+    .review-form label {
+        font-size: 1rem;
+    }
+    .star-rating label {
+        font-size: 2rem; 
+    }
+    .review-form .btn-primary {
+        width: 100%; 
     }
 }
