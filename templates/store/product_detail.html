@@ -96,6 +96,68 @@
     </div>
 </div>
 
+<!-- Sección de Reseñas y Comentarios -->
+<div class="product-reviews-container">
+    <h2>Reseñas de Clientes</h2>
+    <div class="reviews-summary">
+        <div class="summary-stars">
+            {% if promedio_estrellas > 0 %}
+                {% for i in "12345" %}
+                    {% if i|add:0 <= promedio_estrellas %}
+                        <i class='bx bxs-star'></i>
+                    {% elif i|add:0 > promedio_estrellas and i|add:"-1" < promedio_estrellas %}
+                        <i class='bx bxs-star-half'></i>
+                    {% else %}
+                        <i class='bx bx-star'></i>
+                    {% endif %}
+                {% endfor %}
+                <span>{{ promedio_estrellas|floatformat:1 }} de 5 estrellas</span>
+            {% else %}
+                <i class='bx bx-star'></i>
+                <i class='bx bx-star'></i>
+                <i class='bx bx-star'></i>
+                <i class='bx bx-star'></i>
+                <i class='bx bx-star'></i>
+                <span>Sin reseñas aún</span>
+            {% endif %}
+        </div>
+        <p>Basado en {{ total_reseñas }} reseña{{ total_reseñas|pluralize }}</p>
+    </div>
+
+    <div class="review-list">
+        {% for comentario in comentarios %}
+        <div class="review-item">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <span class="reviewer-name">{{ comentario.autor }}</span>
+                </div>
+                <div class="review-meta">
+                    <div class="review-stars">
+                        {% for i in "12345" %}
+                            {% if i|add:0 <= comentario.estrellas %}
+                                <i class='bx bxs-star'></i>
+                            {% else %}
+                                <i class='bx bx-star'></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="review-date">{{ comentario.fecha|naturaltime }}</span>
+                </div>
+            </div>
+            <div class="review-body">
+                <p>{{ comentario.contenido|linebreaks }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="review-item">
+            <div class="review-body">
+                <p>Aún no hay comentarios para este producto. ¡Sé el primero en dejar una reseña!</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 <div class="sticky-actions-bar">
     <div class="sticky-actions-content">
         <form action="{% url 'add_to_cart' product.id %}" method="POST" class="sticky-form" id="sticky-add-to-cart-form">

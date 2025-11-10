@@ -1,7 +1,20 @@
 from django import forms
-from .models import Categoria, Marca, Producto
+from .models import Categoria, Marca, Producto, Comentario
 from django.core.exceptions import ValidationError 
 from .models import Cliente, Direccion # Asegúrate de importar los modelos
+
+class ComentarioForm(forms.ModelForm):
+    class Meta:
+        model = Comentario
+        fields = ['contenido', 'estrellas']
+        widgets = {
+            'contenido': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Escribe tu reseña aquí...'
+            }),
+            'estrellas': forms.HiddenInput(attrs={'id': 'estrellas-input'}),
+        }
 
 class CategoriaForm(forms.ModelForm):
     class Meta:
