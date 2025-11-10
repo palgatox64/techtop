@@ -20,11 +20,9 @@ from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
 import datetime
-from .forms import ComprobantePagoForm, PerfilUsuarioForm
+from .forms import ComprobantePagoForm, PerfilUsuarioForm, ComentarioForm, CheckoutForm
 from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia
-from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg # Agrega Value e IntegerField por si acaso
 from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg
-# Third-party imports
 from decimal import Decimal
 from io import BytesIO
 from xhtml2pdf import pisa
@@ -304,18 +302,35 @@ def product_detail(request, product_id):
     precio_normal = product.precio * Decimal('1.03')
     descuento_porcentaje = 3
     imagenes_adicionales = product.imagenes_adicionales.all()
-    
-    # Verificar si el producto está activo y tiene stock
     producto_disponible = product.activo and product.stock > 0
+    cliente_logueado = None
+    if request.session.get('user_type') == 'cliente':
+        try:
+            cliente_logueado = Cliente.objects.get(id_cliente=request.session.get('cliente_id'))
+        except Cliente.DoesNotExist:
+            pass 
+    if request.method == 'POST' and 'submit_comentario' in request.POST:
+        if not cliente_logueado:
+            messages.error(request, 'Debes iniciar sesión para dejar un comentario.')
+            return redirect('login')
+        
+        form_comentario = ComentarioForm(request.POST)
+        if form_comentario.is_valid():
+            nuevo_comentario = form_comentario.save(commit=False)
+            nuevo_comentario.producto = product
+            nuevo_comentario.cliente = cliente_logueado
+            nuevo_comentario.save()
+            messages.success(request, '¡Gracias por tu comentario! Será revisado por un administrador antes de publicarse.')
+            return redirect('product_detail', product_id=product_id)
+        else:
+            messages.error(request, 'Error al enviar tu comentario. Revisa los campos.')
+    else:
+        form_comentario = ComentarioForm()
+    comentarios = product.comentarios.filter(aprobado=True)
     
-    # Obtener comentarios para este producto desde la base de datos
-    comentarios = product.comentarios.all()
-    
-    # Calcular el promedio de estrellas y el total de reseñas
     total_reseñas = comentarios.count()
     promedio_estrellas = 0
     if total_reseñas > 0:
-        # Usamos aggregate para calcular el promedio en la BD
         promedio_estrellas = comentarios.aggregate(Avg('estrellas'))['estrellas__avg']
 
     context = {
@@ -328,6 +343,8 @@ def product_detail(request, product_id):
         'comentarios': comentarios,
         'total_reseñas': total_reseñas,
         'promedio_estrellas': round(promedio_estrellas, 1) if promedio_estrellas else 0,
+        'form_comentario': form_comentario,
+        'cliente_logueado': cliente_logueado
     }
     return render(request, 'store/product_detail.html', context)
 
@@ -2944,6 +2961,46 @@ def mis_notificaciones_view(request):
     cliente.notificaciones.filter(leida=False).update(leida=True)
     
     return render(request, 'usuario/notificaciones.html', {'notificaciones': notificaciones})
+
+@admin_required
+def listar_comentarios_view(request):
+    """Muestra todos los comentarios, priorizando los pendientes."""
+    comentarios_list = Comentario.objects.all().order_by('aprobado', '-fecha')
+    
+    # Filtro (opcional, pero útil)
+    filtro = request.GET.get('filtro', 'pendientes')
+    if filtro == 'pendientes':
+        comentarios_list = comentarios_list.filter(aprobado=False)
+    elif filtro == 'aprobados':
+        comentarios_list = comentarios_list.filter(aprobado=True)
+    
+    paginator = Paginator(comentarios_list, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'gestion/comentarios_list.html', {
+        'page_obj': page_obj,
+        'filtro_actual': filtro
+    })
+
+@admin_required
+@require_http_methods(["POST"])
+def aprobar_comentario_view(request, comentario_id):
+    """Aprueba un comentario para que sea público."""
+    comentario = get_object_or_404(Comentario, id=comentario_id)
+    comentario.aprobado = True
+    comentario.save()
+    messages.success(request, f'Comentario #{comentario.id} aprobado exitosamente.')
+    return redirect('listar_comentarios')
+
+@admin_required
+@require_http_methods(["POST"])
+def rechazar_comentario_view(request, comentario_id):
+    """Rechaza (elimina) un comentario."""
+    comentario = get_object_or_404(Comentario, id=comentario_id)
+    comentario.delete()
+    messages.warning(request, f'Comentario #{comentario.id} eliminado/rechazado exitosamente.')
+    return redirect('listar_comentarios')
 
 
 # En store/views.py

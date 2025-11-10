@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Gestionar Comentarios - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    .comentario-texto {
+        font-style: italic;
+        color: #555;
+        max-width: 400px;
+        white-space: pre-wrap; /* Respeta saltos de línea */
+    }
+    .badge.status-pendiente { background: #ffc107; color: #333; }
+    .badge.status-aprobado { background: #28a745; color: white; }
+    .btn-approve { background-color: #28a745; color: white; border: none; }
+    .btn-reject { background-color: #dc3545; color: white; border: none; }
+</style>
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Gestión de Comentarios</h1>
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Panel</a>
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="filters-container" style="margin-bottom: 20px;">
+        <a href="?filtro=pendientes" class="btn-action {% if filtro_actual == 'pendientes' %}edit{% else %}secondary{% endif %}" style="background-color: {% if filtro_actual == 'pendientes' %}#ffc107{% else %}#6c757d{% endif %}; color: white;">Pendientes</a>
+        <a href="?filtro=aprobados" class="btn-action {% if filtro_actual == 'aprobados' %}edit{% else %}secondary{% endif %}" style="background-color: {% if filtro_actual == 'aprobados' %}#28a745{% else %}#6c757d{% endif %}; color: white;">Aprobados</a>
+        <a href="?filtro=todos" class="btn-action {% if filtro_actual == 'todos' %}edit{% else %}secondary{% endif %}" style="background-color: {% if filtro_actual == 'todos' %}#007bff{% else %}#6c757d{% endif %}; color: white;">Todos</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Producto</th>
+                    <th>Estrellas</th>
+                    <th>Comentario</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in page_obj %}
+                <tr>
+                    <td>#{{ c.id }}</td>
+                    <td>{{ c.cliente.nombre }} {{ c.cliente.apellidos }}</td>
+                    <td>{{ c.producto.nombre|truncatechars:30 }}</td>
+                    <td>
+                        <span style="color: #ffc107; font-weight: bold;">
+                            {{ c.estrellas }} <i class='bx bxs-star'></i>
+                        </span>
+                    </td>
+                    <td class="comentario-texto">"{{ c.contenido|truncatewords:20 }}"</td>
+                    <td>{{ c.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if c.aprobado %}
+                            <span class="badge status-aprobado">Aprobado</span>
+                        {% else %}
+                            <span class="badge status-pendiente">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions-cell">
+                        {% if not c.aprobado %}
+                        <form action="{% url 'aprobar_comentario' c.id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action btn-approve">Aprobar</button>
+                        </form>
+                        {% endif %}
+                        <form action="{% url 'rechazar_comentario' c.id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action btn-reject">Rechazar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" style="text-align: center; padding: 30px;">No se encontraron comentarios con estos filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&filtro={{ filtro_actual }}" class="page-link">&laquo; Anterior</a>
+            {% endif %}
+            <span class="current-page" style="padding: 10px 15px;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&filtro={{ filtro_actual }}" class="page-link">Siguiente &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

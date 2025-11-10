@@ -77,16 +77,18 @@ class ImagenProducto(models.Model):
 
 class Comentario(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='comentarios')
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    cliente = models.ForeignKey("Cliente", on_delete=models.CASCADE, null=True)
     contenido = models.TextField()
     estrellas = models.IntegerField(default=5)
     fecha = models.DateTimeField(auto_now_add=True)
+    aprobado = models.BooleanField(default=False, help_text="Marcar si el comentario es público")
 
     class Meta:
         ordering = ['-fecha']
 
     def __str__(self):
-        return f'Comentario de {self.cliente.nombre} en {self.producto.nombre}'
+        estado = "Aprobado" if self.aprobado else "Pendiente"
+        return f'Comentario de {self.cliente.nombre} en {self.producto.nombre} ({estado})'
 
 # =========================================
 # MODELOS DE USUARIO (CLIENTE / EMPLEADO)

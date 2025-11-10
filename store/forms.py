@@ -1,9 +1,16 @@
 from django import forms
 from .models import Categoria, Marca, Producto, Comentario
 from django.core.exceptions import ValidationError 
-from .models import Cliente, Direccion # Asegúrate de importar los modelos
+from .models import Cliente, Direccion 
+
 
 class ComentarioForm(forms.ModelForm):
+    estrellas = forms.ChoiceField(
+        choices=[(5, '5'), (4, '4'), (3, '3'), (2, '2'), (1, '1')],
+        widget=forms.RadioSelect(attrs={'class': 'star-radio'}),
+        initial=5
+    )
+    
     class Meta:
         model = Comentario
         fields = ['contenido', 'estrellas']
@@ -13,7 +20,10 @@ class ComentarioForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Escribe tu reseña aquí...'
             }),
-            'estrellas': forms.HiddenInput(attrs={'id': 'estrellas-input'}),
+        }
+        labels = {
+            'contenido': 'Tu opinión sobre el producto',
+            'estrellas': 'Tu calificación (5 es excelente)'
         }
 
 class CategoriaForm(forms.ModelForm):
