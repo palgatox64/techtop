@@ -2934,23 +2934,22 @@ def mis_notificaciones_view(request):
     return render(request, 'usuario/notificaciones.html', {'notificaciones': notificaciones})
 
 
+# En store/views.py
+
 def seguimiento_compra(request):
     pedido_encontrado = None
     error_mensaje = None
+    orden_buscada = request.GET.get('orden_id', '').strip().upper() # Convertimos a mayúsculas
 
-    if request.GET.get('orden_id'): # Si se envió el formulario
-        orden_id = request.GET.get('orden_id').strip()
-        # Opcional: pedir también el email para más seguridad
-        # email = request.GET.get('email').strip()
-        
+    if orden_buscada: 
         try:
-            # Buscar por ID. Puedes añadir 'cliente__email=email' al filtro si quieres doble verificación
-            pedido_encontrado = Pedido.objects.get(id=orden_id)
-        except (Pedido.DoesNotExist, ValueError):
-             error_mensaje = f"No encontramos ningún pedido con el número #{orden_id}."
+            # --- CAMBIO AQUÍ: Buscamos por tracking_number ---
+            pedido_encontrado = Pedido.objects.get(tracking_number=orden_buscada)
+        except Pedido.DoesNotExist:
+             error_mensaje = f"No encontramos ningún pedido con el número de seguimiento #{orden_buscada}."
 
     return render(request, 'seguimiento_compra.html', {
         'pedido': pedido_encontrado,
         'error': error_mensaje,
-        'orden_buscada': request.GET.get('orden_id', '')
+        'orden_buscada': orden_buscada
     })

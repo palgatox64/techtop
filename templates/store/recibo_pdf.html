@@ -5,7 +5,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Recibo de Compra {{ pedido.id }}</title>
+    <title>Recibo de Compra #{{ pedido.tracking_number }}</title>
     <style>
         @page {
             size: A4;
@@ -24,9 +24,8 @@
             overflow: auto;
             zoom: 1;
         }
-        /* LOGO MÁS PEQUEÑO */
         .header img {
-            max-width: 120px; /* Reducido de 180px a 120px */
+            max-width: 120px;
             float: left;
             margin-right: 20px;
         }
@@ -125,8 +124,9 @@
         {% endif %}
         <div class="header-info">
             <h1>RECIBO DE COMPRA</h1>
-            <p><strong>Pedido N°:</strong> {{ pedido.id }}</p>
-            <p><strong>Fecha:</strong> {{ pedido.fecha_pedido|date:"d/m/Y" }}</p>
+            <p><strong>N° Seguimiento:</strong> {{ pedido.tracking_number }}</p>
+            <p><strong>ID Interno:</strong> #{{ pedido.id }}</p>
+            <p><strong>Fecha:</strong> {{ pedido.fecha_pedido|date:"d/m/Y H:i" }}</p>
         </div>
     </div>
 
@@ -137,9 +137,9 @@
             <strong>Email:</strong> {{ cliente_email }} <br>
             {% if cliente_rut != 'No disponible' %}<strong>RUT:</strong> {{ cliente_rut }}<br>{% endif %}
             {% if pedido.direccion_envio %}
-                <strong>Dirección:</strong> {{ pedido.direccion_envio.calle }} {{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}
+                <strong>Dirección de Envío:</strong> {{ pedido.direccion_envio.calle }} #{{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}
             {% else %}
-                <strong>Retiro en Tienda</strong>
+                <strong>Método de Entrega:</strong> Retiro en Tienda
             {% endif %}
         </p>
     </div>

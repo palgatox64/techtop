@@ -1,9 +1,27 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 from .validators import validate_chilean_phone, validate_name, validate_email_extended, validate_chilean_rut
 import os
+import random
+import string
 
-# --- Modelo para la tabla CATEGORIAS ---
+# =========================================
+# FUNCIONES AUXILIARES
+# =========================================
+
+def generate_tracking_number():
+    """Genera un código aleatorio de 8 DÍGITOS (solo números)"""
+    # CAMBIO AQUÍ: Usamos solo string.digits
+    return ''.join(random.choices(string.digits, k=8))
+
+def transferencia_upload_path(instance, filename):
+    """Define la ruta de subida para comprobantes: transferencias/ID_PEDIDO/archivo"""
+    return f'transferencias/{instance.pago.pedido.id}/{filename}'
+
+# =========================================
+# MODELOS BASE (INDEPENDIENTES)
+# =========================================
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=500, blank=True, null=True)
@@ -11,14 +29,16 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
-# --- Modelo para la tabla MARCAS ---
 class Marca(models.Model):
     nombre = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre
 
-# --- Modelo para la tabla PRODUCTOS ---
+# =========================================
+# MODELOS DE PRODUCTO
+# =========================================
+
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, null=True)
@@ -28,7 +48,6 @@ class Producto(models.Model):
     fecha_pub = models.DateField(auto_now_add=True)
     activo = models.BooleanField(default=True)
     
-    # Relaciones (Foreign Keys)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
     marca = models.ForeignKey(Marca, on_delete=models.PROTECT)
     
@@ -36,7 +55,6 @@ class Producto(models.Model):
         return self.nombre
     
     def save(self, *args, **kwargs):
-        # Desactivar automáticamente si el stock llega a 0
         if self.stock == 0:
             self.activo = False
         super().save(*args, **kwargs)
@@ -56,7 +74,10 @@ class ImagenProducto(models.Model):
     def __str__(self):
         return f"Imagen de {self.producto.nombre} (Orden: {self.orden})"
 
-# --- Modelo para la tabla EMPLEADOS ---
+# =========================================
+# MODELOS DE USUARIO (CLIENTE / EMPLEADO)
+# =========================================
+
 class Empleado(models.Model):
     id_empleado = models.AutoField(primary_key=True)
     rut = models.CharField(max_length=12, unique=True, validators=[validate_chilean_rut], help_text='Formato: 12345678-9')
@@ -77,7 +98,6 @@ class Empleado(models.Model):
     def __str__(self):
         return f"{self.nombre} {self.apellidos} ({self.cargo})"
 
-# --- Modelo para la tabla CLIENTES (CON RUT) ---
 class Cliente(models.Model):
     id_cliente = models.AutoField(primary_key=True)
     rut = models.CharField(max_length=12, unique=True, validators=[validate_chilean_rut], help_text='Formato: 12345678-9')
@@ -93,7 +113,6 @@ class Cliente(models.Model):
     def __str__(self):
         return f"{self.nombre} {self.apellidos} - {self.rut}"
 
-# --- Modelo para la tabla DIRECCIONES ---
 class Direccion(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     calle = models.CharField(max_length=200)
@@ -104,7 +123,10 @@ class Direccion(models.Model):
     def __str__(self):
         return f"{self.calle}, {self.ciudad}"
 
-# --- Modelo para la tabla PEDIDOS ---
+# =========================================
+# MODELOS DE PEDIDO Y NOTIFICACIONES
+# =========================================
+
 class Pedido(models.Model):
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
@@ -113,25 +135,43 @@ class Pedido(models.Model):
         ('entregado', 'Entregado'),
         ('cancelado', 'Cancelado'),
     ]
-
-    cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True)
-    direccion_envio = models.ForeignKey(Direccion, on_delete=models.SET_NULL, null=True)
-    fecha_pedido = models.DateTimeField(auto_now_add=True)
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
-
-    def __str__(self):
-        if self.cliente:
-            return f"Pedido #{self.id} de {self.cliente.nombre} {self.cliente.apellidos}"
-        return f"Pedido #{self.id} (Cliente Desconocido)"
     METODO_PAGO_CHOICES = [
         ('webpay', 'Webpay Plus'),
         ('mercadopago', 'Mercado Pago'),
         ('transferencia', 'Transferencia Bancaria'),
         ('otro', 'Otro'),
     ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True)
+    direccion_envio = models.ForeignKey(Direccion, on_delete=models.SET_NULL, null=True)
+    fecha_pedido = models.DateTimeField(auto_now_add=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, default='otro')
+    tracking_number = models.CharField(max_length=8, unique=True, null=True, blank=True)
     
+    def save(self, *args, **kwargs):
+        if not self.tracking_number:
+            new_tracking = generate_tracking_number()
+            while Pedido.objects.filter(tracking_number=new_tracking).exists():
+                new_tracking = generate_tracking_number()
+            self.tracking_number = new_tracking
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        cliente_nombre = self.cliente.nombre if self.cliente else 'Cliente Desconocido'
+        tracking = self.tracking_number if self.tracking_number else f"ID {self.id}"
+        return f"Pedido #{tracking} - {cliente_nombre}"
+
+class DetallePedido(models.Model):
+    pedido = models.ForeignKey(Pedido, related_name='detalles', on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    cantidad = models.IntegerField(validators=[MinValueValidator(1)])
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.producto.nombre}"
+
 class Notificacion(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='notificaciones')
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, null=True, blank=True)
@@ -145,17 +185,10 @@ class Notificacion(models.Model):
     def __str__(self):
         return f"Notificación para {self.cliente.nombre} - {self.fecha_creacion}"
 
-# --- Modelo para la tabla DETALLES_PEDIDO ---
-class DetallePedido(models.Model):
-    pedido = models.ForeignKey(Pedido, related_name='detalles', on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    cantidad = models.IntegerField(validators=[MinValueValidator(1)])
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+# =========================================
+# MODELOS DE PAGO (TRANSACTIONALES)
+# =========================================
 
-    def __str__(self):
-        return f"{self.cantidad} x {self.producto.nombre}"
-
-# --- Modelo para transacciones de Webpay ---
 class TransaccionWebpay(models.Model):
     ESTADO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
@@ -170,13 +203,11 @@ class TransaccionWebpay(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
     
-    # Datos de respuesta de Transbank
     response_code = models.CharField(max_length=10, blank=True, null=True, help_text='Código de respuesta')
     authorization_code = models.CharField(max_length=10, blank=True, null=True, help_text='Código de autorización')
     payment_type_code = models.CharField(max_length=10, blank=True, null=True, help_text='Tipo de pago')
     card_number = models.CharField(max_length=20, blank=True, null=True, help_text='Últimos 4 dígitos de la tarjeta')
     
-    # Fechas
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
@@ -188,7 +219,6 @@ class TransaccionWebpay(models.Model):
     def __str__(self):
         return f"Transacción {self.buy_order} - {self.estado}"
 
-# --- Modelo para transacciones de Mercado Pago ---
 class TransaccionMercadoPago(models.Model):
     ESTADO_CHOICES = [
         ('pending', 'Pendiente'),
@@ -208,17 +238,14 @@ class TransaccionMercadoPago(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pending')
     
-    # Datos de respuesta de MercadoPago
     status_detail = models.CharField(max_length=100, blank=True, null=True, help_text='Detalle del estado')
     payment_method_id = models.CharField(max_length=50, blank=True, null=True, help_text='Método de pago')
     payment_type_id = models.CharField(max_length=50, blank=True, null=True, help_text='Tipo de pago')
     card_last_four_digits = models.CharField(max_length=4, blank=True, null=True, help_text='Últimos 4 dígitos')
     
-    # Datos del pagador
     payer_email = models.EmailField(blank=True, null=True, help_text='Email del pagador')
     payer_identification = models.CharField(max_length=50, blank=True, null=True, help_text='Identificación')
     
-    # Fechas
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     fecha_aprobacion = models.DateTimeField(blank=True, null=True, help_text='Fecha de aprobación')
@@ -230,13 +257,6 @@ class TransaccionMercadoPago(models.Model):
     
     def __str__(self):
         return f"MP-{self.preference_id[:8]} - {self.estado}"
-
-# --- FUNCIÓN PARA LA RUTA DE AZURE ---
-def transferencia_upload_path(instance, filename):
-    # Esta función define la ruta: transferencias/ID_PEDIDO/nombre_archivo
-    return f'transferencias/{instance.pago.pedido.id}/{filename}'
-
-# --- NUEVOS MODELOS AL FINAL DEL ARCHIVO ---
 
 class PagoTransferencia(models.Model):
     ESTADOS_PAGO = [
@@ -253,7 +273,7 @@ class PagoTransferencia(models.Model):
     comentario_admin = models.TextField(blank=True, null=True, help_text="Comentario interno del administrador")
 
     def __str__(self):
-        return f"Transferencia Pedido #{self.pedido.id} - {self.estado}"
+        return f"Transferencia Pedido #{self.pedido.tracking_number or self.pedido.id} - {self.estado}"
 
 class ComprobanteTransferencia(models.Model):
     pago = models.ForeignKey(PagoTransferencia, on_delete=models.CASCADE, related_name='comprobantes')
@@ -261,4 +281,4 @@ class ComprobanteTransferencia(models.Model):
     fecha_subida = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Comprobante {self.id} para Pedido #{self.pago.pedido.id}"
+        return f"Comprobante {self.id} para Pedido #{self.pago.pedido.tracking_number or self.pago.pedido.id}"
