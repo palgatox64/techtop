@@ -5,63 +5,99 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/tracking.css' %}">
+<style>
+    /* Ajuste para que los textos de los pasos sean más legibles si cambian */
+    .step-label { min-height: 40px; }
+</style>
 
 <div class="tracking-page">
     <div class="tracking-input-section">
         <h1>Seguimiento de tu Compra</h1>
-        <p>Ingresa el número de tu pedido para ver su estado actual.</p>
+        <p>Ingresa tu <strong>Número de Seguimiento</strong> (8 caracteres) para ver el estado.</p>
         <form class="tracking-form" method="GET">
-            <input type="text" name="orden_id" placeholder="Ej: 34" value="{{ orden_buscada }}" required>
-            <button type="submit">Rastrear Pedido</button>
+            <input type="text" name="orden_id" placeholder="Ej: 9A4B2C1D" value="{{ orden_buscada }}" required maxlength="8" style="text-transform: uppercase;">
+            <button type="submit">Rastrear</button>
         </form>
         {% if error %}
-            <p style="color: #dc3545; margin-top: 15px;">{{ error }}</p>
+            <p style="color: #dc3545; margin-top: 15px; font-weight: bold;">{{ error }}</p>
         {% endif %}
     </div>
 
     {% if pedido %}
     <div class="tracking-results-section">
-        <h2>Estado del Pedido #{{ pedido.id }}</h2>
-
-        {% with estado=pedido.estado %}
+        <h2>Pedido #{{ pedido.tracking_number }}</h2>
+        
+        {% with estado=pedido.estado es_retiro=pedido.direccion_envio|yesno:"no,yes" %}
         <div class="progress-timeline status-{{ estado }}">
             <div class="step complete">
-                <div class="step-icon"><i class='bx bxs-package'></i></div>
-                <div class="step-label">Realizado</div>
-                <div class="step-date">{{ pedido.fecha_pedido|date:"d M, Y" }}</div>
+                <div class="step-icon"><i class='bx bxs-check-circle'></i></div>
+                <div class="step-label">Confirmado</div>
+                <div class="step-date">{{ pedido.fecha_pedido|date:"d M" }}</div>
             </div>
             
             <div class="step {% if estado == 'procesando' or estado == 'enviado' or estado == 'entregado' %}complete{% endif %} {% if estado == 'pendiente' %}active{% endif %}">
-                <div class="step-icon"><i class='bx bxs-receipt'></i></div>
-                <div class="step-label">Procesando</div>
+                <div class="step-icon"><i class='bx bxs-package'></i></div>
+                <div class="step-label">Preparando</div>
             </div>
             
             <div class="step {% if estado == 'enviado' or estado == 'entregado' %}complete{% endif %} {% if estado == 'procesando' %}active{% endif %}">
-                <div class="step-icon"><i class='bx bxs-truck'></i></div>
-                <div class="step-label">Enviado</div>
+                <div class="step-icon">
+                    {% if es_retiro == 'yes' %}<i class='bx bxs-store'></i>{% else %}<i class='bx bxs-truck'></i>{% endif %}
+                </div>
+                <div class="step-label">
+                    {% if es_retiro == 'yes' %}Listo para Retirar{% else %}En Camino{% endif %}
+                </div>
             </div>
             
             <div class="step {% if estado == 'entregado' %}complete{% endif %} {% if estado == 'enviado' %}active{% endif %}">
-                <div class="step-icon"><i class='bx bxs-home'></i></div>
-                <div class="step-label">Entregado</div>
+                <div class="step-icon">
+                    {% if es_retiro == 'yes' %}<i class='bx bxs-shopping-bag'></i>{% else %}<i class='bx bxs-home-heart'></i>{% endif %}
+                </div>
+                <div class="step-label">
+                    {% if es_retiro == 'yes' %}Retirado{% else %}Entregado{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tracking-details" style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin-top: 40px; text-align: left;">
+            <h3 style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; color: #6a0dad;">Detalles del Pedido</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div>
+                    <strong>Estado Actual:</strong>
+                    <p class="badge status-{{ pedido.estado }}" style="display: inline-block; margin-top: 5px; font-size: 1rem;">
+                        {% if pedido.estado == 'enviado' and es_retiro == 'yes' %}
+                            Listo para Retirar
+                        {% elif pedido.estado == 'entregado' and es_retiro == 'yes' %}
+                            Retirado en Tienda
+                        {% else %}
+                            {{ pedido.get_estado_display }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <strong>Método de Entrega:</strong>
+                    <p>{% if es_retiro == 'yes' %}Retiro en Tienda{% else %}Despacho a Domicilio{% endif %}</p>
+                </div>
+                {% if not es_retiro == 'yes' and pedido.direccion_envio %}
+                <div>
+                    <strong>Dirección de Envío:</strong>
+                    <p>{{ pedido.direccion_envio.calle }} #{{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; background: #fff; border-radius: 8px; border-left: 4px solid #6a0dad;">
+                {% if pedido.estado == 'enviado' and es_retiro == 'yes' %}
+                    <p style="margin: 0;"><strong>¡Tu pedido está listo!</strong> Puedes pasar a retirarlo en nuestro horario de atención. Recuerda llevar tu número de seguimiento: <strong>{{ pedido.tracking_number }}</strong>.</p>
+                {% elif pedido.estado == 'enviado' and es_retiro == 'no' %}
+                    <p style="margin: 0;">Tu pedido va en camino a la dirección indicada. Pronto lo tendrás contigo.</p>
+                {% elif pedido.estado == 'procesando' %}
+                    <p style="margin: 0;">Estamos preparando tu pedido con cuidado. Te avisaremos cuando esté listo para {% if es_retiro == 'yes' %}retirar{% else %}ser enviado{% endif %}.</p>
+                {% endif %}
             </div>
         </div>
         {% endwith %}
-        
-        <div class="tracking-details">
-            <h3>Detalles Actuales</h3>
-            {% if pedido.estado == 'pendiente' %}
-                <p>Tu pedido ha sido recibido y está pendiente de pago o confirmación.</p>
-            {% elif pedido.estado == 'procesando' %}
-                <p>Estamos preparando tu pedido para ser despachado.</p>
-            {% elif pedido.estado == 'enviado' %}
-                <p>¡Tu pedido va en camino! {% if pedido.direccion_envio %}Va hacia {{ pedido.direccion_envio.ciudad }}{% else %}Está listo para retiro en tienda{% endif %}.</p>
-            {% elif pedido.estado == 'entregado' %}
-                <p>El pedido ha sido entregado exitosamente. ¡Gracias por tu compra!</p>
-            {% elif pedido.estado == 'cancelado' %}
-                 <p style="color: #dc3545;">Este pedido ha sido cancelado.</p>
-            {% endif %}
-        </div>
     </div>
     {% endif %}
 </div>

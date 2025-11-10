@@ -3,7 +3,7 @@
 {% load humanize %}
 {% load custom_filters %}
 
-{% block title %}Detalle Pedido #{{ pedido.id }}{% endblock %}
+{% block title %}Detalle Pedido #{{ pedido.tracking_number }}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
@@ -20,9 +20,9 @@
 </style>
 
 <div class="gestion-page">
-    <header class="gestion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <header class="gestion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h1 style="margin-bottom: 10px;">Pedido #{{ pedido.id }}</h1>
+            <h1 style="margin-bottom: 10px;">Pedido #{{ pedido.tracking_number }}</h1>
             <a href="{% url 'historial_compras' %}" class="btn-back-panel" style="position: static;"><i class='bx bx-arrow-back'></i> Volver al Historial</a>
         </div>
         
@@ -32,6 +32,10 @@
     </header>
 
     <div class="order-summary">
+        <div class="summary-item">
+            <h4>N° Seguimiento</h4>
+            <p style="font-family: monospace; font-size: 1.2rem; color: #6a0dad;">{{ pedido.tracking_number }}</p>
+        </div>
         <div class="summary-item">
             <h4>Fecha del Pedido</h4>
             <p>{{ pedido.fecha_pedido|date:"d \d\e F Y, H:i" }}</p>
@@ -81,12 +85,14 @@
         </table>
     </div>
 
-    {% if pedido.estado == 'pendiente' and pedido.pago_transferencia.estado == 'PENDIENTE' %}
-         <div style="margin-top: 30px; text-align: center;">
-             <a href="{% url 'subir_comprobante' pedido.id %}" class="btn-submit" style="background-color: #ffc107; color: #333; text-decoration: none; display: inline-block;">
-                 <i class='bx bx-upload'></i> Subir Comprobante de Pago
-             </a>
-         </div>
+    {% if pedido.estado == 'pendiente' and pedido.metodo_pago == 'transferencia' %}
+        {% if not hasattr_pago_transferencia or pedido.pago_transferencia.estado == 'RECHAZADO' %}
+             <div style="margin-top: 30px; text-align: center;">
+                 <a href="{% url 'subir_comprobante' pedido.id %}" class="btn-submit" style="background-color: #ffc107; color: #333; text-decoration: none; display: inline-block; padding: 15px 30px; font-weight: bold; border-radius: 8px;">
+                     <i class='bx bx-upload'></i> Subir Comprobante de Pago
+                 </a>
+             </div>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}
