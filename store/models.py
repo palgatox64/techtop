@@ -122,6 +122,26 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"Pedido #{self.id} de {self.cliente.nombre}"
+    METODO_PAGO_CHOICES = [
+        ('webpay', 'Webpay Plus'),
+        ('mercadopago', 'Mercado Pago'),
+        ('transferencia', 'Transferencia Bancaria'),
+        ('otro', 'Otro'),
+    ]
+    metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, default='otro')
+    
+class Notificacion(models.Model):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='notificaciones')
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, null=True, blank=True)
+    mensaje = models.CharField(max_length=255)
+    leida = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Notificación para {self.cliente.nombre} - {self.fecha_creacion}"
 
 # --- Modelo para la tabla DETALLES_PEDIDO ---
 class DetallePedido(models.Model):

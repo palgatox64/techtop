@@ -21,7 +21,7 @@ from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
 import datetime
 from .forms import ComprobantePagoForm, PerfilUsuarioForm
-from .models import PagoTransferencia, ComprobanteTransferencia
+from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia
 from django.db.models import Case, When, Value, IntegerField # Agrega Value e IntegerField por si acaso
 from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField
 # Third-party imports
@@ -1437,7 +1437,8 @@ def procesar_pedido_view(request):
                 'cliente': cliente_obj,        # Clave foránea a Cliente (puede ser None)
                 'direccion_envio': direccion_obj, # Clave foránea a Direccion (puede ser None)
                 'total': total_final,          # DecimalField
-                'estado': 'procesando',        # CharField
+                'estado': 'pendiente',
+                'metodo_pago': metodo_pago, # CharField
                 # 'fecha_pedido' se añade automáticamente (auto_now_add=True)
             }
             nuevo_pedido = Pedido.objects.create(**pedido_data)
@@ -2848,3 +2849,108 @@ def detalle_compra_view(request, pedido_id):
          pedido = get_object_or_404(Pedido, id=pedido_id, cliente__id_cliente=cliente_id)
     
     return render(request, 'usuario/detalle_compra.html', {'pedido': pedido})
+
+# En store/views.py
+
+@admin_required
+def listar_pedidos_view(request):
+    # Filtrado inicial base
+    pedidos = Pedido.objects.all().order_by('-fecha_pedido').select_related('cliente', 'direccion_envio')
+
+    # --- FILTROS ---
+    # 1. Filtro por Tipo de Entrega
+    delivery_filter = request.GET.get('entrega')
+    if delivery_filter == 'delivery':
+        pedidos = pedidos.filter(direccion_envio__isnull=False)
+    elif delivery_filter == 'retiro':
+        pedidos = pedidos.filter(direccion_envio__isnull=True)
+
+    # 2. Filtro por Método de Pago
+    pago_filter = request.GET.get('pago')
+    if pago_filter in ['webpay', 'mercadopago', 'transferencia']:
+        pedidos = pedidos.filter(metodo_pago=pago_filter)
+
+    # 3. Filtro por Estado
+    estado_filter = request.GET.get('estado')
+    if estado_filter:
+        pedidos = pedidos.filter(estado=estado_filter)
+
+    # Paginación
+    paginator = Paginator(pedidos, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'gestion/pedidos_list.html', {
+        'page_obj': page_obj,
+        # Pasamos los filtros actuales al template para mantenerlos seleccionados
+        'current_entrega': delivery_filter,
+        'current_pago': pago_filter,
+        'current_estado': estado_filter
+    })
+
+@admin_required
+def gestionar_pedido_view(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('nuevo_estado')
+        
+        if nuevo_estado and nuevo_estado != pedido.estado:
+            estado_anterior = pedido.get_estado_display()
+            pedido.estado = nuevo_estado
+            pedido.save()
+            
+            # --- CREAR NOTIFICACIÓN AUTOMÁTICA ---
+            if pedido.cliente:
+                Notificacion.objects.create(
+                    cliente=pedido.cliente,
+                    pedido=pedido,
+                    mensaje=f"El estado de tu pedido #{pedido.id} ha cambiado a: {pedido.get_estado_display()}"
+                )
+            
+            messages.success(request, f'Pedido #{pedido.id} actualizado a {pedido.get_estado_display()}. Notificación enviada al cliente.')
+            return redirect('gestionar_pedido', pedido_id=pedido.id)
+
+    return render(request, 'gestion/pedido_detail.html', {'pedido': pedido})
+
+
+@usuario_logueado_required
+def mis_notificaciones_view(request):
+    user_type = request.session.get('user_type')
+    if user_type != 'cliente':
+        # Si no es cliente, no tiene notificaciones de pedido por ahora
+        # Podrías redirigir al perfil o mostrar una lista vacía
+        return render(request, 'usuario/notificaciones.html', {'notificaciones': []})
+
+    cliente_id = request.session.get('cliente_id')
+    cliente = get_object_or_404(Cliente, id_cliente=cliente_id)
+    
+    # Obtener todas las notificaciones
+    notificaciones = cliente.notificaciones.all()
+    
+    # Marcar todas como leídas al entrar a la vista
+    cliente.notificaciones.filter(leida=False).update(leida=True)
+    
+    return render(request, 'usuario/notificaciones.html', {'notificaciones': notificaciones})
+
+
+def seguimiento_compra(request):
+    pedido_encontrado = None
+    error_mensaje = None
+
+    if request.GET.get('orden_id'): # Si se envió el formulario
+        orden_id = request.GET.get('orden_id').strip()
+        # Opcional: pedir también el email para más seguridad
+        # email = request.GET.get('email').strip()
+        
+        try:
+            # Buscar por ID. Puedes añadir 'cliente__email=email' al filtro si quieres doble verificación
+            pedido_encontrado = Pedido.objects.get(id=orden_id)
+        except (Pedido.DoesNotExist, ValueError):
+             error_mensaje = f"No encontramos ningún pedido con el número #{orden_id}."
+
+    return render(request, 'seguimiento_compra.html', {
+        'pedido': pedido_encontrado,
+        'error': error_mensaje,
+        'orden_buscada': request.GET.get('orden_id', '')
+    })

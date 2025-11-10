@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load humanize %}
+
 {% block title %}Revisar Transferencia #{{ pago.pedido.id }}{% endblock %}
 
 {% block content %}
@@ -15,7 +17,22 @@
     .proof-img { width: 100%; max-width: 300px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: transform 0.3s; }
     .proof-img:hover { transform: scale(1.05); }
     .action-buttons { display: flex; gap: 20px; margin-top: 30px; }
-    .btn-approve, .btn-reject { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: white; transition: opacity 0.3s; }
+    /* Botones personalizados para acciones */
+    .btn-approve, .btn-reject { 
+        flex: 1; 
+        padding: 15px; 
+        border: none; 
+        border-radius: 8px; 
+        font-size: 1.1rem; 
+        font-weight: bold; 
+        cursor: pointer; 
+        color: white; 
+        transition: opacity 0.3s; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 10px; 
+    }
     .btn-approve { background-color: #28a745; }
     .btn-reject { background-color: #dc3545; }
     .btn-approve:hover, .btn-reject:hover { opacity: 0.9; }
@@ -36,7 +53,7 @@
             <div class="info-row"><span class="info-label">Total a Pagar:</span> <span class="total-highlight">${{ pago.pedido.total|floatformat:0|dot_thousands }}</span></div>
             
             <h4 style="margin-top: 20px;">Comentario del Cliente:</h4>
-            <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 10px;">
+            <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 10px; font-style: italic; color: #555;">
                 {{ pago.comentario_usuario|default:"Sin comentarios." }}
             </p>
         </div>
@@ -47,10 +64,10 @@
             <div class="proof-images">
                 {% for comprobante in pago.comprobantes.all %}
                     <a href="{{ comprobante.imagen.url }}" target="_blank">
-                        <img src="{{ comprobante.imagen.url }}" class="proof-img" alt="Comprobante">
+                        <img src="{{ comprobante.imagen.url }}" class="proof-img" alt="Comprobante de pago">
                     </a>
                 {% empty %}
-                    <p>No hay imágenes adjuntas.</p>
+                    <p style="color: #999; font-style: italic;">No hay imágenes adjuntas a este pago.</p>
                 {% endfor %}
             </div>
         </div>
@@ -58,23 +75,85 @@
 
     {% if pago.estado == 'PENDIENTE' %}
     <div class="info-box" style="margin-top: 30px; text-align: center;">
-        <h3>Acciones</h3>
-        <p>Revisa tu cuenta bancaria y confirma si el monto ${{ pago.pedido.total|floatformat:0|dot_thousands }} fue recibido.</p>
-        <form method="POST" class="action-buttons">
+        <h3>Acciones de Validación</h3>
+        <p>Por favor, revisa tu cuenta bancaria y confirma si el monto exacto de <strong>${{ pago.pedido.total|floatformat:0|dot_thousands }}</strong> fue recibido.</p>
+        
+        <form method="POST" id="action-form" class="action-buttons">
             {% csrf_token %}
-            <button type="submit" name="accion" value="rechazar" class="btn-reject" onclick="return confirm('¿Estás seguro de RECHAZAR este pago? El pedido será cancelado.')">
+            <input type="hidden" name="accion" id="accion-input" value="">
+            
+            <button type="button" id="btn-reject" class="btn-reject">
                 <i class='bx bx-x-circle'></i> Rechazar Pago
             </button>
-            <button type="submit" name="accion" value="aprobar" class="btn-approve" onclick="return confirm('¿Confirmas que recibiste el dinero?')">
+            <button type="button" id="btn-approve" class="btn-approve">
                 <i class='bx bx-check-circle'></i> Aprobar Pago
             </button>
         </form>
     </div>
     {% else %}
-    <div class="info-box" style="margin-top: 30px; text-align: center; background-color: {% if pago.estado == 'APROBADO' %}#d4edda{% else %}#f8d7da{% endif %};">
-        <h3>Este pago ya fue {{ pago.get_estado_display|lower }}.</h3>
-        <p>Fecha de revisión: {{ pago.fecha_revision|date:"d/m/Y H:i" }}</p>
+    <div class="info-box" style="margin-top: 30px; text-align: center; background-color: {% if pago.estado == 'APROBADO' %}#d4edda{% else %}#f8d7da{% endif %}; border: 1px solid {% if pago.estado == 'APROBADO' %}#c3e6cb{% else %}#f5c6cb{% endif %};">
+        <h3 style="color: {% if pago.estado == 'APROBADO' %}#155724{% else %}#721c24{% endif %}; margin: 0;">
+            Este pago ya fue {{ pago.get_estado_display|upper }}.
+        </h3>
+        <p style="margin-top: 10px; color: #666;">
+            Fecha de revisión: <strong>{{ pago.fecha_revision|date:"d \d\e F Y, H:i"|default:"--" }}</strong>
+        </p>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('action-form');
+        const accionInput = document.getElementById('accion-input');
+        const btnApprove = document.getElementById('btn-approve');
+        const btnReject = document.getElementById('btn-reject');
+
+        // Lógica para el botón de APROBAR
+        if (btnApprove) {
+            btnApprove.addEventListener('click', function() {
+                Swal.fire({
+                    title: '¿Aprobar Pago?',
+                    text: "Estás confirmando que recibiste el dinero correctamente. El pedido pasará a estado 'Procesando'.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, aprobar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        accionInput.value = 'aprobar'; // Seteamos la acción
+                        form.submit(); // Enviamos el formulario
+                    }
+                });
+            });
+        }
+
+        // Lógica para el botón de RECHAZAR
+        if (btnReject) {
+            btnReject.addEventListener('click', function() {
+                Swal.fire({
+                    title: '¿Rechazar Pago?',
+                    text: "¡Atención! El pedido será CANCELADO automáticamente y el stock se restaurará. Esta acción no se puede deshacer.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, rechazar y cancelar pedido',
+                    cancelButtonText: 'Volver'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        accionInput.value = 'rechazar'; // Seteamos la acción
+                        form.submit(); // Enviamos el formulario
+                    }
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

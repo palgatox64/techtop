@@ -6,22 +6,56 @@
 {% block title %}Mi Perfil - Techtop{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/gestion.css' %}"> <div class="gestion-page">
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    .card-icon { position: relative; display: inline-block; }
+    .notif-badge-card {
+        position: absolute;
+        top: -5px;
+        right: -10px;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        border: 2px solid #f9f9f9;
+    }
+</style>
+
+<div class="gestion-page">
     <header class="gestion-header">
         <h1>Hola, {{ cliente.nombre }}</h1>
         <p>Bienvenido a tu panel de cliente.</p>
     </header>
 
-    <div class="gestion-menu">
+    <div class="gestion-menu" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
         <a href="{% url 'editar_perfil' %}" class="menu-card">
             <div class="card-icon"><i class='bx bx-user-circle'></i></div>
             <h3>Mis Datos Personales</h3>
             <p>Ver y editar tu información de contacto y envío.</p>
         </a>
+        
         <a href="{% url 'historial_compras' %}" class="menu-card">
             <div class="card-icon"><i class='bx bx-shopping-bag'></i></div>
             <h3>Mis Compras</h3>
             <p>Revisa el historial y estado de tus pedidos.</p>
+        </a>
+
+        <a href="{% url 'mis_notificaciones' %}" class="menu-card">
+            <div class="card-icon">
+                <i class='bx bx-bell'></i>
+                {% if notificaciones_count > 0 %}
+                    <span class="notif-badge-card">{{ notificaciones_count }}</span>
+                {% endif %}
+            </div>
+            <h3>Notificaciones</h3>
+            <p>Avisos importantes sobre tus pedidos.</p>
+        </a>
+        <a href="{% url 'seguimiento_compra' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bx-radar'></i></div>
+            <h3>Seguimiento de Envío</h3>
+            <p>Rastrea la ubicación y estado de tus paquetes.</p>
         </a>
     </div>
 
