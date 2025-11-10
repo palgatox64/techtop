@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Notificaciones - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    .notifications-list { max-width: 800px; margin: 0 auto; }
+    .notification-item { 
+        background: #fff; 
+        padding: 20px; 
+        border-radius: 10px; 
+        margin-bottom: 15px; 
+        border-left: 5px solid #6a0dad; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        transition: transform 0.2s;
+    }
+    .notification-item.unread { background: #f9f5ff; border-left-color: #9c27b0; font-weight: 600; }
+    .notification-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: #666; }
+    .notification-body { font-size: 1.1rem; color: #333; }
+    .no-notif { text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px; color: #666; }
+    .no-notif i { font-size: 4rem; color: #ddd; margin-bottom: 20px; }
+</style>
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Mis Notificaciones</h1>
+        <a href="{% url 'perfil_usuario' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Perfil</a>
+    </header>
+
+    <div class="notifications-list">
+        {% for notif in notificaciones %}
+        <div class="notification-item {% if not notif.leida %}unread{% endif %}">
+            <div class="notification-header">
+                <span class="date"><i class='bx bx-time-five'></i> {{ notif.fecha_creacion|date:"d M Y, H:i" }}</span>
+                {% if not notif.leida %}
+                    <span class="badge" style="background: #9c27b0; color: white; font-size: 0.7rem; padding: 2px 8px;">NUEVA</span>
+                {% endif %}
+            </div>
+            <div class="notification-body">
+                {{ notif.mensaje }}
+                {% if notif.pedido %}
+                    <a href="{% url 'detalle_compra' notif.pedido.id %}" style="color: #6a0dad; margin-left: 10px; font-size: 0.9rem;">Ver Pedido →</a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-notif">
+            <i class='bx bx-bell-off'></i>
+            <h3>No tienes notificaciones</h3>
+            <p>Te avisaremos aquí cuando haya actualizaciones de tus pedidos.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

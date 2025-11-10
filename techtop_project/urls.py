@@ -71,5 +71,9 @@ urlpatterns = [
     path('mi-cuenta/editar/', views.editar_perfil_view, name='editar_perfil'),
     path('mi-cuenta/compras/', views.historial_compras_view, name='historial_compras'),
     path('mi-cuenta/compras/<int:pedido_id>/', views.detalle_compra_view, name='detalle_compra'),
+    
+    path('gestion/pedidos/', views.listar_pedidos_view, name='listar_pedidos'),
+    path('gestion/pedidos/<int:pedido_id>/', views.gestionar_pedido_view, name='gestionar_pedido'),
+    path('mi-cuenta/notificaciones/', views.mis_notificaciones_view, name='mis_notificaciones'), 
 ]
 

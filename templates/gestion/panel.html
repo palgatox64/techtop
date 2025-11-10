@@ -5,8 +5,6 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
 
-<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-
 <div class="gestion-page">
     <header class="gestion-header">
         <h1>Panel de Gestión</h1>
@@ -29,6 +27,13 @@
             <h3>Gestionar Marcas</h3>
             <p>Ver, añadir o editar marcas.</p>
         </a>
+
+        <a href="{% url 'listar_pedidos' %}" class="menu-card">
+            <div class="card-icon"><i class='bx bxs-package'></i></div>
+            <h3>Gestión de Pedidos</h3>
+            <p>Ver todos los pedidos, filtrar y actualizar estados.</p>
+        </a>
+
         <a href="{% url 'ver_metricas' %}" class="menu-card">
             <div class="card-icon"><i class='bx bxs-chart'></i></div>
             <h3>Métricas de Ventas</h3>

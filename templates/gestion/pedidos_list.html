@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Gestionar Pedidos - Techtop{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Gestión de Pedidos</h1>
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Panel</a>
+    </header>
+
+    <div class="filters-container" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+        <form method="GET" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Estado:</label>
+                <select name="estado" class="form-control" style="padding: 8px;">
+                    <option value="">Todos</option>
+                    <option value="pendiente" {% if current_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                    <option value="procesando" {% if current_estado == 'procesando' %}selected{% endif %}>Procesando</option>
+                    <option value="enviado" {% if current_estado == 'enviado' %}selected{% endif %}>Enviado</option>
+                    <option value="entregado" {% if current_estado == 'entregado' %}selected{% endif %}>Entregado</option>
+                    <option value="cancelado" {% if current_estado == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Entrega:</label>
+                <select name="entrega" class="form-control" style="padding: 8px;">
+                    <option value="">Todas</option>
+                    <option value="delivery" {% if current_entrega == 'delivery' %}selected{% endif %}>Delivery</option>
+                    <option value="retiro" {% if current_entrega == 'retiro' %}selected{% endif %}>Retiro en Tienda</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Pago:</label>
+                <select name="pago" class="form-control" style="padding: 8px;">
+                    <option value="">Todos</option>
+                    <option value="webpay" {% if current_pago == 'webpay' %}selected{% endif %}>Webpay</option>
+                    <option value="mercadopago" {% if current_pago == 'mercadopago' %}selected{% endif %}>Mercado Pago</option>
+                    <option value="transferencia" {% if current_pago == 'transferencia' %}selected{% endif %}>Transferencia</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-action" style="background: #2c2c2c; color: white; height: 38px; border: none;">Filtrar</button>
+            <a href="{% url 'listar_pedidos' %}" class="btn-action" style="background: #6c757d; color: white; height: 38px; display: flex; align-items: center; text-decoration: none;">Limpiar</a>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th>Pago</th>
+                    <th>Entrega</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in page_obj %}
+                <tr>
+                    <td>#{{ pedido.id }}</td>
+                    <td>{{ pedido.fecha_pedido|date:"d/m/y H:i" }}</td>
+                    <td>
+                        {% if pedido.cliente %}
+                            {{ pedido.cliente.nombre }} {{ pedido.cliente.apellidos }}
+                        {% else %}
+                            <span style="color: #999;">Anónimo</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ pedido.total|floatformat:0|dot_thousands }}</td>
+                    <td style="text-transform: capitalize;">{{ pedido.metodo_pago }}</td>
+                    <td>
+                        {% if pedido.direccion_envio %}
+                            <span class="badge" style="background: #17a2b8; color: white;">Delivery</span>
+                        {% else %}
+                            <span class="badge" style="background: #6c757d; color: white;">Retiro</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge status-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+                    </td>
+                    <td>
+                        <a href="{% url 'gestionar_pedido' pedido.id %}" class="btn-action" style="background-color: #6a0dad; color: white;">
+                            Gestionar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" style="text-align: center; padding: 30px;">No se encontraron pedidos con estos filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&estado={{ current_estado }}&entrega={{ current_entrega }}&pago={{ current_pago }}" class="page-link">&laquo; Anterior</a>
+            {% endif %}
+            <span class="current-page" style="padding: 10px 15px;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&estado={{ current_estado }}&entrega={{ current_entrega }}&pago={{ current_pago }}" class="page-link">Siguiente &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

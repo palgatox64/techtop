@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Gestionar Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    .order-detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 30px; }
+    .info-section { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .info-section h3 { color: #6a0dad; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; margin-top: 0; }
+    .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 1rem; }
+    .data-label { font-weight: 600; color: #555; }
+    .status-form { background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #6a0dad; }
+    
+    @media (max-width: 992px) { .order-detail-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Pedido #{{ pedido.id }}</h1>
+        <a href="{% url 'listar_pedidos' %}" class="btn-back-panel"><i class='bx bx-arrow-back'></i> Volver al Listado</a>
+    </header>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="order-detail-grid">
+        <div class="main-col">
+            <div class="info-section">
+                <h3>Detalle de Productos</h3>
+                <div class="table-responsive">
+                    <table class="crud-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Precio Unit.</th>
+                                <th>Cant.</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pedido.detalles.all %}
+                            <tr>
+                                <td>{{ item.producto.nombre }}</td>
+                                <td>${{ item.precio_unitario|floatformat:0|dot_thousands }}</td>
+                                <td>{{ item.cantidad }}</td>
+                                <td>${% widthratio item.precio_unitario 1 item.cantidad as item_total %}{{ item_total|floatformat:0|dot_thousands }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8f9fa; font-weight: bold;">
+                                <td colspan="3" style="text-align: right;">TOTAL PEDIDO:</td>
+                                <td style="color: #6a0dad; font-size: 1.2rem;">${{ pedido.total|floatformat:0|dot_thousands }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>Datos de Envío / Cliente</h3>
+                <div class="data-row"><span class="data-label">Cliente:</span> <span>{{ pedido.cliente.nombre }} {{ pedido.cliente.apellidos }} (RUT: {{ pedido.cliente.rut }})</span></div>
+                <div class="data-row"><span class="data-label">Email:</span> <span>{{ pedido.cliente.email }}</span></div>
+                <div class="data-row"><span class="data-label">Teléfono:</span> <span>{{ pedido.cliente.telefono }}</span></div>
+                <hr>
+                <div class="data-row"><span class="data-label">Tipo de Entrega:</span> 
+                    <span>{% if pedido.direccion_envio %}Despacho a Domicilio{% else %}Retiro en Tienda{% endif %}</span>
+                </div>
+                {% if pedido.direccion_envio %}
+                <div class="data-row"><span class="data-label">Dirección:</span> 
+                    <span>{{ pedido.direccion_envio.calle }} #{{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}, {{ pedido.direccion_envio.region }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="side-col">
+            <div class="info-section status-form">
+                <h3>Gestionar Estado</h3>
+                <p>Estado actual: <span class="badge status-{{ pedido.estado }}" style="font-size: 1rem;">{{ pedido.get_estado_display }}</span></p>
+                <p>Método de Pago: <strong>{{ pedido.get_metodo_pago_display }}</strong></p>
+                
+                <form method="POST" style="margin-top: 20px;">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="nuevo_estado" style="font-weight: bold; display: block; margin-bottom: 10px;">Cambiar estado a:</label>
+                        <select name="nuevo_estado" id="nuevo_estado" class="form-control" style="padding: 12px; width: 100%; margin-bottom: 15px;">
+                            <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="procesando" {% if pedido.estado == 'procesando' %}selected{% endif %}>Procesando (Pagado)</option>
+                            <option value="enviado" {% if pedido.estado == 'enviado' %}selected{% endif %}>Enviado / Listo para Retiro</option>
+                            <option value="entregado" {% if pedido.estado == 'entregado' %}selected{% endif %}>Entregado (Finalizado)</option>
+                            <option value="cancelado" {% if pedido.estado == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit" style="width: 100%; background: #6a0dad; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                        Actualizar Estado y Notificar
+                    </button>
+                </form>
+            </div>
+            
+            <div class="info-section" style="text-align: center;">
+                 <a href="{% url 'generar_recibo_pdf' pedido.id %}" target="_blank" class="btn-action" style="display: block; background: #2c2c2c; color: white; padding: 12px; text-decoration: none; border-radius: 8px;">
+                    <i class='bx bxs-file-pdf'></i> Ver Comprobante PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
