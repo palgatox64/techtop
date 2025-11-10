@@ -121,7 +121,9 @@ class Pedido(models.Model):
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
 
     def __str__(self):
-        return f"Pedido #{self.id} de {self.cliente.nombre}"
+        if self.cliente:
+            return f"Pedido #{self.id} de {self.cliente.nombre} {self.cliente.apellidos}"
+        return f"Pedido #{self.id} (Cliente Desconocido)"
     METODO_PAGO_CHOICES = [
         ('webpay', 'Webpay Plus'),
         ('mercadopago', 'Mercado Pago'),
