@@ -178,6 +178,10 @@ class TechTopChatbot {
                 timestamp: new Date(),
                 data: response.data
             });
+            
+            // --- ¡CAMBIO CLAVE! ---
+            // Vuelve a mostrar las opciones rápidas después de la respuesta
+            this.showQuickReplies();
 
         } catch (error) {
             console.error('Error sending message:', error);
@@ -187,6 +191,10 @@ class TechTopChatbot {
                 text: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
                 timestamp: new Date()
             });
+            
+            // --- ¡CAMBIO CLAVE! ---
+            // También las mostramos si hay un error, para que el usuario no se atasque
+            this.showQuickReplies();
         }
     }
 

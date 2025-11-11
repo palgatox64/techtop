@@ -1,14 +1,41 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
 {% block title %}Gestionar Productos{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+<style>
+    /* Estilo para la celda de precio actualizada */
+    .price-cell .original-price {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 0.9rem;
+        display: block; /* Muestra el precio original arriba */
+    }
+    .price-cell .final-price {
+        color: #28a745; /* Verde para el precio final */
+        font-weight: bold;
+        font-size: 1.1rem;
+        display: block; /* Muestra el precio final abajo */
+    }
+    .price-cell .discount-badge {
+        background-color: #dc3545;
+        color: white;
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-left: 5px;
+        vertical-align: middle;
+    }
+</style>
 
 <div class="gestion-page">
     <header class="gestion-header">
         <h1>Gestión de Productos</h1>
-        <!-- Nuevo botón para volver al panel principal -->
         <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
             <i class='bx bx-arrow-back'></i> Volver al Panel
         </a>
@@ -34,8 +61,7 @@
                     <th>ID</th>
                     <th>Imagen</th>
                     <th>Nombre</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
+                    <th>Precio</th> <th>Stock</th>
                     <th>Estado</th>
                     <th>Categoría</th>
                     <th>Marca</th>
@@ -54,7 +80,19 @@
                         {% endif %}
                     </td>
                     <td>{{ producto.nombre }}</td>
-                    <td>${{ producto.precio|floatformat:0 }}</td>
+                    
+                    <td class="price-cell">
+                        {% if producto.descuento > 0 %}
+                            <span class="original-price">${{ producto.precio|floatformat:0|dot_thousands }}</span>
+                            
+                            <span class="final-price">
+                                ${{ producto.precio_oferta|floatformat:0|dot_thousands }}
+                                <span class="discount-badge">-{{ producto.descuento }}%</span>
+                            </span>
+                        {% else %}
+                            <span>${{ producto.precio|floatformat:0|dot_thousands }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ producto.stock }}</td>
                     <td>
                         {% if producto.activo %}

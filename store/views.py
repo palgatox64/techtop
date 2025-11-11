@@ -2762,14 +2762,30 @@ def generate_chatbot_response(message_raw):
             'data': {'type': 'link', 'url': '/seguimiento-compra/'}
         }
          
-# CASO: Ofertas (AHORA CON VARIACIÓN)
+# CASO: Ofertas (MODIFICADO)
     if any(w in msg for w in ['oferta', 'ofertas', 'descuento', 'barato', 'economico', 'liquidacion']):
-        # 1. Obtenemos un "pool" de los 20 productos más baratos
-        pool_baratos = list(Producto.objects.filter(activo=True, stock__gt=0).order_by('precio')[:20])
-        # 2. Si hay productos, elegimos 5 al azar de ese pool para dar variedad
-        if pool_baratos:
-            seleccionados = random.sample(pool_baratos, min(len(pool_baratos), 5))
-            return crear_respuesta_productos(seleccionados, "🔥 Ofertas Variadas")
+        
+        # 1. [NUEVO] Buscamos productos que tengan un descuento (slider) aplicado.
+        productos_en_oferta = Producto.objects.filter(
+            activo=True, 
+            stock__gt=0, 
+            descuento__gt=0  # <-- La nueva condición clave
+        ).order_by('?')[:5] # <-- Pide 5 aleatorios directamente
+
+        # 2. Si encontramos productos en oferta, los mostramos
+        if productos_en_oferta.exists():
+            return crear_respuesta_productos(productos_en_oferta, "🔥 ¡Nuestras Ofertas Especiales!")
+        else:
+            # 3. [NUEVO FALLBACK] Si NO hay ofertas, mostramos 5 productos aleatorios
+            productos_aleatorios = Producto.objects.filter(activo=True, stock__gt=0).order_by('?')[:5]
+            if productos_aleatorios.exists():
+                return crear_respuesta_productos(productos_aleatorios, "🤔 No hay ofertas especiales activas ahora mismo, ¡pero mira estos productos!")
+            else:
+                # Si no hay nada, mensaje de stock
+                return {
+                    'message': 'Lo sentimos, no encontramos productos disponibles en este momento.',
+                    'data': None
+                }
 
     # CASO: Tiempos de envío / Plazos
     # Detecta preguntas sobre cuánto demora el envío general (no un pedido específico)
@@ -2886,20 +2902,54 @@ def generate_chatbot_response(message_raw):
     }
 
 def crear_respuesta_productos(productos, titulo):
-    """Genera el HTML de las tarjetas de producto."""
+    """
+    Genera el HTML de las tarjetas de producto CON PRECIOS DE OFERTA.
+    """
     html = f'🎯 <strong>{titulo}:</strong><div class="chatbot-products-grid">'
+    
     for p in productos:
         img_url = p.imagen.url if p.imagen else '/static/img/no-image.png'
-        # Cálculo de precio transferencia (3% dcto)
-        precio_transf = int(p.precio * Decimal('0.97')) 
+        
+        # Obtenemos los precios correctos desde las propiedades del modelo
+        precio_oferta_val = p.precio_oferta
+        precio_transf_val = p.precio_transferencia
+        precio_original_val = int(p.precio)
+
+        # --- Construcción del HTML de precios ---
+        price_html = ""
+        
+        # 1. Si hay descuento (slider > 0), mostramos el precio original tachado
+        if p.descuento > 0:
+            price_html += f'''
+            <p class="price-original" style="text-decoration: line-through; color: #999; font-size: 0.8rem; margin: 0;">
+                ${precio_original_val:,.0f}
+            </p>
+            '''
+
+        # 2. Mostramos el precio de oferta (para Webpay/Otros)
+        price_html += f'''
+        <p class="price" style="font-weight: bold; color: #333; margin: 0;">
+            ${precio_oferta_val:,.0f}
+        </p>
+        '''
+
+        # 3. Mostramos el precio de transferencia (Oferta + 3% extra)
+        price_html += f'''
+        <p class="price-transfer" style="font-weight: normal; color: #444; font-size: 0.9rem;">
+            ⚡ ${precio_transf_val:,.0f} (Transferencia)
+        </p>
+        '''
+        
+        # --- Fin construcción HTML ---
+
         html += f'''
         <div class="chatbot-product-card" onclick="window.location.href='/producto/{p.id}/'">
             <img src="{img_url}">
             <div class="chatbot-product-info">
                 <h4>{p.nombre}</h4>
-                <p class="price">${int(p.precio):,.0f}</p>
-                <p class="price-transfer">⚡ ${precio_transf:,.0f} (Transferencia)</p>
+                {price_html}
             </div>
         </div>'''
+    
     html += '</div>'
     return {'message': html, 'data': {'type': 'productos'}}
