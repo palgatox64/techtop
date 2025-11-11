@@ -194,21 +194,26 @@
         {% endfor %}
     </div>
 </div>
-
 <div class="sticky-actions-bar">
     <div class="sticky-actions-content">
+    
         <form action="{% url 'add_to_cart' product.id %}" method="POST" class="sticky-form" id="sticky-add-to-cart-form">
             {% csrf_token %}
             <button type="submit" class="btn btn-secondary" {% if not producto_disponible %}disabled{% endif %}>
                 Agregar al carro
             </button>
         </form>
-        <button class="btn btn-primary" id="sticky-buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
-            Comprar ahora
-        </button>
+        
+        <form action="{% url 'add_to_cart' product.id %}" method="POST" class="sticky-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="checkout"> <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn btn-primary" id="sticky-buy-now-btn" {% if not producto_disponible %}disabled{% endif %}>
+                Comprar ahora
+            </button>
+        </form>
+
     </div>
 </div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const thumbnails = document.querySelectorAll('.thumb-item');
@@ -217,8 +222,6 @@
         
         let isZooming = false;
         let currentImageSrc = mainImage.src;
-        
-        // Funcionalidad de cambio de imagen
         thumbnails.forEach(thumb => {
             thumb.addEventListener('click', function() {
                 thumbnails.forEach(t => t.classList.remove('active'));
@@ -230,7 +233,7 @@
             });
         });
         
-        // Funcionalidad de zoom
+        
         container.addEventListener('mouseenter', function() {
             isZooming = true;
             container.classList.add('zooming');
@@ -248,20 +251,13 @@
             const rect = container.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
-            // Calcular porcentaje de posición
             const xPercent = (x / rect.width) * 100;
             const yPercent = (y / rect.height) * 100;
-            
-            // Aplicar zoom con background
             container.style.backgroundImage = `url('${currentImageSrc}')`;
             container.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
-            container.style.backgroundSize = '250%'; // 2.5x zoom
+            container.style.backgroundSize = '250%'; 
         });
-
-        // ========== VALIDACIÓN DE PRODUCTO NO DISPONIBLE ==========
         {% if not producto_disponible %}
-        // Mostrar SweetAlert automáticamente cuando el producto no está disponible
         Swal.fire({
             icon: 'warning',
             title: 'Producto no disponible',
@@ -280,8 +276,6 @@
                 window.location.href = '/radios/';
             }
         });
-
-        // Prevenir envío de formularios y clicks en botones deshabilitados
         const allForms = document.querySelectorAll('#add-to-cart-form, #sticky-add-to-cart-form');
         const allBuyButtons = document.querySelectorAll('#buy-now-btn, #sticky-buy-now-btn');
         

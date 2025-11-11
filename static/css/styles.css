@@ -608,9 +608,18 @@ ul {
     .swiper {
         height: 300px;
     }
+
+    .header-actions {
+    display: flex;                
+    justify-content: space-between;  
+    align-items: center;           
+    width: 100%;                   
+    order: 2;                      
+    padding: 5px 10px 0; 
+    box-sizing: border-box; 
+    }
 }
 
-/* --- Arreglo para Mega-Menú de Columna Única --- */
 
 .mega-menu-column.full-width {
     flex-grow: 1; 
@@ -618,7 +627,7 @@ ul {
     height: auto;
 }
 
-/* --- Overlay para desenfoque de fondo --- */
+
 .page-overlay {
     position: fixed;
     top: 0;
@@ -641,3 +650,40 @@ ul {
     opacity: 1;
     visibility: visible;
 }
+
+
+.review-form-container,
+.review-form h3,
+.review-form label {
+    color: #ffffff; 
+}
+
+
+.review-form .form-group-content textarea {
+    background-color: #ffffff !important; 
+    color: #333333 !important;    
+}
+
+
+.review-form .form-group-content textarea::placeholder {
+    color: #b0b0b0; 
+    opacity: 1; 
+}
+
+
+.star-rating label {
+    color: #555; 
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input[type="radio"]:checked ~ label {
+    color: #ffc107; 
+}
+
+@media (max-width: 768px) {
+    .user-menu .dropdown-content {
+        left: 0;       
+        right: auto;   
+    }
+}
+
