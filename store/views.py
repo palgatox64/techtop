@@ -29,6 +29,13 @@ from xhtml2pdf import pisa
 import re
 import csv
 import json
+import unicodedata 
+import random      
+from django.db.models import Q
+import unicodedata
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 # Local imports
 from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario
@@ -1611,343 +1618,7 @@ def generar_recibo_pdf(request, pedido_id):
         return HttpResponse(f"Error al generar el PDF: {pdf.err}. Revisa los logs.", status=500)
 
 
-# ==================== CHATBOT INTELIGENTE ====================
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def chatbot_view(request):
-    """
-    Vista para procesar las consultas del chatbot y generar respuestas inteligentes.
-    """
-    try:
-        data = json.loads(request.body)
-        user_message = data.get('message', '').lower().strip()
-        
-        # Generar respuesta basada en el mensaje del usuario
-        response = generate_chatbot_response(user_message)
-        
-        return JsonResponse(response)
-    
-    except json.JSONDecodeError as e:
-        print(f"JSON Decode Error: {e}")
-        return JsonResponse({
-            'message': 'Error al procesar el mensaje. Por favor, intenta de nuevo.',
-            'data': None
-        }, status=400)
-    except Exception as e:
-        print(f"Error en chatbot_view: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            'message': f'Lo siento, ocurrió un error: {str(e)}',
-            'data': None
-        }, status=500)
-
-
-def generate_chatbot_response(message):
-    """
-    Genera una respuesta inteligente basada en el mensaje del usuario.
-    Utiliza procesamiento de lenguaje natural mejorado.
-    """
-    original_message = message
-    message = message.lower().strip()
-    
-    # Palabras irrelevantes para filtrar
-    stop_words = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'al', 'por', 'para', 'en', 'y', 'o']
-    
-    # Extraer palabras clave (sin palabras irrelevantes)
-    words = [w for w in message.split() if w not in stop_words and len(w) > 1]
-    
-    # ========== RESPUESTAS PRIORITARIAS (NO BÚSQUEDA) ==========
-    
-    # 1. SALUDOS (PRIMERO - Alta prioridad)
-    if any(word in message for word in ['hola', 'buenos días', 'buenas tardes', 'buenas noches', 'hey', 'hi', 'saludos']) and len(words) <= 3:
-        return {
-            'message': '👋 <strong>¡Hola! Bienvenido a TechTop</strong><br><br>Soy tu asistente virtual inteligente. Puedo ayudarte con:<br><br>🔍 <strong>Búsqueda rápida de productos:</strong><br>• "Quiero un parlante Bluetooth"<br>• "Muéstrame medidores láser"<br>• "Cargadores de batería"<br><br>💡 <strong>Recomendaciones personalizadas:</strong><br>• "¿Qué me recomiendas para mi auto?"<br>• "Productos más vendidos"<br>• "Lo más económico"<br><br>📋 <strong>Información útil:</strong><br>• Ver categorías y marcas<br>• Seguimiento de pedidos<br>• Métodos de pago y garantías<br><br><em>¿En qué puedo ayudarte hoy?</em>',
-            'data': {'type': 'welcome'}
-        }
-    
-    # 2. AGRADECIMIENTOS
-    if any(word in message for word in ['gracias', 'gracias!', 'thank', 'excelente', 'perfecto', 'genial']) and len(words) <= 3:
-        return {
-            'message': '😊 ¡De nada! Es un placer ayudarte.<br><br>¿Necesitas algo más? Puedo ayudarte a encontrar productos específicos o resolver cualquier duda.',
-            'data': None
-        }
-    
-    # 3. AYUDA
-    if any(word in message for word in ['ayuda', 'help', 'que puedes hacer', 'qué puedes hacer', 'como funciona', 'cómo funciona']):
-        return {
-            'message': '💡 <strong>Soy tu asistente de compras inteligente</strong><br><br><strong>🎯 Puedo ayudarte a:</strong><br><br>1️⃣ <strong>Encontrar productos exactos:</strong><br>• "Parlante Bluetooth para exteriores"<br>• "Medidor láser de distancia"<br>• "Radio Android para Nissan"<br><br>2️⃣ <strong>Darte recomendaciones:</strong><br>• "¿Qué productos recomiendas?"<br>• "Lo más vendido"<br>• "Productos económicos"<br><br>3️⃣ <strong>Comparar y filtrar:</strong><br>• "Diferencia entre medidores"<br>• "Compresores más baratos"<br>• "Productos de marca Xiaomi"<br><br>4️⃣ <strong>Resolver dudas:</strong><br>• Métodos de pago<br>• Seguimiento de pedidos<br>• Garantías y devoluciones<br><br><em>¡Escribe cualquier consulta y te ayudaré!</em>',
-            'data': {'type': 'help'}
-        }
-    
-    # 4. SEGUIMIENTO DE PEDIDOS
-    if any(word in message for word in ['pedido', 'orden', 'compra', 'rastrear', 'seguimiento', 'envío', 'envio', 'tracking', 'donde esta', 'dónde está']):
-        return {
-            'message': '📦 <strong>Seguimiento de Pedidos</strong><br><br>Para rastrear tu pedido en tiempo real:<br><br>1️⃣ Visita: <a href="/seguimiento-compra/" style="color: #667eea; font-weight: bold;">Seguimiento de Compra</a><br>2️⃣ Ingresa tu número de orden<br>3️⃣ Confirma con tu correo electrónico<br><br>ℹ️ <strong>Recibirás información sobre:</strong><br>• Estado actual del pedido<br>• Fecha estimada de entrega<br>• Número de guía de envío<br><br>¿Necesitas ayuda con algo más?',
-            'data': {'type': 'link', 'url': '/seguimiento-compra/'}
-        }
-    
-    # 5. MÉTODOS DE PAGO
-    if any(word in message for word in ['pago', 'pagar', 'tarjeta', 'transferencia', 'efectivo', 'método', 'forma', 'como pago', 'cómo pago']):
-        return {
-            'message': '💳 <strong>Métodos de Pago Disponibles</strong><br><br>✅ <strong>Tarjeta de crédito/débito</strong><br>   • Visa, Mastercard, American Express<br>   • Pago seguro y encriptado<br><br>💸 <strong>Transferencia bancaria</strong><br>   • <span style="color: #48bb78; font-weight: bold;">¡3% de descuento!</span><br>   • Procesamiento en 24-48 hrs<br><br>💵 <strong>Efectivo en tienda</strong><br>   • Paga al retirar tu producto<br>   • Sin cargos adicionales<br><br>🔒 <strong>Todos los pagos son 100% seguros</strong><br><br>¿Tienes alguna pregunta sobre un método específico?',
-            'data': {'type': 'payment_methods'}
-        }
-    
-    # 6. GARANTÍAS
-    if any(word in message for word in ['garantia', 'garantía', 'devolución', 'devolucion', 'cambio', 'retorno', 'defectuoso']):
-        return {
-            'message': '🛡️ <strong>Garantías y Devoluciones</strong><br><br>✅ <strong>Todos nuestros productos incluyen:</strong><br>• Garantía del fabricante<br>• Certificado de autenticidad<br>• Soporte técnico<br><br>🔄 <strong>Política de devolución:</strong><br>• 30 días para cambios y devoluciones<br>• Producto en perfecto estado<br>• Con embalaje original<br><br>📞 <strong>Para más detalles:</strong><br>• <a href="/garantias/" style="color: #667eea; font-weight: bold;">Ver Política Completa</a><br>• <a href="/contacto/" style="color: #667eea; font-weight: bold;">Contactar Soporte</a><br><br>¿Tienes un caso específico?',
-            'data': {'type': 'link', 'url': '/garantias/'}
-        }
-    
-    # 7. CONTACTO
-    if any(word in message for word in ['contacto', 'teléfono', 'telefono', 'dirección', 'direccion', 'ubicación', 'ubicacion', 'horario', 'llamar', 'visitar']):
-        return {
-            'message': '📞 <strong>¿Cómo contactarnos?</strong><br><br>• <a href="/contacto/" style="color: #667eea; font-weight: bold;">Formulario de Contacto</a><br>• <a href="/centro-ayuda/" style="color: #667eea; font-weight: bold;">Centro de Ayuda</a><br><br>⏰ <strong>Horario de atención:</strong><br>Lunes a Viernes: 9:00 - 18:00<br>Sábados: 10:00 - 14:00<br><br>¿Necesitas ayuda con algo específico?',
-            'data': {'type': 'contact'}
-        }
-    
-    # ========== BÚSQUEDA DE PRODUCTOS ==========
-    
-    # 8. PALABRAS CLAVE DE BÚSQUEDA EXPLÍCITA
-    search_keywords = ['quiero', 'busco', 'necesito', 'muestra', 'muestrame', 'mostrame', 'ver', 'buscar', 
-                      'encontrar', 'tienes', 'tienen', 'vende', 'venden', 'precio', 'cuanto', 'cuesta',
-                      'recomienda', 'recomendación', 'sugerir', 'dame']
-    
-    is_explicit_search = any(word in message for word in search_keywords)
-    
-    # 9. SOLICITUD DE VER PRODUCTOS GENERALES
-    if any(word in message for word in ['productos', 'catalogo', 'catálogo', 'tienda', 'mostrar todo', 'todo']):
-        if any(word in message for word in ['todos', 'ver', 'mostrar', 'cuales', 'qué', 'que']):
-            productos = Producto.objects.all().order_by('-fecha_pub')[:6]
-            if productos:
-                return crear_respuesta_productos(productos, "productos destacados")
-    
-    # 10. RECOMENDACIONES Y PRODUCTOS DESTACADOS
-    if any(word in message for word in ['recomien', 'sugerir', 'mejor', 'mejores', 'destacado', 'popular', 'vendido']):
-        productos = Producto.objects.filter(stock__gt=0).order_by('-fecha_pub')[:6]
-        return crear_respuesta_productos(productos, "productos recomendados")
-    
-    # 11. CONSULTAS SOBRE PRECIOS
-    if any(word in message for word in ['barato', 'económico', 'oferta', 'descuento', 'rebaja']):
-        productos = Producto.objects.filter(stock__gt=0).order_by('precio')[:6]
-        return crear_respuesta_productos(productos, "productos más económicos")
-    elif any(word in message for word in ['caro', 'premium', 'mejor calidad', 'alta gama']):
-        productos = Producto.objects.filter(stock__gt=0).order_by('-precio')[:6]
-        return crear_respuesta_productos(productos, "productos premium")
-    
-    # 12. BÚSQUEDA POR CATEGORÍA O MARCA
-    categorias = Categoria.objects.all()
-    for categoria in categorias:
-        cat_lower = categoria.nombre.lower()
-        cat_normalized = cat_lower.replace('-', ' ').replace('_', ' ')
-        message_normalized = message.replace('-', ' ').replace('_', ' ')
-        
-        if cat_lower in message or cat_normalized in message_normalized:
-            productos = Producto.objects.filter(categoria=categoria, stock__gt=0)[:6]
-            if productos:
-                return crear_respuesta_productos(productos, f"productos de {categoria.nombre}")
-    
-    # 13. BÚSQUEDA POR MARCA
-    marcas = Marca.objects.all()
-    for marca in marcas:
-        marca_lower = marca.nombre.lower()
-        if marca_lower in message:
-            productos = Producto.objects.filter(marca=marca, stock__gt=0)[:6]
-            if productos:
-                return crear_respuesta_productos(productos, f"productos de {marca.nombre}")
-    
-    # 14. LISTAR CATEGORÍAS
-    if any(word in message for word in ['categoria', 'categoría', 'categorias', 'categorías', 'tipo', 'tipos', 'secciones']):
-        categorias = Categoria.objects.all()
-        if categorias:
-            response_text = "📁 <strong>Nuestras Categorías de Productos:</strong><br><br>"
-            for cat in categorias:
-                count = Producto.objects.filter(categoria=cat, stock__gt=0).count()
-                if count > 0:
-                    response_text += f"• <strong>{cat.nombre}</strong> - {count} productos disponibles<br>"
-            response_text += "<br><em>Escribe el nombre de una categoría para ver sus productos</em>"
-            
-            return {
-                'message': response_text,
-                'data': {'type': 'categorias', 'categorias': [c.nombre for c in categorias]}
-            }
-    
-    # 15. LISTAR MARCAS
-    if any(word in message for word in ['marca', 'marcas', 'fabricante', 'fabricantes']):
-        marcas = Marca.objects.all()
-        if marcas:
-            response_text = "🏷️ <strong>Marcas Disponibles:</strong><br><br>"
-            for marca in marcas:
-                count = Producto.objects.filter(marca=marca, stock__gt=0).count()
-                if count > 0:
-                    response_text += f"• <strong>{marca.nombre}</strong> - {count} productos<br>"
-            response_text += "<br><em>Escribe el nombre de una marca para ver sus productos</em>"
-            
-            return {
-                'message': response_text,
-                'data': {'type': 'marcas', 'marcas': [m.nombre for m in marcas]}
-            }
-    
-    # 16. BÚSQUEDA INTELIGENTE DE PRODUCTOS
-    if is_explicit_search and len(words) >= 1:
-        productos_encontrados = buscar_productos_inteligente(original_message, words)
-        if productos_encontrados and len(productos_encontrados) > 0:
-            return crear_respuesta_productos(productos_encontrados, "productos encontrados")
-    
-    # ========== RESPUESTA POR DEFECTO ==========
-    return {
-        'message': '🤔 <strong>No estoy seguro de cómo ayudarte con eso</strong><br><br>Pero puedo ayudarte con:<br><br>💬 <strong>Búsqueda de productos:</strong><br>• "Quiero ver parlantes Bluetooth"<br>• "Necesito un medidor láser"<br>• "Mostrar radios Android"<br><br>🔍 <strong>Explorar catálogo:</strong><br>• "Ver todas las categorías"<br>• "Productos más baratos"<br>• "¿Qué me recomiendas?"<br><br>ℹ️ <strong>Información:</strong><br>• "Métodos de pago"<br>• "Seguimiento de pedido"<br>• "Garantías"<br><br><em>Escribe "ayuda" para ver más opciones</em>',
-        'data': None
-    }
-
-
-def buscar_productos_inteligente(mensaje_original, palabras_clave):
-    """
-    Búsqueda inteligente de productos usando múltiples criterios.
-    Prioriza coincidencias exactas en categorías y marcas.
-    """
-    mensaje_limpio = mensaje_original.lower().strip()
-    
-    # Diccionario de sinónimos para búsqueda más inteligente
-    sinonimos = {
-        'parlante': ['parlante', 'parlantes', 'bocina', 'bocinas', 'altavoz', 'speaker', 'bluetooth'],
-        'medidor': ['medidor', 'medidores', 'nivel', 'laser', 'distancia', 'angulo'],
-        'cargador': ['cargador', 'cargadores', 'bateria', 'batería', 'fosfor'],
-        'compresor': ['compresor', 'compresores', 'aire', 'inflador'],
-        'radio': ['radio', 'radios', 'android', 'pantalla', 'multimedia', 'carplay'],
-        'scanner': ['scanner', 'escaner', 'diagnostico', 'obdii', 'obd2', 'automotriz'],
-    }
-    
-    # Expandir palabras clave con sinónimos
-    palabras_expandidas = list(palabras_clave)
-    for palabra in palabras_clave:
-        for key, values in sinonimos.items():
-            if palabra.lower() in values:
-                palabras_expandidas.extend(values)
-                break
-    
-    # PASO 1: Buscar primero en categorías (más específico)
-    categorias = Categoria.objects.all()
-    for categoria in categorias:
-        cat_nombre_lower = categoria.nombre.lower()
-        cat_words = cat_nombre_lower.split()
-        
-        if cat_nombre_lower in mensaje_limpio:
-            productos = Producto.objects.filter(categoria=categoria)[:6]
-            if productos:
-                return productos
-        
-        for cat_word in cat_words:
-            if len(cat_word) > 3 and cat_word in mensaje_limpio:
-                productos = Producto.objects.filter(categoria=categoria)[:6]
-                if productos:
-                    return productos
-        
-        for palabra in palabras_expandidas:
-            if palabra.lower() in cat_nombre_lower or cat_nombre_lower in palabra.lower():
-                productos = Producto.objects.filter(categoria=categoria)[:6]
-                if productos:
-                    return productos
-    
-    # PASO 2: Buscar en marcas
-    marcas = Marca.objects.all()
-    for marca in marcas:
-        marca_nombre_lower = marca.nombre.lower()
-        if marca_nombre_lower in mensaje_limpio or any(marca_nombre_lower in palabra for palabra in palabras_expandidas):
-            productos = Producto.objects.filter(marca=marca)[:6]
-            if productos:
-                return productos
-    
-    # PASO 3: Búsqueda general por palabras clave
-    query = Q()
-    for palabra in palabras_expandidas:
-        if len(palabra) > 1:
-            query |= Q(nombre__icontains=palabra)
-            query |= Q(descripcion__icontains=palabra)
-    
-    if mensaje_limpio:
-        query |= Q(nombre__icontains=mensaje_limpio)
-        query |= Q(descripcion__icontains=mensaje_limpio)
-    
-    if query:
-        productos = Producto.objects.filter(query).distinct()[:6]
-        if productos:
-            return productos
-    
-    # PASO 4: Búsqueda flexible
-    if palabras_clave:
-        query_flexible = Q()
-        for palabra in palabras_clave:
-            if len(palabra) > 2:
-                query_flexible |= Q(nombre__icontains=palabra)
-        
-        if query_flexible:
-            productos = Producto.objects.filter(query_flexible).distinct()[:6]
-            if productos:
-                return productos
-    
-    return Producto.objects.all()[:6]
-
-
-def crear_respuesta_productos(productos, contexto="productos"):
-    """
-    Crea una respuesta formateada con los productos encontrados.
-    """
-    if not productos:
-        return {
-            'message': 'No encontré productos que coincidan con tu búsqueda. 🤔<br><br>Intenta:<br>• Usar otras palabras clave<br>• Ver todas las categorías<br>• Escribir "ver productos" para ver el catálogo',
-            'data': None
-        }
-    
-    productos_data = []
-    for p in productos:
-        precio_transferencia = float(p.precio * Decimal('0.97'))
-        imagen_url = p.imagen.url if p.imagen else '/static/img/no-image.png'
-        
-        productos_data.append({
-            'id': p.id,
-            'nombre': p.nombre,
-            'precio': float(p.precio),
-            'precio_transferencia': precio_transferencia,
-            'imagen': imagen_url,
-            'marca': p.marca.nombre,
-            'categoria': p.categoria.nombre,
-            'stock': p.stock
-        })
-    
-    count = len(productos)
-    header = f'🎯 <strong>Encontré {count} producto{"s" if count > 1 else ""}:</strong><br><br>'
-    
-    response_text = header
-    response_text += '<div class="chatbot-products-grid">'
-    
-    for p in productos_data:
-        disponible = "✅ Disponible" if p['stock'] > 0 else "❌ Sin stock"
-        response_text += f'''
-        <div class="chatbot-product-card" onclick="window.location.href='/producto/{p['id']}/'">
-            <img src="{p['imagen']}" alt="{p['nombre']}" onerror="this.src='/static/img/no-image.png'">
-            <div class="chatbot-product-info">
-                <h4>{p['nombre']}</h4>
-                <p class="brand">{p['marca']} • {p['categoria']}</p>
-                <p class="price">💳 ${p['precio']:,.0f}</p>
-                <p class="price-transfer">💸 ${p['precio_transferencia']:,.0f} (Transferencia)</p>
-                <p class="stock">{disponible}</p>
-            </div>
-        </div>
-        '''
-    
-    response_text += '</div><br><em>Haz clic en cualquier producto para ver más detalles</em>'
-    
-    return {
-        'message': response_text,
-        'data': {
-            'type': 'productos',
-            'productos': productos_data
-        }
-    }
 
 
 # ==================== INTEGRACIÓN CON TRANSBANK WEBPAY PLUS ====================
@@ -3022,3 +2693,203 @@ def seguimiento_compra(request):
         'error': error_mensaje,
         'orden_buscada': orden_buscada
     })
+    
+# ==================== CHATBOT INTELIGENTE V3 (FINAL) ====================
+
+def normalizar_texto(texto):
+    """
+    Normaliza el texto: elimina diacríticos (tildes, ñ->n) y convierte a minúsculas.
+    Es vital que las palabras clave en los IFs también estén normalizadas.
+    """
+    if not texto: return ""
+    # NFD separa caracteres base de sus modificadores (ej: ñ -> n + ~)
+    # Luego filtramos los modificadores (Mn)
+    return ''.join(c for c in unicodedata.normalize('NFD', texto)
+                   if unicodedata.category(c) != 'Mn').lower().strip()
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def chatbot_view(request):
+    try:
+        data = json.loads(request.body)
+        user_message = data.get('message', '')
+        response = generate_chatbot_response(user_message)
+        return JsonResponse(response)
+    except Exception as e:
+        print(f"Chatbot Error: {e}")
+        return JsonResponse({'message': 'Lo siento, tuve un error interno.', 'data': None}, status=500)
+
+def generate_chatbot_response(message_raw):
+    # 1. Normalización (IMPORTANTE: 'dañado' se convierte en 'danado')
+    msg = normalizar_texto(message_raw)
+    words = set(msg.split()) # Set para búsqueda rápida de palabras exactas
+
+    # ================================================================
+    # NIVEL 1: SOPORTE URGENTE (Envíos, Daños)
+    # ================================================================
+
+    # CASO: Producto dañado o fallas
+    # Keywords normalizadas: 'danado' en lugar de 'dañado'
+    if any(w in msg for w in ['roto', 'danado', 'malo', 'falla', 'no funciona', 'defectuoso', 'quebrado', 'golpeado', 'llego mal']):
+        return {
+            'message': '😟 <strong>¿Tu producto llegó con problemas?</strong><br><br>Lo lamentamos mucho. Por favor, ingresa a nuestro Centro de Ayuda para gestionar una solución rápida (cambio o devolución).<br><br>👉 <a href="/centro-ayuda/" style="color: #667eea; font-weight: bold;">Ir al Centro de Ayuda</a>',
+            'data': {'type': 'link', 'url': '/centro-ayuda/'}
+        }
+
+    # CASO: Problemas de envío / No llega
+    # Detecta combinaciones como "no llega", "aun no recibo", "retraso"
+    if ('no' in words and any(w in msg for w in ['llega', 'recib', 'llegado'])) or \
+       any(w in msg for w in ['retraso', 'demora', 'tarda', 'donde viene']):
+        return {
+            'message': '🚚 <strong>¿Tu pedido está demorado?</strong><br><br>Revisa el estado actual aquí:<br><br>👉 <a href="/seguimiento-compra/" style="color: #667eea; font-weight: bold;">Seguimiento de Compra</a><br><br>Si el plazo expiró, contáctanos de inmediato.',
+            'data': {'type': 'link', 'url': '/seguimiento-compra/'}
+        }
+
+    # CASO: Seguimiento general (sin queja)
+    if any(w in msg for w in ['seguimiento', 'rastrea', 'donde esta mi', 'estado del pedido']):
+         return {
+            'message': '📦 <strong>Rastrea tu pedido</strong><br><br>Puedes ver la ubicación de tu compra ingresando tu número de orden aquí:<br><br>👉 <a href="/seguimiento-compra/" style="color: #667eea; font-weight: bold;">Ir a Seguimiento</a>',
+            'data': {'type': 'link', 'url': '/seguimiento-compra/'}
+        }
+         
+# CASO: Ofertas (AHORA CON VARIACIÓN)
+    if any(w in msg for w in ['oferta', 'ofertas', 'descuento', 'barato', 'economico', 'liquidacion']):
+        # 1. Obtenemos un "pool" de los 20 productos más baratos
+        pool_baratos = list(Producto.objects.filter(activo=True, stock__gt=0).order_by('precio')[:20])
+        # 2. Si hay productos, elegimos 5 al azar de ese pool para dar variedad
+        if pool_baratos:
+            seleccionados = random.sample(pool_baratos, min(len(pool_baratos), 5))
+            return crear_respuesta_productos(seleccionados, "🔥 Ofertas Variadas")
+
+    # CASO: Tiempos de envío / Plazos
+    # Detecta preguntas sobre cuánto demora el envío general (no un pedido específico)
+    if any(w in msg for w in ['tiempo', 'plazo', 'demora', 'tarda', 'dias']) and any(w in msg for w in ['envio', 'despacho', 'entrega', 'llegar']):
+        return {
+            'message': '🚚 <strong>Plazos de Envío Aproximados</strong><br><br>• <strong>Santiago:</strong> 24 a 48 horas hábiles.<br>• <strong>Regiones:</strong> 2 a 5 días hábiles (depende de la zona).<br><br>Recibirás un código de seguimiento apenas tu compra sea despachada.',
+            'data': {'type': 'info'}
+        }
+
+    # CASO: Garantías (Información general)
+    if any(w in msg for w in ['garantia', 'devolucion', 'cambio', 'falla']):
+         return {
+            'message': '🛡️ <strong>Políticas de Garantía</strong><br><br>✅ <strong>Garantía Legal (6 meses):</strong> Cubre fallas de fabricación.<br>✅ <strong>Satisfacción (10 días):</strong> Devolución si el producto no cumple tus expectativas (debe estar sellado/nuevo).<br><br>👉 <a href="/garantias/" style="color: #667eea; font-weight: bold;">Ver Política Completa</a>',
+            'data': {'type': 'link', 'url': '/garantias/'}
+        }
+
+    # CASO: Pago en cuotas (Complemento a medios de pago)
+    if 'cuotas' in msg:
+         return {
+             'message': '💳 <strong>Pago en Cuotas</strong><br><br>¡Sí! Puedes pagar en cuotas usando tarjetas de crédito a través de <strong>Webpay Plus</strong> o <strong>Mercado Pago</strong>.<br><br>ℹ️ <em>La cantidad de cuotas sin interés dependerá de las promociones vigentes con tu banco.</em>',
+             'data': {'type': 'info'}
+         }
+
+    # CASO: Centro de Ayuda (Preguntas frecuentes)
+    if any(w in msg for w in ['ayuda', 'faq', 'preguntas', 'dudas']):
+        return {
+            'message': '❓ <strong>Centro de Ayuda</strong><br><br>Encuentra respuestas rápidas a las consultas más comunes en nuestra sección de ayuda:<br><br>👉 <a href="/centro-ayuda/" style="color: #667eea; font-weight: bold;">Ir a Preguntas Frecuentes</a>',
+            'data': {'type': 'link', 'url': '/centro-ayuda/'}
+        }
+
+    # ================================================================
+    # NIVEL 2: INFORMACIÓN GENERAL Y CONTACTO
+    # ================================================================
+
+    # CASO: Contacto (Solicitado explícitamente)
+    if any(w in msg for w in ['humano', 'persona', 'agente', 'ejecutivo', 'alguien real', 'asesor']):
+        return {
+            'message': '🤖 <strong>¿Prefieres atención personalizada?</strong><br><br>Entiendo, a veces es mejor hablar con una persona. Nuestro equipo humano está disponible en:<br><br>📱 <strong>WhatsApp:</strong> +56 9 6652 6672<br>📞 <strong>Teléfono:</strong> (mismo número)<br>📧 <strong>Email:</strong> contacto@techtop.cl<br>⏰ <strong>Horario:</strong> Lun-Vie 09:00 - 18:00 hrs',
+            'data': {'type': 'info'}
+        }
+        
+    if any(w in msg for w in ['contacto', 'contactar', 'telefono', 'celular', 'correo', 'email', 'hablar con alguien', 'direccion', 'ubicacion', 'donde estan']):
+        return {
+            'message': '📞 <strong>Canales de Contacto TechTop</strong><br><br>• 📱 <strong>Teléfono/WhatsApp:</strong> +56 9 6652 6672<br>• 📧 <strong>Email:</strong> contacto@techtop.cl<br>• 📍 <strong>Ubicación:</strong> Santiago, Región Metropolitana<br><br>También puedes usar nuestro formulario web:<br><br>👉 <a href="/contacto/" style="color: #667eea; font-weight: bold;">Ir a Página de Contacto</a>',
+            'data': {'type': 'link', 'url': '/contacto/'} # Redirige o muestra botón si el JS lo soporta
+        }
+
+    # CASO: Métodos de pago
+    if any(w in msg for w in ['pago', 'pagar', 'tarjeta', 'cuotas', 'transferencia', 'redcompra']):
+        return {
+            'message': '💳 <strong>Medios de Pago Aceptados</strong><br><br>✅ <strong>Webpay Plus:</strong> Tarjetas de crédito y débito.<br>✅ <strong>Mercado Pago:</strong> Saldo en cuenta y tarjetas guardadas.<br>✅ <strong>Transferencia:</strong> ¡Obtén un <strong>3% de DESCUENTO</strong> pagando así!',
+            'data': {'type': 'info'}
+        }
+
+    # ================================================================
+    # NIVEL 3: BÚSQUEDA DE PRODUCTOS
+    # ================================================================
+
+    # CASO: "Ver productos" genérico -> Muestra RANDOM
+    # Si el mensaje es muy corto y genérico, mostramos variedad.
+    if msg in ['ver productos', 'productos', 'quiero ver productos', 'muestrame productos', 'tienda', 'catalogo']:
+        # .order_by('?') obtiene registros aleatorios
+        productos = Producto.objects.filter(activo=True, stock__gt=0).order_by('?')[:6]
+        return crear_respuesta_productos(productos, "Explora nuestro catálogo 🚀")
+
+    # CASO: Búsqueda específica (Marcas, Categorías, Palabras clave)
+    # Usamos la misma lógica de detección combinada de la V2 mejorada, 
+    # pero aseguramos que busque por relevancia (fecha o precio) si es específico.
+    
+    # 1. Detectar marcas y categorías en el mensaje
+    marcas_detectadas = [m for m in Marca.objects.all() if normalizar_texto(m.nombre) in msg]
+    cats_detectadas = [c for c in Categoria.objects.all() if normalizar_texto(c.nombre) in msg]
+
+    if marcas_detectadas and cats_detectadas:
+        # Búsqueda combinada: "Radio Kia"
+        prods = Producto.objects.filter(marca=marcas_detectadas[0], categoria=cats_detectadas[0], activo=True, stock__gt=0)[:6]
+        if prods.exists(): return crear_respuesta_productos(prods, f"{cats_detectadas[0].nombre} para {marcas_detectadas[0].nombre}")
+
+    if marcas_detectadas:
+        # Solo marca: "Cosas para Toyota" -> mostrar lo más nuevo
+        prods = Producto.objects.filter(marca=marcas_detectadas[0], activo=True, stock__gt=0).order_by('-fecha_pub')[:6]
+        return crear_respuesta_productos(prods, f"Productos {marcas_detectadas[0].nombre}")
+
+    if cats_detectadas:
+        # Solo categoría: "Muestrame radios" -> mostrar aleatorios de esa categoría para variedad
+        prods = Producto.objects.filter(categoria=cats_detectadas[0], activo=True, stock__gt=0).order_by('?')[:6]
+        return crear_respuesta_productos(prods, f"Categoría: {cats_detectadas[0].nombre}")
+
+    # 2. Búsqueda por palabras clave (último recurso de búsqueda)
+    intentos_busqueda = ['busco', 'quiero', 'necesito', 'tienes', 'venden', 'precio', 'valor', 'mostrar', 'ver']
+    if any(i in msg for i in intentos_busqueda) or len(words) > 1: # Si parece una búsqueda
+        palabras_clave = [w for w in words if len(w) > 3 and w not in intentos_busqueda]
+        if palabras_clave:
+            query = Q()
+            for p in palabras_clave:
+                query |= Q(nombre__icontains=p) | Q(descripcion__icontains=p)
+            prods = Producto.objects.filter(query, activo=True, stock__gt=0).order_by('?')[:6]
+            if prods.exists():
+                return crear_respuesta_productos(prods, "Lo que encontré para ti")
+
+    # ================================================================
+    # NIVEL 4: SALUDOS Y DESPEDIDAS
+    # ================================================================
+    if any(w in words for w in ['hola', 'buenas', 'alo', 'hey']):
+        return {'message': '¡Hola! 👋 Bienvenido a TechTop. ¿En qué te puedo ayudar hoy? (Puedes pedirme ver productos, seguimiento de pedidos o contacto)', 'data': {'type': 'welcome'}}
+
+    if any(w in words for w in ['gracias', 'chao', 'adios']):
+        return {'message': '¡De nada! 😊 Estamos para ayudarte.', 'data': None}
+
+    # RESPUESTA POR DEFECTO
+    return {
+        'message': '🤔 No entendí bien tu consulta. Prueba con:<br><br>• "Ver productos" (para ver variedad)<br>• "Radio para Nissan"<br>• "Seguimiento de pedido"<br>• "Contacto"',
+        'data': None
+    }
+
+def crear_respuesta_productos(productos, titulo):
+    """Genera el HTML de las tarjetas de producto."""
+    html = f'🎯 <strong>{titulo}:</strong><div class="chatbot-products-grid">'
+    for p in productos:
+        img_url = p.imagen.url if p.imagen else '/static/img/no-image.png'
+        # Cálculo de precio transferencia (3% dcto)
+        precio_transf = int(p.precio * Decimal('0.97')) 
+        html += f'''
+        <div class="chatbot-product-card" onclick="window.location.href='/producto/{p.id}/'">
+            <img src="{img_url}">
+            <div class="chatbot-product-info">
+                <h4>{p.nombre}</h4>
+                <p class="price">${int(p.precio):,.0f}</p>
+                <p class="price-transfer">⚡ ${precio_transf:,.0f} (Transferencia)</p>
+            </div>
+        </div>'''
+    html += '</div>'
+    return {'message': html, 'data': {'type': 'productos'}}
