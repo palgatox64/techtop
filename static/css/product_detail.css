@@ -338,41 +338,43 @@
     }
 }
 
-/* ========================================
-   SECCIÓN DE RESEÑAS Y COMENTARIOS
-   ======================================== */
 
 .product-reviews-container {
     max-width: 1200px;
     margin: 4rem auto;
     padding: 1rem;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0; 
     padding-top: 2rem;
+    background-color: #ffffff; 
 }
+
 
 .product-reviews-container h2 {
     font-size: 1.8rem;
     margin-bottom: 1rem;
     text-align: center;
+    color: #000000; 
+    border-bottom: 2px solid #777272; 
+    padding-bottom: 1rem;
 }
 
-/* --- Resumen de Estrellas --- */
+
 .reviews-summary {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 2.5rem;
-    background-color: #f9f9f9;
+    background-color: #363636; 
     padding: 1.5rem;
     border-radius: 8px;
-    /* Ancho máximo para centrarlo */
     max-width: 800px; 
     margin-left: auto;
     margin-right: auto;
+    border: 1px solid #444; 
 }
 
-.summary-stars {
+.reviews-summary .summary-stars {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -380,27 +382,26 @@
     color: #ffc107;
 }
 
-.summary-stars span {
+.reviews-summary .summary-stars span {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
+    color: #ffffff; 
     margin-left: 0.75rem;
 }
 
 .reviews-summary p {
     font-size: 1rem;
-    color: #666;
+    color: #ffffff; 
     margin: 0;
 }
 
-/* --- Formulario para Escribir Reseña --- */
+
 .review-form-container, .review-form-login-prompt {
-    background-color: #fdfdfd;
-    border: 1px solid #e0e0e0;
+    background-color: #363636; 
+    border: 1px solid #444;
     border-radius: 8px;
     padding: 1.5rem 2rem;
     margin-bottom: 2.5rem;
-    /* Centrado y con ancho máximo */
     max-width: 800px; 
     margin-left: auto;
     margin-right: auto;
@@ -414,10 +415,11 @@
     margin: 0;
     text-align: center;
     font-size: 1.1rem;
+    color: #ffffff; 
 }
 
 .review-form-login-prompt a {
-    color: #6a0dad; /* Color principal */
+    color: #ffffff; 
     text-decoration: none;
     font-weight: 600;
 }
@@ -428,24 +430,27 @@
 .review-form h3 {
     margin: 0 0 1.5rem 0;
     font-size: 1.5rem;
-    color: #333;
+    color: #ffffff; 
 }
 
 .review-form .form-group-stars {
     margin-bottom: 1.5rem;
 }
 
-.review-form label { /* Etiqueta general */
+.review-form label {
     font-weight: 600;
     margin-bottom: 0.5rem;
     display: block;
     font-size: 1.1rem;
+    color: #eee; 
 }
 
 .review-form .form-group-content textarea {
     width: 100%;
     padding: 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #555; 
+    background-color: #333; 
+    color: #ffffff; 
     border-radius: 5px;
     font-family: inherit;
     font-size: 1rem;
@@ -455,47 +460,43 @@
 
 .review-form .form-group-content textarea:focus {
     outline: none;
-    border-color: #6a0dad;
-    box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.1);
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
-/* --- Sistema de Estrellas Interactivo --- */
+
 .star-rating {
     display: flex;
-    flex-direction: row-reverse; /* Invierte el orden de los elementos */
-    justify-content: flex-end; /* Los alinea a la derecha */
-    width: fit-content; /* Evita que ocupe todo el ancho */
+    flex-direction: row-reverse;
+    justify-content: flex-end; 
+    width: fit-content; 
 }
 
-/* Oculta los botones de radio originales */
 .star-rating input[type="radio"] {
     display: none;
 }
 
-/* Estilo de las estrellas (íconos) */
 .star-rating label {
-    font-size: 2.5rem; /* Tamaño de las estrellas */
-    color: #ccc;      /* Color de estrella apagada */
+    font-size: 2.5rem; 
+    color: #555; 
     cursor: pointer;
     transition: color 0.2s;
     padding: 0 0.1em;
 }
 
-/* Esto colorea las estrellas al pasar el mouse */
 .star-rating label:hover,
 .star-rating label:hover ~ label {
     color: #ffc107;
 }
 
-/* Esto colorea las estrellas que están seleccionadas (checked) */
 .star-rating input[type="radio"]:checked ~ label {
     color: #ffc107;
 }
 
-/* --- Botón de Enviar Reseña --- */
+
 .review-form .btn-primary {
-    background-color: #000;
-    color: #fff;
+    background-color: #ffffff; 
+    color: #1a1a1a;
     border: none;
     padding: 12px 25px;
     font-size: 1rem;
@@ -506,16 +507,14 @@
 }
 
 .review-form .btn-primary:hover {
-    background-color: #333;
+    background-color: #dddddd;
 }
 
 
-/* --- Lista de Reseñas (Comentarios) --- */
 .review-list {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    /* Centrado y con ancho máximo */
+    gap: 2rem; 
     max-width: 800px; 
     margin-left: auto;
     margin-right: auto;
@@ -525,7 +524,7 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 1.5rem;
-    background-color: #fff;
+    background-color: #fff; 
 }
 
 .review-header {
@@ -545,6 +544,7 @@
 .reviewer-name {
     font-weight: 600;
     font-size: 1.05rem;
+    color: #000000; 
 }
 
 .review-meta {
@@ -552,7 +552,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 0.25rem;
-    flex-shrink: 0; /* Evita que se encoja */
+    flex-shrink: 0; 
 }
 
 .review-stars {
@@ -562,21 +562,22 @@
 
 .review-date {
     font-size: 0.85rem;
-    color: #777;
+    color: #777; 
 }
 
 .review-body p {
     line-height: 1.6;
-    color: #444;
+    color: #444; 
     margin: 0;
-    word-break: break-word; /* Evita que el texto largo rompa el layout */
+    word-break: break-word; 
 }
 
 
-/* --- RESPONSIVIDAD (Móviles) --- */
+
 @media (max-width: 768px) {
     .product-reviews-container {
         margin: 2rem auto;
+        padding: 1rem; 
     }
 
     .product-reviews-container h2 {

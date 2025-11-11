@@ -12,10 +12,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 </head>
 <body>
-    <header class="header">
+    <div id="page-overlay" class="page-overlay"></div> <header class="header">
         <div class="header-container">
             <a href="/" class="header-logo">
-                <img src="{% static 'img/new_black.png' %}" alt="TECHTOP">
+                <img src="{% static 'img/new.png' %}" alt="TECHTOP"> 
             </a>
             <form class="header-search" method="GET" action="{% url 'search' %}">
                 <input type="text" name="q" placeholder="Busca los mejores productos y marcas :)" value="{{ search_query|default:'' }}">

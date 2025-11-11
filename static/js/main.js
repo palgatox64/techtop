@@ -36,23 +36,67 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const dropdownItems = document.querySelectorAll('.nav-item-dropdown');
+    const pageOverlay = document.getElementById('page-overlay'); 
+
     dropdownItems.forEach(item => {
         const link = item.querySelector('.nav-link');
+        
         link.addEventListener('click', function(event) {
+            
             if (window.innerWidth <= 768) {
-                if (!item.classList.contains('active')) {
-                    event.preventDefault(); 
-                    dropdownItems.forEach(openItem => {
-                        if (openItem !== item) {
-                            openItem.classList.remove('active');
-                        }
-                    });
-                    
-                    item.classList.add('active');
+                event.preventDefault(); 
+                
+                const wasActive = item.classList.contains('active');
+
+                
+                dropdownItems.forEach(openItem => {
+                    if (openItem !== item) {
+                        openItem.classList.remove('active');
+                    }
+                });
+
+                
+                if (wasActive) {
+                    item.classList.remove('active'); 
+                    if (pageOverlay) pageOverlay.classList.remove('is-active'); 
+                } else {
+                    item.classList.add('active'); 
+                    if (pageOverlay) pageOverlay.classList.add('is-active'); 
                 }
             }
         });
     });
+
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth <= 768) {
+            const clickedInsideNavbar = event.target.closest('.navbar');
+            
+            if (!clickedInsideNavbar) {
+                dropdownItems.forEach(item => {
+                    item.classList.remove('active');
+                });
+                if (pageOverlay) pageOverlay.classList.remove('is-active'); 
+            }
+        }
+    });
+
+    if (pageOverlay && dropdownItems.length > 0) {
+        dropdownItems.forEach(item => {
+            
+            item.addEventListener('mouseenter', function() {
+                if (window.innerWidth > 768) {
+                    pageOverlay.classList.add('is-active');
+                }
+            });
+            
+            item.addEventListener('mouseleave', function() {
+                if (window.innerWidth > 768) {
+                    pageOverlay.classList.remove('is-active');
+                }
+            });
+        });
+    }
+    
 
 
     const openBtn = document.getElementById('open-filters-btn');
@@ -237,6 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 'Tu carrito ha sido vaciado.',
                                 'success'
                             );
+
                         }
                     })
                     .catch(error => console.error('Error al vaciar el carrito:', error));
@@ -244,4 +289,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
 });
