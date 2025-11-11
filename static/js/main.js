@@ -1,4 +1,18 @@
 document.addEventListener('DOMContentLoaded', function() {
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
     const swiper = new Swiper('.swiper', {
         direction: 'horizontal',
         loop: true,
@@ -15,8 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
             disableOnInteraction: false,
         },
     });
-
- 
     const userMenuButton = document.getElementById('user-menu-button');
     const userMenuDropdown = document.getElementById('user-menu-dropdown');
     const userMenuButtonLoggedIn = document.getElementById('user-menu-button-loggedin');
@@ -34,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
             userMenuDropdownLoggedIn.classList.toggle('show');
         });
     }
-
     const dropdownItems = document.querySelectorAll('.nav-item-dropdown');
     const pageOverlay = document.getElementById('page-overlay'); 
 
@@ -42,20 +53,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const link = item.querySelector('.nav-link');
         
         link.addEventListener('click', function(event) {
-            
             if (window.innerWidth <= 768) {
                 event.preventDefault(); 
-                
                 const wasActive = item.classList.contains('active');
-
-                
                 dropdownItems.forEach(openItem => {
                     if (openItem !== item) {
                         openItem.classList.remove('active');
                     }
                 });
-
-                
                 if (wasActive) {
                     item.classList.remove('active'); 
                     if (pageOverlay) pageOverlay.classList.remove('is-active'); 
@@ -68,9 +73,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.addEventListener('click', function(event) {
+        if (!event.target.closest('.user-menu')) {
+            if (userMenuDropdown) userMenuDropdown.classList.remove('show');
+            if (userMenuDropdownLoggedIn) userMenuDropdownLoggedIn.classList.remove('show');
+        }
         if (window.innerWidth <= 768) {
             const clickedInsideNavbar = event.target.closest('.navbar');
-            
             if (!clickedInsideNavbar) {
                 dropdownItems.forEach(item => {
                     item.classList.remove('active');
@@ -82,13 +90,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (pageOverlay && dropdownItems.length > 0) {
         dropdownItems.forEach(item => {
-            
             item.addEventListener('mouseenter', function() {
                 if (window.innerWidth > 768) {
                     pageOverlay.classList.add('is-active');
                 }
             });
-            
             item.addEventListener('mouseleave', function() {
                 if (window.innerWidth > 768) {
                     pageOverlay.classList.remove('is-active');
@@ -96,9 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
-
-
     const openBtn = document.getElementById('open-filters-btn');
     const closeBtn = document.getElementById('close-filters-btn');
     const filterSidebar = document.getElementById('filter-sidebar');
@@ -122,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function() {
             backdrop.classList.remove('is-active');
         });
     }
-
     const cartIconButton = document.getElementById('cart-icon-button');
     const cartOffcanvas = document.getElementById('cart-offcanvas');
     const cartBackdrop = document.getElementById('cart-backdrop');
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(cartOffcanvas) cartOffcanvas.classList.remove('is-open');
     }
 
-    if(cartIconButton) cartIconButton.addEventListener('click', (e) => { e.preventDefault(); openCartPanel(); });
+    if(cartIconButton) cartIconButton.addEventListener('click', (e) => { e.preventDefault(); loadInitialCart(); openCartPanel(); });
     if(closeCartBtn) closeCartBtn.addEventListener('click', closeCartPanel);
     if(cartBackdrop) cartBackdrop.addEventListener('click', closeCartPanel);
     function updateCartUI(data) {
@@ -156,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         cartBody.innerHTML = '';
         if (data.items && data.items.length > 0) {
             data.items.forEach(item => {
-                const formattedPrice = item.price.toLocaleString('es-CL');
+                const formattedPrice = parseFloat(item.price).toLocaleString('es-CL');
                 const cartItemHTML = `
                     <div class="cart-offcanvas-item">
                         <img src="${item.image_url}" alt="${item.name}" class="item-image">
@@ -164,41 +166,46 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="item-name">${item.name}</p>
                             <p class="item-price">Cantidad: ${item.quantity} x $${formattedPrice}</p>
                         </div>
+                        <button class="cart-item-remove" data-item-id="${item.id}" title="Eliminar" style="background:none; border:none; font-size: 1.5rem; color:#900; cursor:pointer; padding: 5px;">&times;</button>
                     </div>
                 `;
                 cartBody.insertAdjacentHTML('beforeend', cartItemHTML);
             });
-            cartSubtotal.textContent = '$' + data.subtotal.toLocaleString('es-CL');
+            cartSubtotal.textContent = '$' + parseFloat(data.subtotal).toLocaleString('es-CL');
         } else {
             cartBody.innerHTML = '<p>Tu carrito está vacío.</p>';
             cartSubtotal.textContent = '$0';
         }
     }
-
     document.body.addEventListener('submit', function(event) {
         if (event.target.matches('form[action*="/agregar/"]')) {
-            event.preventDefault();
             
             const form = event.target;
-            const url = form.action;
             const formData = new FormData(form);
+            const redirectNext = formData.get('next'); 
+            if (redirectNext === 'checkout') {
+                return; 
+            }
+            event.preventDefault();
+            const url = form.action;
             
             fetch(url, {
                 method: 'POST',
                 body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken') 
+                },
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateCartUI(data);
-
+                    updateCartUI(data); 
                     Swal.fire({
                         icon: 'success', title: '¡Producto Agregado!', toast: true,
                         position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true
                     });
-
-                    openCartPanel();
+                    openCartPanel(); 
                 } else {
                     Swal.fire({ icon: 'error', title: 'Oops...', text: data.message || 'Ocurrió un error.' });
                 }
@@ -208,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function loadInitialCart() {
-        fetch('/api/get-cart/')
+        fetch('/api/get-cart/') 
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -217,38 +224,19 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Error al cargar el carrito inicial:', error));
     }
+
     loadInitialCart();
-
-    // Función para obtener la cookie CSRF
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    // Botón para vaciar carrito
     const clearCartBtn = document.getElementById('clear-cart-btn');
     if (clearCartBtn) {
         clearCartBtn.addEventListener('click', function() {
-            const cartItemCount = document.getElementById('cart-item-count');
-            const itemCount = parseInt(cartItemCount?.textContent) || 0;
+            const cartItemCountSpan = document.getElementById('cart-item-count');
+            const itemCount = parseInt(cartItemCountSpan?.textContent) || 0;
 
-            // Verificar si hay productos en el carrito
             if (itemCount === 0) {
                 Swal.fire({
                     title: 'Carrito Vacío',
-                    text: 'Necesitas tener al menos un producto en el carrito para vaciarlo.',
+                    text: 'No hay productos para vaciar.',
                     icon: 'info',
-                    confirmButtonColor: '#3085d6',
                     confirmButtonText: 'Entendido'
                 });
                 return;
@@ -265,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch('/limpiar-carro/', {
+                    fetch('/limpiar-carro/', { 
                         method: 'POST',
                         headers: {
                             'X-CSRFToken': getCookie('csrftoken'),
@@ -275,13 +263,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            loadInitialCart();
+                            loadInitialCart(); 
                             Swal.fire(
                                 '¡Vaciado!',
                                 'Tu carrito ha sido vaciado.',
                                 'success'
                             );
 
+                            closeCartPanel(); 
                         }
                     })
                     .catch(error => console.error('Error al vaciar el carrito:', error));
@@ -290,4 +279,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-});
+    if (cartBody) {
+        cartBody.addEventListener('click', function(e) {
+            if (e.target.classList.contains('cart-item-remove')) {
+                e.preventDefault();
+                const product_id = e.target.dataset.itemId;
+                const url = `/eliminar-del-carro/${product_id}/`; 
+
+                fetch(url, {
+                    method: 'POST', 
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateCartUI(data); 
+                        closeCartPanel();
+                    } else {
+                        alert(data.message || 'Error al eliminar el producto.');
+                    }
+                })
+                .catch(error => console.error('Error al eliminar ítem:', error));
+            }
+        });
+    }
+
+}); 

@@ -1,7 +1,3 @@
-/* =========================================
-   DISEÑO MODERNO DE CHATBOT
-   ========================================= */
-
 .chatbot-container {
     position: fixed;
     bottom: 25px;
@@ -10,12 +6,12 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* --- BOTÓN FLOTANTE PRINCIPAL --- */
+
 .chatbot-button {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: #6a0dad; /* Color principal morado */
+    background: #6a0dad; 
     border: none;
     box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3);
     cursor: pointer;
@@ -31,7 +27,7 @@
     box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
 }
 
-/* Iconos del botón */
+
 .chatbot-button i {
     font-size: 28px;
     color: white;
@@ -39,14 +35,14 @@
     position: absolute;
 }
 
-/* Animación de cambio de icono */
+
 .chatbot-button .close-icon { opacity: 0; transform: rotate(-90deg); }
 .chatbot-button.active .chat-icon { opacity: 0; transform: rotate(90deg); }
 .chatbot-button.active .close-icon { opacity: 1; transform: rotate(0); }
-.chatbot-button.active { background: #2c2c2c; } /* Cambia a negro al abrir */
+.chatbot-button.active { background: #2c2c2c; } 
 
 
-/* --- VENTANA DEL CHAT --- */
+
 .chatbot-window {
     position: fixed;
     bottom: 100px;
@@ -73,9 +69,9 @@
     transform: translateY(0) scale(1);
 }
 
-/* Header del Chat */
+
 .chatbot-header {
-    background: #6a0dad; /* Morado TechTop */
+    background: #6a0dad; 
     padding: 15px 20px;
     display: flex;
     align-items: center;
@@ -110,7 +106,7 @@
 }
 .header-close-btn:hover { opacity: 1; }
 
-/* Cuerpo de Mensajes */
+
 .chatbot-messages {
     flex: 1;
     padding: 20px;
@@ -121,7 +117,7 @@
     gap: 15px;
 }
 
-/* Burbujas de mensaje */
+
 .message {
     display: flex;
     gap: 10px;
@@ -169,7 +165,7 @@
     font-size: 0.7rem; color: #999; margin-top: 5px; text-align: right;
 }
 
-/* Botones de Respuesta Rápida */
+
 .quick-replies {
     display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
 }
@@ -191,7 +187,7 @@
     box-shadow: 0 3px 10px rgba(106, 13, 173, 0.2);
 }
 
-/* Área de Input */
+
 .chatbot-input-container {
     padding: 15px;
     background: white;
@@ -219,10 +215,10 @@
     cursor: pointer; transition: all 0.2s;
 }
 .chatbot-send-btn:hover { transform: scale(1.1); background: #5a099a; }
-.chatbot-send-btn i { font-size: 20px; margin-left: 3px; /* Pequeño ajuste visual para el icono send */ }
+.chatbot-send-btn i { font-size: 20px; margin-left: 3px;  }
 
 
-/* --- TARJETAS DE PRODUCTO EN CHAT --- */
+
 .chatbot-products-grid {
     display: flex; flex-direction: column; gap: 10px; margin-top: 15px; width: 100%;
 }
@@ -239,7 +235,7 @@
 }
 .chatbot-product-card img {
     width: 60px; height: 60px;
-    object-fit: contain; /* IMPORTANTE: para que no se recorte */
+    object-fit: contain; 
     border-radius: 8px;
     padding: 2px; border: 1px solid #f0f0f0;
 }
@@ -251,11 +247,19 @@
     font-weight: bold; color: #333; margin: 0;
 }
 
-/* Responsive */
+
 @media (max-width: 480px) {
     .chatbot-window {
         width: 100%; height: 100%; max-height: 100%;
         bottom: 0; right: 0; border-radius: 0;
     }
     .chatbot-button { bottom: 20px; right: 20px; }
+}
+
+
+@media (max-width: 768px) {
+    .chatbot-container {
+        bottom: 55px;  
+        right: 1px;   
+    }
 }

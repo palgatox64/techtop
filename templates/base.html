@@ -38,7 +38,7 @@
                             </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
-                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px;">
+                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
                                     <i class='bx bx-log-out'></i> Cerrar Sesión
                                 </button>
                             </form>
@@ -50,7 +50,7 @@
                 </div>
 
             {% elif request.session.user_type == 'cliente' %}
-                {# === Menú para CLIENTES === #}
+                {# === Menú para CLIENTES (MODIFICADO) === #}
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
@@ -58,11 +58,14 @@
                         </div>
                         <div id="user-menu-dropdown-loggedin" class="dropdown-content">
                             <a href="{% url 'perfil_usuario' %}">
-                                <i class='bx bx-user-circle'></i> Mi Cuenta
+                                <i class='bx bx-user-circle'></i> Mi Perfil
+                            </a>
+                            <a href="{% url 'historial_compras' %}">
+                                <i class='bx bx-history'></i> Historial de Compras
                             </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
-                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px;">
+                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
                                     <i class='bx bx-log-out'></i> Cerrar Sesión
                                 </button>
                             </form>
@@ -74,14 +77,18 @@
                 </div>
 
             {% else %}
-                {# === Menú para VISITANTES NO LOGUEADOS === #}
+                {# === Menú para VISITANTES (MODIFICADO) === #}
                 <div class="user-menu">
                     <div id="user-menu-button" class="action-item">
                         <i class='bx bx-user'></i>
                     </div>
                     <div id="user-menu-dropdown" class="dropdown-content">
-                        <a href="{% url 'login' %}">Iniciar Sesión</a>
-                        <a href="{% url 'register' %}">Regístrate</a>
+                        <a href="{% url 'login' %}">
+                            <i class='bx bx-log-in'></i> Iniciar Sesión
+                        </a>
+                        <a href="{% url 'register' %}">
+                            <i class='bx bx-user-plus'></i> Regístrate
+                        </a>
                     </div>
                 </div>
             {% endif %}
@@ -91,8 +98,8 @@
                     <i class='bx bx-cart'></i>
                 </a>
                 <span id="cart-item-count" class="cart-item-count" 
-                      {% if cart_item_count > 0 %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                      {{ cart_item_count }}
+                        {% if cart_item_count > 0 %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                        {{ cart_item_count }}
                 </span>
             </div>
 
@@ -124,7 +131,7 @@
         </div>
     </div>
 </li>       
-         <li class="nav-item-dropdown">
+        <li class="nav-item-dropdown">
     <a href="{% url 'accesorios_catalog' %}" class="nav-link">Accesorios <i class='bx bx-chevron-down'></i></a>
     <div class="mega-menu">
         <div class="mega-menu-content">
@@ -176,14 +183,14 @@
                 <ul>
                     <li><a href="{% url 'centro_ayuda' %}">Centro de Ayuda</a></li>
                     <li><a href="{% url 'seguimiento_compra' %}">Seguimiento de mi compra</a></li>
-                    <li><a href="{% url 'contacto' %}">Contacto</a></li>    
+                    <li><a href="{% url 'contacto' %}">Contacto</a></li>   
                     <li><a href="{% url 'garantias' %}">Garantías</a></li>
                 </ul>
             </div>
             <div class="footer-column">
                 <h3>Nosotros</h3>
                 <ul>
-                    <li><a href="{% url 'about' %}">Quiénes Somos</a></li>                    
+                    <li><a href="{% url 'about' %}">Quiénes Somos</a></li>                 
                     <li><a href="{% url 'politicas_privacidad' %}">Políticas de Privacidad</a></li>
                     <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
                 </ul>
@@ -223,8 +230,6 @@
     
     <a href="{% url 'checkout' %}" class="btn-checkout">Finalizar Compra</a>
 </div>
-
-
     
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/chatbot.js' %}"></script>

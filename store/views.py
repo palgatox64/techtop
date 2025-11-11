@@ -359,8 +359,6 @@ def product_detail(request, product_id):
 
 def add_to_cart(request, product_id):
     product = get_object_or_404(Producto, id=product_id)
-    
-    # Validar si el producto está activo y tiene stock
     if not product.activo:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         error_message = 'Este producto no está disponible actualmente.'
@@ -389,8 +387,6 @@ def add_to_cart(request, product_id):
         cart[product_id_str] = {'quantity': quantity}
     
     request.session['cart'] = cart
-
-    # --- RESPUESTA AJAX (PARA ACTUALIZAR SIN RECARGAR) ---
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if is_ajax:
         cart_items_data = []
@@ -401,9 +397,6 @@ def add_to_cart(request, product_id):
         for p in products_in_cart:
             pid_str = str(p.id)
             qty = cart[pid_str]['quantity']
-            
-            # --- CORRECCIÓN AQUÍ ---
-            # Usamos precio_oferta para que el total se actualice correctamente al instante
             precio_actual = p.precio_oferta
             
             total_price += precio_actual * qty
@@ -412,7 +405,7 @@ def add_to_cart(request, product_id):
                 'id': p.id,
                 'name': p.nombre,
                 'quantity': qty,
-                'price': float(precio_actual), # Enviamos el precio correcto
+                'price': float(precio_actual), 
                 'image_url': p.imagen.url if p.imagen else '/static/img/no-image.png' 
             })
 
@@ -423,7 +416,6 @@ def add_to_cart(request, product_id):
             'subtotal': float(total_price) 
         })
     else:
-        # Fallback para navegadores sin JS (poco común hoy en día)
         if request.POST.get('next') == 'checkout':
             return redirect('checkout')
         return redirect('view_cart')
@@ -440,13 +432,8 @@ def view_cart(request):
     for product in products_in_cart:
         product_id_str = str(product.id)
         quantity = cart[product_id_str]['quantity']
-        
-        # --- CAMBIO CLAVE AQUÍ ---
-        # Usamos las propiedades del modelo que ya incluyen los descuentos
         precio_transf_unitario = product.precio_transferencia
         precio_oferta_unitario = product.precio_oferta
-
-        # Calculamos subtotales por producto
         subtotal_transf = precio_transf_unitario * quantity
         subtotal_otros = precio_oferta_unitario * quantity
 
@@ -456,8 +443,6 @@ def view_cart(request):
             'subtotal_transferencia': subtotal_transf,
             'subtotal_otros_medios': subtotal_otros, 
         })
-        
-        # Sumamos a los totales generales del carrito
         total_transferencia += subtotal_transf
         total_otros_medios += subtotal_otros
 
@@ -496,10 +481,6 @@ def remove_from_cart(request, product_id):
     return redirect('view_cart')
 
 def clear_cart(request):
-    """
-    Elimina todos los productos del carrito de la sesión.
-    Responde a una petición AJAX.
-    """
     if request.method == 'POST':
         if 'cart' in request.session:
             del request.session['cart']
@@ -509,17 +490,12 @@ def clear_cart(request):
 
 
 def login_view(request):
-    """
-    Vista de login UNIFICADA que valida tanto empleados como clientes
-    """
     if request.method == 'GET':
         return render(request, 'login.html')
 
     if request.method == 'POST':
         correo = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
-        
-        # Validaciones del backend
         if not correo or not password:
             return JsonResponse({
                 'success': False,
@@ -539,12 +515,8 @@ def login_view(request):
                 'success': False,
                 'message': 'La contraseña debe tener al menos 6 caracteres.'
             })
-        
-        # 🔥 PRIMERO: Intentar buscar en EMPLEADOS
         try:
             empleado = Empleado.objects.get(email=correo)
-            
-            # Verificar si el empleado está activo
             if not empleado.activo:
                 return JsonResponse({
                     'success': False,
@@ -552,16 +524,15 @@ def login_view(request):
                 })
             
             if check_password(password, empleado.pass_hash):
-                # Crear sesión de EMPLEADO
                 request.session['empleado_id'] = empleado.id_empleado
                 request.session['empleado_nombre'] = empleado.nombre
                 request.session['empleado_cargo'] = empleado.cargo
-                request.session['user_type'] = 'empleado'  # 🔥 Identificador clave
+                request.session['user_type'] = 'empleado'  
                 
                 return JsonResponse({
                     'success': True,
                     'message': f'¡Bienvenido, {empleado.nombre}! ({empleado.cargo})',
-                    'redirect_url': '/gestion/'  # Redirigir al panel de gestión
+                    'redirect_url': '/gestion/' 
                 })
             else:
                 return JsonResponse({
@@ -570,20 +541,18 @@ def login_view(request):
                 })
                 
         except Empleado.DoesNotExist:
-            # 🔥 SEGUNDO: Si no es empleado, buscar en CLIENTES
             try:
                 cliente = Cliente.objects.get(email=correo)
                 
                 if check_password(password, cliente.pass_hash):
-                    # Crear sesión de CLIENTE
                     request.session['cliente_id'] = cliente.id_cliente
                     request.session['cliente_nombre'] = cliente.nombre
-                    request.session['user_type'] = 'cliente'  # 🔥 Identificador clave
+                    request.session['user_type'] = 'cliente'  
                     
                     return JsonResponse({
                         'success': True,
                         'message': f'¡Bienvenido de vuelta, {cliente.nombre}!',
-                        'redirect_url': '/'  # Redirigir al home
+                        'redirect_url': '/'  
                     })
                 else:
                     return JsonResponse({
