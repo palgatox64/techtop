@@ -52,13 +52,20 @@ class ProductoForm(forms.ModelForm):
     )
     class Meta:
         model = Producto
-        fields = ['nombre', 'descripcion', 'precio', 'stock', 'imagen', 'categoria', 'marca', 'activo']
+        fields = ['nombre', 'descripcion', 'precio', 'descuento', 'stock', 'imagen', 'categoria', 'marca', 'activo']
         
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'precio': forms.NumberInput(attrs={'class': 'form-control'}),
             'stock': forms.NumberInput(attrs={'class': 'form-control'}),
+            'descuento': forms.NumberInput(attrs={
+                'type': 'range',
+                'class': 'form-range discount-slider', # Clase personalizada para JS
+                'min': '0',
+                'max': '99',
+                'step': '1'
+            }),
             'imagen': forms.FileInput(attrs={'class': 'form-control'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
             'marca': forms.Select(attrs={'class': 'form-select'}),
@@ -67,6 +74,7 @@ class ProductoForm(forms.ModelForm):
         
         labels = {
             'activo': 'Producto Activo (visible en tienda)',
+            'descuento': 'Oferta Especial (%) - Arrastra para aplicar'
         }
 
 class CheckoutForm(forms.Form):

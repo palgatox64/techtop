@@ -106,9 +106,22 @@
                     <div class="product-info">
                         <p class="product-brand">{{ product.marca.nombre }}</p>
                         <h4 class="product-name">{{ product.nombre }}</h4>
+
                         <div class="product-prices">
-                            <p class="product-price-main">${{ product.precio|floatformat:0|dot_thousands }}</p>
+                            {% if product.descuento > 0 %}
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span style="font-size: 0.9rem; color: #999; text-decoration: line-through;">
+                                        ${{ product.precio|floatformat:0|dot_thousands }}
+                                    </span>
+                                    <span style="background-color: #dc3545; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
+                                        -{{ product.descuento }}%
+                                    </span>
+                                </div>
+                            {% endif %}
+
+                            <p class="product-price-main">${{ product.precio_oferta|floatformat:0|dot_thousands }}</p>
                             <p class="price-label">Otros medios de pago</p>
+
                             <p class="product-price-secondary">${{ product.precio_transferencia|floatformat:0|dot_thousands }}</p>
                             <p class="price-label">Transferencia</p>
                         </div>

@@ -344,3 +344,77 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('📄 Final del archivo gestion_modal.js');
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    // Función para inicializar un slider
+    function initSlider(sliderInput) {
+        // Evitar inicializar dos veces el mismo slider
+        if (sliderInput.dataset.initialized === 'true') return;
+
+        // 1. Crear el contenedor si no existe (para agrupar slider y numero)
+        // Esto ayuda a que se mantengan juntos visualmente
+        let wrapper = sliderInput.closest('.slider-container');
+        if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'slider-container';
+            sliderInput.parentNode.insertBefore(wrapper, sliderInput);
+            wrapper.appendChild(sliderInput);
+        }
+
+        // 2. Crear el elemento que mostrará el número
+        let valueDisplay = document.createElement('span');
+        valueDisplay.className = 'discount-value';
+        wrapper.appendChild(valueDisplay);
+
+        // 3. Función para actualizar el texto y el color
+        function updateDisplay() {
+            const val = sliderInput.value;
+            valueDisplay.textContent = val + '%';
+            
+            // Si es 0%, ponerlo gris. Si es > 0%, ponerlo morado.
+            if (val === '0') {
+                valueDisplay.classList.add('zero');
+            } else {
+                valueDisplay.classList.remove('zero');
+            }
+        }
+
+        // 4. Escuchar el evento 'input' (se dispara mientras arrastras)
+        sliderInput.addEventListener('input', updateDisplay);
+
+        // Inicializar el valor al cargar la página
+        updateDisplay();
+        
+        // Marcar como inicializado
+        sliderInput.dataset.initialized = 'true';
+    }
+
+    // Buscar e inicializar todos los sliders existentes al cargar la página
+    const existingSliders = document.querySelectorAll('.discount-slider');
+    existingSliders.forEach(initSlider);
+
+    // OBSERVER: Esto es IMPORTANTE si tus formularios cargan en Modales (popups).
+    // Detecta cuando se agregan nuevos elementos al HTML y si son sliders, los inicializa.
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) { // Si es un elemento HTML
+                    // Si el nodo insertado es el slider mismo
+                    if (node.classList && node.classList.contains('discount-slider')) {
+                        initSlider(node);
+                    }
+                    // O si el nodo insertado CONTIENE un slider dentro
+                    else {
+                        const slidersInside = node.querySelectorAll('.discount-slider');
+                        slidersInside.forEach(initSlider);
+                    }
+                }
+            });
+        });
+    });
+
+    // Iniciar el observador en todo el cuerpo del documento
+    observer.observe(document.body, { childList: true, subtree: true });
+
+});
