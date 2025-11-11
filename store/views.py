@@ -89,8 +89,6 @@ def radios_catalog(request):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
     context = {
         'products': products,
         'available_brands': available_brands,
@@ -122,8 +120,6 @@ def category_catalog(request, categoria_nombre):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
     category_type = 'subcategoria'
     if categoria_nombre in ['Audio-y-Video', 'Seguridad-y-Sensores', 'Diagnostico-Automotriz']:
         parent_category = 'accesorios'
@@ -179,8 +175,7 @@ def electronica_catalog(request):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -235,8 +230,7 @@ def accesorios_catalog(request):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -287,12 +281,19 @@ def get_cart_data(request):
             pid_str = str(p.id)
             if pid_str in cart:
                 qty = cart[pid_str]['quantity']
-                total_price += p.precio * qty
+                
+                # --- CORRECCIÓN AQUÍ ---
+                # Usamos precio_oferta en lugar de p.precio para que el minicart
+                # muestre el precio real que pagará el cliente (antes de elegir transferencia)
+                precio_actual = p.precio_oferta
+                
+                total_price += precio_actual * qty
+                
                 cart_items_data.append({
                     'id': p.id,
                     'name': p.nombre,
                     'quantity': qty,
-                    'price': float(p.precio),
+                    'price': float(precio_actual), # Enviamos el precio con oferta
                     'image_url': p.imagen.url if p.imagen and hasattr(p.imagen, 'url') else ''
                 })
 
@@ -363,12 +364,8 @@ def add_to_cart(request, product_id):
     if not product.activo:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         error_message = 'Este producto no está disponible actualmente.'
-        
         if is_ajax:
-            return JsonResponse({
-                'success': False,
-                'message': error_message
-            })
+            return JsonResponse({'success': False, 'message': error_message})
         else:
             messages.error(request, error_message)
             return redirect('product_detail', product_id=product_id)
@@ -376,12 +373,8 @@ def add_to_cart(request, product_id):
     if product.stock <= 0:
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         error_message = 'Este producto está agotado.'
-        
         if is_ajax:
-            return JsonResponse({
-                'success': False,
-                'message': error_message
-            })
+            return JsonResponse({'success': False, 'message': error_message})
         else:
             messages.error(request, error_message)
             return redirect('product_detail', product_id=product_id)
@@ -397,8 +390,8 @@ def add_to_cart(request, product_id):
     
     request.session['cart'] = cart
 
+    # --- RESPUESTA AJAX (PARA ACTUALIZAR SIN RECARGAR) ---
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
     if is_ajax:
         cart_items_data = []
         total_price = Decimal('0.00')
@@ -408,13 +401,19 @@ def add_to_cart(request, product_id):
         for p in products_in_cart:
             pid_str = str(p.id)
             qty = cart[pid_str]['quantity']
-            total_price += p.precio * qty
+            
+            # --- CORRECCIÓN AQUÍ ---
+            # Usamos precio_oferta para que el total se actualice correctamente al instante
+            precio_actual = p.precio_oferta
+            
+            total_price += precio_actual * qty
+            
             cart_items_data.append({
                 'id': p.id,
                 'name': p.nombre,
                 'quantity': qty,
-                'price': float(p.precio), 
-                'image_url': p.imagen.url if p.imagen else '/static/img/placeholder.png' 
+                'price': float(precio_actual), # Enviamos el precio correcto
+                'image_url': p.imagen.url if p.imagen else '/static/img/no-image.png' 
             })
 
         return JsonResponse({
@@ -424,9 +423,9 @@ def add_to_cart(request, product_id):
             'subtotal': float(total_price) 
         })
     else:
+        # Fallback para navegadores sin JS (poco común hoy en día)
         if request.POST.get('next') == 'checkout':
             return redirect('checkout')
-        
         return redirect('view_cart')
 
 def view_cart(request):
@@ -441,17 +440,26 @@ def view_cart(request):
     for product in products_in_cart:
         product_id_str = str(product.id)
         quantity = cart[product_id_str]['quantity']
-        precio_transferencia_unitario = product.precio * Decimal('0.97')
+        
+        # --- CAMBIO CLAVE AQUÍ ---
+        # Usamos las propiedades del modelo que ya incluyen los descuentos
+        precio_transf_unitario = product.precio_transferencia
+        precio_oferta_unitario = product.precio_oferta
+
+        # Calculamos subtotales por producto
+        subtotal_transf = precio_transf_unitario * quantity
+        subtotal_otros = precio_oferta_unitario * quantity
 
         cart_items.append({
             'product': product,
             'quantity': quantity,
-            'subtotal_transferencia': precio_transferencia_unitario * quantity,
-            'subtotal_otros_medios': product.precio * quantity, 
+            'subtotal_transferencia': subtotal_transf,
+            'subtotal_otros_medios': subtotal_otros, 
         })
         
-        total_transferencia += precio_transferencia_unitario * quantity
-        total_otros_medios += product.precio * quantity
+        # Sumamos a los totales generales del carrito
+        total_transferencia += subtotal_transf
+        total_otros_medios += subtotal_otros
 
     context = {
         'cart_items': cart_items,
@@ -1240,8 +1248,7 @@ def electronica_automotriz_catalog(request):
     ).filter(product_count__gt=0).order_by('nombre')
 
     # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -1305,9 +1312,7 @@ def search_results_view(request):
             Q(nombre__icontains=query) |
             Q(marca__nombre__icontains=query)
         ).distinct()
-        if products:
-            for product in products:
-                product.precio_transferencia = product.precio * Decimal('0.97')
+
     context = {
         'products': products,
         'search_query': query,
@@ -1318,75 +1323,80 @@ def search_results_view(request):
 
 def checkout_view(request):
     """
-    Muestra la página de checkout, rellenando los datos si el usuario está logueado.
+    Muestra la página de checkout con los precios correctos (oferta base + transferencia).
     """
     cart = request.session.get('cart', {})
     if not cart:
         messages.error(request, 'Tu carro está vacío.')
         return redirect('view_cart')
 
-    # (Lógica para calcular items y totales - sin cambios)
     product_ids = cart.keys()
     products_in_cart = Producto.objects.filter(id__in=product_ids)
+    
     cart_items = []
     total_transferencia = Decimal('0.00')
     total_otros_medios = Decimal('0.00')
+
     for product in products_in_cart:
         product_id_str = str(product.id)
         quantity = cart[product_id_str]['quantity']
-        precio_transferencia_unitario = product.precio * Decimal('0.97')
+        
+        # --- USAMOS LAS NUEVAS PROPIEDADES DEL MODELO ---
+        # precio_transferencia: Ya incluye la oferta base (si existe) + 3% extra.
+        # precio_oferta: Es el precio base con el descuento del slider aplicado.
+        
+        precio_transf_unitario = product.precio_transferencia
+        precio_oferta_unitario = product.precio_oferta
+
+        # Calculamos subtotales por línea de producto
+        subtotal_transf = precio_transf_unitario * quantity
+        subtotal_otros = precio_oferta_unitario * quantity
+
         cart_items.append({
             'product': product,
             'quantity': quantity,
-            'subtotal_transferencia': precio_transferencia_unitario * quantity,
-            'subtotal_otros_medios': product.precio * quantity,
+            'subtotal_transferencia': subtotal_transf,
+            'subtotal_otros_medios': subtotal_otros,
         })
-        total_transferencia += precio_transferencia_unitario * quantity
-        total_otros_medios += product.precio * quantity
+        
+        # Acumulamos a los totales generales
+        total_transferencia += subtotal_transf
+        total_otros_medios += subtotal_otros
 
-    # --- LÓGICA MEJORADA PARA RELLENAR EL FORMULARIO ---
+    # --- Lógica de pre-llenado del formulario con datos del usuario logueado ---
     initial_data = {}
     user_type = request.session.get('user_type')
-    user = None # Variable para guardar el objeto Cliente o Empleado
-
-    print(f"DEBUG: User type in session: {user_type}") # Para depurar
-
+    
     if user_type == 'cliente':
         cliente_id = request.session.get('cliente_id')
         if cliente_id:
             try:
-                user = get_object_or_404(Cliente, id_cliente=cliente_id)
-                print(f"DEBUG: Cliente encontrado: {user}") # Para depurar
-            except Exception as e:
-                print(f"Error buscando Cliente ID {cliente_id}: {e}")
-                request.session.flush() # Limpiar sesión si el ID es inválido
-
+                user = Cliente.objects.get(id_cliente=cliente_id)
+                initial_data = {
+                    'nombre': user.nombre,
+                    'apellidos': user.apellidos,
+                    'rut': getattr(user, 'rut', ''),
+                    'email': user.email,
+                    'telefono': user.telefono,
+                }
+            except Cliente.DoesNotExist:
+                pass
+                
     elif user_type == 'empleado':
         empleado_id = request.session.get('empleado_id')
         if empleado_id:
             try:
-                user = get_object_or_404(Empleado, id_empleado=empleado_id)
-                print(f"DEBUG: Empleado encontrado: {user}") # Para depurar
-            except Exception as e:
-                print(f"Error buscando Empleado ID {empleado_id}: {e}")
-                request.session.flush() # Limpiar sesión si el ID es inválido
+                user = Empleado.objects.get(id_empleado=empleado_id)
+                initial_data = {
+                    'nombre': user.nombre,
+                    'apellidos': user.apellidos,
+                    'rut': getattr(user, 'rut', ''),
+                    'email': user.email,
+                    'telefono': user.telefono,
+                }
+            except Empleado.DoesNotExist:
+                pass
 
-    # Si encontramos un usuario (Cliente o Empleado), llenamos initial_data
-    if user:
-        initial_data = {
-            'nombre': user.nombre,
-            'apellidos': user.apellidos,
-            'rut': getattr(user, 'rut', ''), # Usamos getattr por si algún modelo no tuviera rut (aunque ambos lo tienen)
-            'email': user.email,
-            'telefono': user.telefono,
-        }
-        print(f"DEBUG: Initial data set: {initial_data}") # Para depurar
-    else:
-         print("DEBUG: No user found in session or DB, form will be empty.") # Para depurar
-
-
-    # Pasamos los datos iniciales al formulario
-    # Si initial_data está vacío, el formulario aparecerá en blanco
     form = CheckoutForm(initial=initial_data)
 
     context = {
@@ -1402,8 +1412,7 @@ def checkout_view(request):
 @transaction.atomic
 def procesar_pedido_view(request):
     """
-    Recibe el POST del checkout, valida, crea Pedido/Detalles/Direccion (SOLO con campos existentes),
-    descuenta stock y redirige al PDF.
+    Procesa el pedido usando los precios correctos según el método de pago elegido.
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Método no permitido'})
@@ -1419,140 +1428,141 @@ def procesar_pedido_view(request):
         metodo_pago = cleaned_data.get('metodo_pago')
         tipo_entrega = cleaned_data.get('tipo_entrega')
 
-        # --- OBTENER DATOS DEL CARRITO Y VALIDAR STOCK (Sin cambios) ---
+        # --- 1. OBTENER DATOS Y VALIDAR STOCK ---
         product_ids = cart.keys()
+        # Usamos select_for_update para bloquear los registros mientras descontamos stock
         products_in_cart = Producto.objects.select_for_update().filter(id__in=product_ids)
+        
         cart_items_details = []
-        subtotal_calculado = Decimal('0.00')
+        subtotal_calculado = Decimal('0')
+        
         product_map = {str(p.id): p for p in products_in_cart}
+
         for product_id_str, item_data in cart.items():
             product = product_map.get(product_id_str)
-            if not product: return JsonResponse({'success': False, 'message': f'Producto ID {product_id_str} no disponible.'})
+            if not product:
+                return JsonResponse({'success': False, 'message': f'Producto ID {product_id_str} no disponible.'})
+            
             quantity = item_data['quantity']
-            if product.stock < quantity: return JsonResponse({'success': False, 'message': f'Stock insuficiente para "{product.nombre}".'})
-            precio_unitario_a_guardar = product.precio * Decimal('0.97') if metodo_pago == 'transferencia' else product.precio
-            cart_items_details.append({'producto': product, 'cantidad': quantity, 'precio_unitario': precio_unitario_a_guardar})
-            subtotal_calculado += precio_unitario_a_guardar * quantity
+            if product.stock < quantity:
+                return JsonResponse({'success': False, 'message': f'Stock insuficiente para "{product.nombre}".'})
 
-        # --- BUSCAR CLIENTE LOGUEADO (Sin cambios) ---
+            # --- CAMBIO CLAVE: DETERMINAR PRECIO FINAL A GUARDAR ---
+            # Si paga con transferencia, usamos el precio que ya incluye oferta + 3% extra.
+            # Si paga con otro medio, usamos el precio oferta (que puede ser igual al normal si el descuento es 0%).
+            if metodo_pago == 'transferencia':
+                precio_final_unitario = product.precio_transferencia
+            else:
+                precio_final_unitario = product.precio_oferta
+            
+            cart_items_details.append({
+                'producto': product,
+                'cantidad': quantity,
+                'precio_unitario': precio_final_unitario
+            })
+            subtotal_calculado += precio_final_unitario * quantity
+
+        # --- 2. BUSCAR CLIENTE (Si está logueado) ---
         cliente_obj = None
         if request.session.get('user_type') == 'cliente':
             try:
                 cliente_obj = Cliente.objects.get(id_cliente=request.session.get('cliente_id'))
             except Cliente.DoesNotExist:
-                request.session.flush()
+                pass # Si no existe, el pedido quedará como anónimo (o podrías forzar logout)
 
-        # --- MANEJAR DIRECCIÓN Y COSTO DE ENVÍO (Sin cambios) ---
+        # --- 3. MANEJAR DIRECCIÓN Y COSTO DE ENVÍO ---
         direccion_obj = None
-        costo_envio_calculado = Decimal('0.00')
+        costo_envio_calculado = Decimal('0')
+        
         if tipo_entrega == 'delivery':
-            costo_envio_calculado = Decimal('4500')
+            costo_envio_calculado = Decimal('4500') # Costo fijo por ahora
+            # Si el cliente está registrado, guardamos la dirección
             if cliente_obj:
                  try:
+                     # Podrías mejorar esto para no crear duplicados si la dirección ya existe
                      direccion_obj = Direccion.objects.create(
                         cliente=cliente_obj,
                         calle=cleaned_data.get('calle'),
                         numero=cleaned_data.get('numero', ''),
-                        ciudad='Santiago', # Temporal
-                        region='Metropolitana', # Temporal
+                        # Depto/Casa y Comuna se podrían agregar al modelo Direccion si lo actualizas
+                        ciudad='Santiago',    # Valor por defecto si no está en el formulario
+                        region='Metropolitana', # Valor por defecto
                         codigo_postal=cleaned_data.get('codigo_postal', '')
                      )
                  except Exception as e:
-                      print(f"Error al crear dirección: {e}")
-                      direccion_obj = None
+                      print(f"Advertencia: No se pudo guardar la dirección: {e}")
+                      # El pedido sigue adelante, pero sin dirección guardada en BD (solo en el pedido físico si lo requieres)
 
-        # --- CALCULAR TOTAL FINAL (Sin cambios) ---
-        total_final = subtotal_calculado + costo_envio_calculado
+        # --- 4. CALCULAR TOTAL FINAL ---
+        total_pedido = subtotal_calculado + costo_envio_calculado
 
-        # --- CREAR EL OBJETO Pedido (CORREGIDO: SIN CAMPOS EXTRA) ---
+        # --- 5. CREAR EL PEDIDO ---
         try:
-            # Quitamos los campos nombre_cliente, apellidos_cliente, rut_cliente,
-            # email_cliente, telefono_cliente, metodo_pago, tipo_entrega, costo_envio
-            # porque NO existen en el modelo Pedido actual.
-            pedido_data = {
-                'cliente': cliente_obj,        # Clave foránea a Cliente (puede ser None)
-                'direccion_envio': direccion_obj, # Clave foránea a Direccion (puede ser None)
-                'total': total_final,          # DecimalField
-                'estado': 'pendiente',
-                'metodo_pago': metodo_pago, # CharField
-                # 'fecha_pedido' se añade automáticamente (auto_now_add=True)
-            }
-            nuevo_pedido = Pedido.objects.create(**pedido_data)
-            # El ID se genera automáticamente
-
+            nuevo_pedido = Pedido.objects.create(
+                cliente=cliente_obj,
+                direccion_envio=direccion_obj,
+                total=total_pedido,
+                estado='pendiente',
+                metodo_pago=metodo_pago
+                # fecha_pedido y tracking_number se generan automáticamente
+            )
         except Exception as e:
-             # Si aún da error aquí, será por otra razón (ej: tipo de dato incorrecto)
-             print(f"ERROR AL CREAR PEDIDO: {e}")
-             # Mensaje de error genérico para el usuario
-             return JsonResponse({'success': False, 'message': 'Hubo un error al registrar tu pedido. Intenta de nuevo más tarde.'})
+             print(f"ERROR CRÍTICO AL CREAR PEDIDO: {e}")
+             return JsonResponse({'success': False, 'message': 'Error interno al crear el pedido. Intenta nuevamente.'})
 
-
-        # --- CREAR LOS OBJETOS DetallePedido Y DESCONTAR STOCK (Sin cambios) ---
+        # --- 6. GUARDAR DETALLES Y ACTUALIZAR STOCK ---
         for item in cart_items_details:
-            try:
-                DetallePedido.objects.create(
-                    pedido=nuevo_pedido,
-                    producto=item['producto'],
-                    cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario']
-                )
-                producto_a_actualizar = item['producto']
-                producto_a_actualizar.stock -= item['cantidad']
-                producto_a_actualizar.save(update_fields=['stock', 'activo'])
-            except Exception as e:
-                print(f"Error al crear DetallePedido o actualizar stock para {item['producto'].nombre}: {e}")
-                raise e # Re-lanzar para rollback
+            DetallePedido.objects.create(
+                pedido=nuevo_pedido,
+                producto=item['producto'],
+                cantidad=item['cantidad'],
+                precio_unitario=item['precio_unitario'] # Guardamos el precio exacto que se cobró
+            )
+            # Descontar stock
+            producto = item['producto']
+            producto.stock -= item['cantidad']
+            producto.save() # El método save() del modelo ya maneja el campo 'activo' si stock llega a 0
 
-        # --- LIMPIAR CARRITO ---
-        # IMPORTANTE: Solo limpiar el carrito si NO es pago con Webpay o Mercado Pago
-        # Para estos métodos, se limpiará después de confirmar el pago
-        if metodo_pago not in ['webpay', 'mercadopago']:
-            request.session['cart'] = {}
-            request.session.modified = True
+        # --- 7. FINALIZAR: LIMPIAR CARRO (Solo si no es pago externo inmediato) ---
+        # Si es transferencia, ya "terminó" la compra online, así que limpiamos el carro.
+        # Si es Webpay/MercadoPago, esperamos a la confirmación para limpiar.
+        if metodo_pago == 'transferencia':
+             if 'cart' in request.session:
+                del request.session['cart']
+                request.session.modified = True
 
-        # --- REDIRIGIR SEGÚN EL MÉTODO DE PAGO ---
+        # --- 8. REDIRECCIONAR SEGÚN MÉTODO DE PAGO ---
         if metodo_pago == 'webpay':
-            # Redirigir a la vista de inicio de pago de Webpay
-            redirect_url = reverse('iniciar_pago_webpay', args=[nuevo_pedido.id])
             return JsonResponse({
                 'success': True,
-                'message': 'Redirigiendo a Webpay para completar el pago...',
-                'redirect_url': redirect_url
+                'message': 'Redirigiendo a Webpay...',
+                'redirect_url': reverse('iniciar_pago_webpay', args=[nuevo_pedido.id])
             })
         elif metodo_pago == 'mercadopago':
-            # Redirigir a la vista de inicio de pago de Mercado Pago
-            redirect_url = reverse('iniciar_pago_mercadopago', args=[nuevo_pedido.id])
             return JsonResponse({
                 'success': True,
-                'message': 'Redirigiendo a Mercado Pago para completar el pago...',
-                'redirect_url': redirect_url
+                'message': 'Redirigiendo a Mercado Pago...',
+                'redirect_url': reverse('iniciar_pago_mercadopago', args=[nuevo_pedido.id])
             })
         elif metodo_pago == 'transferencia':
-            # --- CAMBIO AQUÍ ---
-            # Redirigir a la nueva vista de subida de comprobantes
-            redirect_url = reverse('subir_comprobante', args=[nuevo_pedido.id])
+            # Redirigir a la página de subir comprobante
             return JsonResponse({
                 'success': True,
-                'message': 'Pedido creado. Redirigiendo para subir comprobante...',
-                'redirect_url': redirect_url
+                'message': 'Pedido creado correctamente. Redirigiendo para finalizar...',
+                'redirect_url': reverse('subir_comprobante', args=[nuevo_pedido.id])
             })
         else:
-            # Para otros métodos de pago, ir directo al PDF
-            redirect_url = reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
+            # Fallback para otros métodos futuros
             return JsonResponse({
                 'success': True,
-                'message': '¡Pedido recibido con éxito! Generando recibo...',
-                'redirect_url': redirect_url
+                'message': 'Pedido creado exitosamente.',
+                'redirect_url': reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
             })
 
     else:
-        # El formulario NO es válido (Sin cambios)
-        error_message = "Error en el formulario. Por favor, revisa tus datos."
-        if form.errors:
-            first_error_field = next(iter(form.errors))
-            first_error_msg = form.errors[first_error_field][0]
-            error_message = f"Error en '{first_error_field.replace('_',' ').title()}': {first_error_msg}"
-        return JsonResponse({ 'success': False, 'message': error_message })
+        # Errores de validación del formulario
+        first_error = next(iter(form.errors.values()))[0] if form.errors else "Revisa los datos ingresados."
+        return JsonResponse({ 'success': False, 'message': f'Error en el formulario: {first_error}' })
 
 def generar_recibo_pdf(request, pedido_id):
     """

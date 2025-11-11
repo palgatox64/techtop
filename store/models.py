@@ -4,6 +4,8 @@ from .validators import validate_chilean_phone, validate_name, validate_email_ex
 import os
 import random
 import string
+from django.core.validators import MinValueValidator, MaxValueValidator 
+from decimal import Decimal 
 
 # =========================================
 # FUNCIONES AUXILIARES
@@ -44,6 +46,11 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    descuento = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(99)],
+        verbose_name="Porcentaje de Oferta (0-99%)"
+    )
     imagen = models.ImageField(upload_to='productos/', null=True, blank=True)
     fecha_pub = models.DateField(auto_now_add=True)
     activo = models.BooleanField(default=True)
@@ -58,6 +65,27 @@ class Producto(models.Model):
         if self.stock == 0:
             self.activo = False
         super().save(*args, **kwargs)
+        
+    @property
+    def precio_oferta(self):
+        """Calcula el precio con el descuento base aplicado (para Webpay/otros)"""
+        if self.descuento > 0:
+            descuento_decimal = Decimal(self.descuento) / Decimal(100)
+            precio_final = self.precio * (1 - descuento_decimal)
+            return int(precio_final) # Redondeo a entero para CLP
+        return int(self.precio)
+
+    @property
+    def precio_transferencia(self):
+        """
+        Calcula el precio final para transferencia.
+        Aplica el 3% EXTRA sobre el precio que ya tiene oferta (si existe).
+        """
+        # Primero obtenemos el precio base (normal u oferta)
+        base = self.precio_oferta
+        # Aplicamos el 3% adicional de transferencia
+        precio_final = base * Decimal('0.97')
+        return int(precio_final) # Redondeo a entero para CLP
 
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes_adicionales', on_delete=models.CASCADE)

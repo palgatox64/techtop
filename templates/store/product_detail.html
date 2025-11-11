@@ -36,26 +36,36 @@
         <p class="product-brand-name">Marca: <strong>{{ product.marca.nombre }}</strong></p>
 
         <div class="price-box">
-            <div class="price-item">
-                <span class="price-label">Normal</span>
-                <span class="price-normal-strike">${{ precio_normal|floatformat:0|dot_thousands }}</span>
-            </div>
-            {% if descuento_porcentaje > 0 %}
-            <div class="price-item">
-                <span class="price-label">Descuento</span>
-                <span class="price-discount-badge">{{ descuento_porcentaje }}% DCTO.</span>
-            </div>
+            {% if product.descuento > 0 %}
+                <div class="price-item">
+                    <span class="price-label">Precio Normal</span>
+                    <span class="price-normal-strike">${{ product.precio|floatformat:0|dot_thousands }}</span>
+                </div>
+                <div class="price-item">
+                     <span class="price-discount-badge">¡OFERTA -{{ product.descuento }}%!</span>
+                </div>
             {% endif %}
+
             <div class="price-item main-price">
-                <span class="price-label">Otros medios de pago</span>
-                <span class="price-final">${{ product.precio|floatformat:0|dot_thousands }}</span>
+                <span class="price-label">
+                    {% if product.descuento > 0 %}Precio Oferta{% else %}Precio Normal{% endif %}
+                    (Otros medios de pago)
+                </span>
+                <span class="price-final">${{ product.precio_oferta|floatformat:0|dot_thousands }}</span>
             </div>
+
             <div class="price-item">
-                <span class="price-label">Pago con transferencia</span>
-                <span class="price-other">${{ precio_transferencia|floatformat:0|dot_thousands }}</span>
+                <span class="price-label">
+                    Pago con transferencia
+                    {% if product.descuento > 0 %}
+                       <small style="color: #28a745;">(Oferta + 3% extra)</small>
+                    {% else %}
+                       <small style="color: #28a745;">(Ahorra 3%)</small>
+                    {% endif %}
+                </span>
+                <span class="price-other">${{ product.precio_transferencia|floatformat:0|dot_thousands }}</span>
             </div>
         </div>
-
         <div class="product-actions">
             <form action="{% url 'add_to_cart' product.id %}" method="POST" id="add-to-cart-form">
                 {% csrf_token %}
