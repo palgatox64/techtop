@@ -5,67 +5,128 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/help_center.css' %}">
+<style>
+    /* Ocultamos el contenedor de FAQ por defecto */
+    .faq-container {
+        display: none;
+        margin-top: 30px;
+    }
+    
+    /* Mostramos el contenedor si tiene la clase 'active' (cuando hay resultados) */
+    .faq-container.active {
+        display: block;
+    }
+    
+    /* Mensaje de 'no encontrado' (ahora controlado por JS) */
+    #no-results-message {
+        display: none; /* Oculto por defecto */
+        text-align: center;
+        padding: 40px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        color: #666;
+        margin-top: 30px;
+    }
+    #no-results-message i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+</style>
 
 <div class="help-center-page">
     <header class="help-header">
         <h1>Centro de Ayuda</h1>
         <p>Encuentra respuestas a tus preguntas más frecuentes.</p>
         <div class="search-bar">
-            <input type="text" placeholder="Describe tu problema...">
-            <button type="submit"><i class='bx bx-search'></i></button>
+            <input type="text" id="faq-search-input" placeholder="Describe tu problema (ej: envío, garantía, pago)..." autocomplete="off">
+            <button type="button" id="faq-search-btn"><i class='bx bx-search'></i></button>
         </div>
     </header>
 
-    <main class="faq-container">
-        <h2>Preguntas Frecuentes</h2>
+    <main class="faq-container" id="faq-results-list">
+        </main>
 
-        <div class="faq-item">
-            <button class="faq-question">
-                <span>¿Cuáles son los tiempos de envío?</span>
-                <i class='bx bx-plus'></i>
-            </button>
-            <div class="faq-answer">
-                <p>Los envíos en la Región Metropolitana tardan entre 24 y 48 horas hábiles. Para otras regiones, el tiempo estimado es de 2 a 5 días hábiles. Recibirás un número de seguimiento para monitorear tu pedido en todo momento.</p>
-            </div>
-        </div>
-
-        <div class="faq-item">
-            <button class="faq-question">
-                <span>¿Qué métodos de pago aceptan?</span>
-                <i class='bx bx-plus'></i>
-            </button>
-            <div class="faq-answer">
-                <p>Aceptamos pagos a través de tarjetas de crédito y débito (Visa, MasterCard, etc.) y transferencias bancarias. Todos los pagos son procesados de forma segura a través de nuestra pasarela de pago.</p>
-            </div>
-        </div>
-        
-        <div class="faq-item">
-            <button class="faq-question">
-                <span>¿Cómo funciona la garantía de los productos?</span>
-                <i class='bx bx-plus'></i>
-            </button>
-            <div class="faq-answer">
-                <p>Todos nuestros productos cuentan con una garantía legal de 6 meses por fallas de fabricación. Si tu producto presenta un defecto, contáctanos a través de nuestro Centro de Ayuda para iniciar el proceso de revisión y, si corresponde, reparación o reemplazo.</p>
-            </div>
-        </div>
-
-        <div class="faq-item">
-            <button class="faq-question">
-                <span>¿Puedo devolver un producto si no me gustó?</span>
-                <i class='bx bx-plus'></i>
-            </button>
-            <div class="faq-answer">
-                <p>Sí, tienes una garantía de satisfacción de 10 días desde la recepción de tu compra para devolver el producto si no cumple tus expectativas. El producto debe estar en su empaque original, sin uso y con todos sus accesorios. El costo de envío de la devolución corre por cuenta del cliente.</p>
-            </div>
-        </div>
-    </main>
-
-    <footer class="contact-prompt">
-        <h3>¿No encontraste lo que buscabas?</h3>
-        <p>Nuestro equipo de soporte está listo para ayudarte con cualquier otra consulta.</p>
-        <a href="{% url 'contacto' %}" class="btn-contact">Contáctanos</a>
-    </footer>
+    <div id="no-results-message">
+        <i class='bx bx-search-alt-2'></i>
+        <h3>No encontramos resultados</h3>
+        <p>No pudimos encontrar una respuesta para tu búsqueda. Intenta con palabras clave más simples (ej: "pago", "envío", "garantía").</p>
+        <p>Si sigues sin encontrar lo que buscas, nuestro equipo de soporte te ayudará.</p>
+        <a href="{% url 'contacto' %}" class="btn-contact" style="background-color: #6a0dad;">Contactar a Soporte</a>
+    </div>
 </div>
 
+<script id="faq-database" type="application/json">
+[
+    {
+        "q": "¿Cuáles son los tiempos y costos de envío?",
+        "a": "<p>Nuestros tiempos de envío varían según la ubicación:</p><ul><li><strong>Región Metropolitana (Santiago):</strong> Generalmente de 24 a 48 horas hábiles.</li><li><strong>Otras Regiones:</strong> De 2 a 5 días hábiles, dependiendo de la distancia y la logística del transportista.</li></ul><p>El costo de envío se calcula automáticamente durante el proceso de checkout, justo antes de pagar, basado en tu dirección. También ofrecemos <strong>Retiro en Tienda</strong> sin costo adicional.</p>"
+    },
+    {
+        "q": "¿Cómo puedo hacer seguimiento de mi pedido?",
+        "a": "<p>¡Es muy fácil! Una vez que tu pedido sea despachado, recibirás un correo electrónico con tu <strong>número de seguimiento de 8 dígitos</strong>. Puedes usar ese número directamente en nuestro portal de seguimiento.</p><p>👉 <a href='{% url 'seguimiento_compra' %}' style='font-weight: bold; color: #6a0dad;'>Ir a Seguimiento de Compra</a></p>"
+    },
+    {
+        "q": "¿Qué métodos de pago aceptan?",
+        "a": "<p>Aceptamos los siguientes métodos de pago 100% seguros:</p><ul><li><strong>Webpay Plus (Transbank):</strong> Paga con cualquier tarjeta de débito (Redcompra) o crédito (Visa, Mastercard, etc.).</li><li><strong>Mercado Pago:</strong> Usa tu saldo en cuenta o tus tarjetas asociadas de forma segura.</li><li><strong>Transferencia Bancaria Directa:</strong> Al elegir este método, obtienes automáticamente un <strong>3% de descuento</strong> sobre el total de tus productos.</li></ul>"
+    },
+    {
+        "q": "¿Es seguro comprar en Techtop?",
+        "a": "<p>Absolutamente. Tu seguridad es nuestra prioridad. Toda tu información de pago es manejada por pasarelas seguras como <strong>Transbank (Webpay)</strong> y <strong>Mercado Pago</strong>. Nosotros nunca almacenamos los datos de tu tarjeta.</p>"
+    },
+    {
+        "q": "¿Cómo funciona la garantía de los productos?",
+        "a": "<p>Todos nuestros productos tienen una <strong>Garantía Legal de 6 meses</strong> que cubre cualquier falla o defecto de fabricación. Si tu producto presenta un problema que no sea por mal uso, lo gestionaremos.</p><p>Además, tienes una <strong>Garantía de Satisfacción de 10 días</strong> para devolver el producto si no te gustó (debe estar sin uso y en su empaque original).</p><p>👉 <a href='{% url 'garantias' %}' style='font-weight: bold; color: #6a0dad;'>Ver detalles de la Política de Garantía</a></p>"
+    },
+    {
+        "q": "¿Qué hago si mi producto llegó roto o dañado?",
+        "a": "<p>Lamentamos mucho si eso ocurrió. Por favor, <strong>no instales ni uses el producto</strong>.</p><p>Contáctanos de inmediato (antes de 48 horas desde la recepción) a través de nuestra <a href='{% url 'contacto' %}' style='color: #6a0dad;'>página de contacto</a>, indicando tu número de pedido y adjuntando fotos claras del daño en el producto y el embalaje. Gestionaremos una solución (cambio o devolución) lo más rápido posible.</p>"
+    },
+    {
+        "q": "¿Cómo sé si una radio es compatible con mi auto?",
+        "a": "<p>La mejor forma de asegurarlo es fijándote en el título del producto. Nuestros productos especifican claramente la <strong>Marca, Modelo y Rango de Años</strong> (ej: 'RADIO ANDROID NISSAN KICKS 2015-2021').</p><p>Si tu vehículo está dentro de ese rango, la radio incluirá el bisel adaptador (mascarilla) y los conectores (plug and play) específicos para tu auto. Si tienes dudas, te recomendamos consultarnos en la página de contacto antes de comprar.</p>"
+    },
+    {
+        "q": "¿Ustedes realizan la instalación de las radios?",
+        "a": "<p>Actualmente, <strong>Techtop es una tienda de venta online</strong> y no ofrecemos servicio de instalación directa. Sin embargo, nuestras radios están diseñadas para ser 'Plug and Play' (conectar y usar), facilitando mucho la instalación.</p><p>Si no te sientes cómodo realizando la instalación tú mismo, te recomendamos acudir a cualquier taller de car audio o eléctrico automotriz de tu confianza. La mayoría de los técnicos están familiarizados con estos sistemas Android.</p>"
+    },
+    {
+        "q": "¿Necesito crear una cuenta para comprar?",
+        "a": "<p>¡No es obligatorio! Puedes comprar como invitado. Sin embargo, te recomendamos crear una cuenta de cliente.</p><p>Al crear una cuenta, podrás:<ul><li>Ver tu historial de compras.</li><li>Acceder al seguimiento de tus pedidos más fácilmente.</li><li>Guardar tus datos para futuras compras más rápidas.</li></ul></p>"
+    },
+    {
+        "q": "¿Tienen tienda física? ¿Dónde están ubicados?",
+        "a": "<p>Somos una tienda <strong>100% online</strong>, lo que nos permite ofrecer precios más competitivos. No contamos con una tienda física abierta al público para exhibición de productos.</p><p>Ofrecemos la opción de <strong>Retiro en Tienda</strong> en nuestra bodega en Santiago (Pudahuel) para los pedidos comprados online. Los datos exactos de retiro se entregan una vez que tu pedido está listo para ser recogido.</p>"
+    },
+    {
+        "q": "¿Cómo funciona el descuento por transferencia?",
+        "a": "<p>¡Es nuestro mejor precio! Al momento de pagar, si eliges la opción 'Transferencia Bancaria', el sistema aplicará automáticamente un <strong>3% de descuento</strong> al subtotal de tus productos.</p><p>Después de finalizar la compra, te mostraremos los datos bancarios para que puedas realizar la transferencia y subir el comprobante. Tu pedido se procesará una vez validemos el pago (usualmente en menos de 24 horas hábiles).</p>"
+    },
+    {
+        "q": "¿Puedo pagar en cuotas?",
+        "a": "<p>¡Claro! Puedes pagar en cuotas utilizando tu tarjeta de crédito a través de <strong>Webpay Plus</strong> o <strong>Mercado Pago</strong>. El número de cuotas disponibles dependerá de las condiciones de tu banco.</p>"
+    },
+    {
+        "q": "¿Qué pasa si mi pago es rechazado?",
+        "a": "<p>Si tu pago es rechazado por la pasarela (Webpay o Mercado Pago), no te preocupes. Tu pedido será cancelado automáticamente y el stock será liberado.</p><p>Puedes volver a intentarlo, revisando que los datos de tu tarjeta sean correctos, o puedes probar con otro método de pago, como la transferencia bancaria.</p>"
+    },
+    {
+        "q": "¿Venden productos al por mayor?",
+        "a": "<p>Actualmente estamos enfocados en la venta al detalle para el cliente final. No contamos con un sistema de precios al por mayor automatizado. Para consultas comerciales sobre volúmenes grandes, puedes contactarnos a nuestro correo de ventas en la página de contacto.</p>"
+    },
+    {
+        "q": "¿Cómo puedo contactar a un humano?",
+        "a": "<p>¡Entendemos! Si prefieres atención personalizada, puedes contactarnos a través de:</p><ul><li><strong>Email:</strong> techtop.contacto@gmail.com</li><li><strong>Teléfono/WhatsApp:</strong> +56 9 6652 6672</li></ul><p>Nuestro horario de atención es de Lunes a Viernes. Haremos lo posible por responderte a la brevedad.</p>"
+    },
+    {
+        "q": "¿El producto que quiero está agotado, volverá a tener stock?",
+        "a": "<p>Estamos reponiendo nuestro inventario constantemente. Si un producto aparece como 'Agotado', es muy probable que vuelva a estar disponible.</p><p>Te recomendamos revisar la página del producto en unos días. ¡Lamentamos las molestias!</p>"
+    },
+    {
+        "q": "Olvidé mi contraseña, ¿cómo la recupero?",
+        "a": "<p>En la página de <a href='{% url 'login' %}' style='color: #6a0dad;'>Inicio de Sesión</a>, encontrarás un enlace que dice '¿Olvidaste tu contraseña?'. Haz clic ahí y sigue las instrucciones para reestablecerla usando tu correo electrónico.</p>"
+    }
+]
+</script>
 <script src="{% static 'js/help_center.js' %}"></script>
 {% endblock %}
