@@ -153,3 +153,12 @@ MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', 'TEST-466096716
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', 'TEST-b729921c-1996-4f1a-9f68-0785f2d67619')  # Public Key de prueba
 MERCADOPAGO_ENVIRONMENT = os.getenv('MERCADOPAGO_ENVIRONMENT', 'TEST')  # TEST o PRODUCTION
 
+# Configuración de Email con Amazon SES
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('AWS_SES_EMAIL_HOST')
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('AWS_SES_SMTP_USER')
+EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SMTP_PASSWORD')
+DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  # Usar el dominio verificado en SES
+SERVER_EMAIL = DEFAULT_FROM_EMAIL

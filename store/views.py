@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.db import IntegrityError, transaction
 from django.core.validators import validate_email
+from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.urls import reverse
@@ -38,7 +39,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 # Local imports
-from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario, PasswordResetToken
 from .decorators import admin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
 from .validators import validate_chilean_rut
@@ -2922,3 +2923,134 @@ def crear_respuesta_productos(productos, titulo):
     
     html += '</div>'
     return {'message': html, 'data': {'type': 'productos'}}
+
+def password_reset_request(request):
+    """Vista para solicitar recuperación de contraseña"""
+    if request.method == 'GET':
+        return render(request, 'password_reset_request.html')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        
+        # Validar email
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, 'Por favor, ingresa un correo electrónico válido.')
+            return redirect('password_reset_request')
+        
+        # Buscar cliente
+        try:
+            cliente = Cliente.objects.get(email=email)
+            
+            # Invalidar tokens anteriores
+            PasswordResetToken.objects.filter(cliente=cliente, usado=False).update(usado=True)
+            
+            # Crear nuevo token
+            token = PasswordResetToken.objects.create(
+                cliente=cliente,
+                token=PasswordResetToken.generate_token()
+            )
+            
+            # Crear URL de recuperación
+            reset_url = request.build_absolute_uri(
+                reverse('password_reset_confirm', kwargs={'token': token.token})
+            )
+            
+            # Enviar email
+            try:
+                send_mail(
+                    subject='Recuperación de Contraseña - Techtop',
+                    message=f'''Hola {cliente.nombre},
+
+Recibimos una solicitud para restablecer tu contraseña en Techtop.
+
+Para crear una nueva contraseña, haz clic en el siguiente enlace (válido por 1 hora):
+{reset_url}
+
+Si no solicitaste este cambio, ignora este correo. Tu contraseña actual seguirá siendo válida.
+
+Saludos,
+Equipo Techtop''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[cliente.email],
+                    fail_silently=False,
+                )
+                
+                messages.success(request, f'Se ha enviado un enlace de recuperación a {email}. Revisa tu bandeja de entrada.')
+            except Exception as e:
+                print(f"Error al enviar email: {e}")
+                messages.error(request, 'Hubo un error al enviar el correo. Por favor, intenta nuevamente.')
+                return redirect('password_reset_request')
+                
+        except Cliente.DoesNotExist:
+            # Por seguridad, mostramos el mismo mensaje aunque no exista
+            messages.success(request, f'Si existe una cuenta con {email}, recibirás un enlace de recuperación.')
+        
+        return redirect('login')
+
+
+def password_reset_confirm(request, token):
+    """Vista para confirmar y establecer nueva contraseña"""
+    # Buscar token
+    try:
+        reset_token = PasswordResetToken.objects.get(token=token)
+    except PasswordResetToken.DoesNotExist:
+        messages.error(request, 'El enlace de recuperación no es válido.')
+        return redirect('login')
+    
+    # Verificar validez
+    if not reset_token.is_valid():
+        messages.error(request, 'El enlace de recuperación ha expirado. Solicita uno nuevo.')
+        return redirect('password_reset_request')
+    
+    if request.method == 'GET':
+        return render(request, 'password_reset_confirm.html', {'token': token})
+    
+    if request.method == 'POST':
+        password = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
+        
+        # Validar contraseñas
+        if password != password2:
+            messages.error(request, 'Las contraseñas no coinciden.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        # Validar seguridad de contraseña
+        if len(password) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        if not re.search(r'[a-z]', password):
+            messages.error(request, 'La contraseña debe contener al menos una letra minúscula.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        if not re.search(r'[A-Z]', password):
+            messages.error(request, 'La contraseña debe contener al menos una letra mayúscula.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        if not re.search(r'\d', password):
+            messages.error(request, 'La contraseña debe contener al menos un número.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>/?~`]', password):
+            messages.error(request, 'La contraseña debe contener al menos un carácter especial.')
+            return render(request, 'password_reset_confirm.html', {'token': token})
+        
+        # Actualizar contraseña
+        try:
+            cliente = reset_token.cliente
+            cliente.pass_hash = make_password(password)
+            cliente.save()
+            
+            # Marcar token como usado
+            reset_token.usado = True
+            reset_token.save()
+            
+            messages.success(request, '¡Tu contraseña ha sido actualizada exitosamente! Ya puedes iniciar sesión.')
+            return redirect('login')
+            
+        except Exception as e:
+            print(f"Error al actualizar contraseña: {e}")
+            messages.error(request, 'Hubo un error al actualizar tu contraseña. Intenta nuevamente.')
+            return render(request, 'password_reset_confirm.html', {'token': token})

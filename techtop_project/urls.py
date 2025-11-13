@@ -78,5 +78,8 @@ urlpatterns = [
     path('gestion/pedidos/', views.listar_pedidos_view, name='listar_pedidos'),
     path('gestion/pedidos/<int:pedido_id>/', views.gestionar_pedido_view, name='gestionar_pedido'),
     path('mi-cuenta/notificaciones/', views.mis_notificaciones_view, name='mis_notificaciones'), 
+    
+    # Recuperación de contraseña
+    path('recuperar-contrasena/', views.password_reset_request, name='password_reset_request'),
+    path('restablecer-contrasena/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
 ]
-

@@ -6,6 +6,8 @@ import random
 import string
 from django.core.validators import MinValueValidator, MaxValueValidator 
 from decimal import Decimal 
+from django.utils import timezone
+import datetime
 
 # =========================================
 # FUNCIONES AUXILIARES
@@ -326,3 +328,26 @@ class ComprobanteTransferencia(models.Model):
 
     def __str__(self):
         return f"Comprobante {self.id} para Pedido #{self.pago.pedido.tracking_number or self.pago.pedido.id}"
+
+class PasswordResetToken(models.Model):
+    """Tokens para recuperación de contraseña"""
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='reset_tokens')
+    token = models.CharField(max_length=100, unique=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    usado = models.BooleanField(default=False)
+    
+    def is_valid(self):
+        """Verifica si el token sigue siendo válido (1 hora de validez)"""
+        expiracion = self.fecha_creacion + datetime.timedelta(hours=1)
+        return not self.usado and timezone.now() < expiracion
+    
+    @staticmethod
+    def generate_token():
+        """Genera un token aleatorio único"""
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=64))
+    
+    class Meta:
+        db_table = 'PASSWORD_RESET_TOKENS'
+    
+    def __str__(self):
+        return f"Token para {self.cliente.email}"
