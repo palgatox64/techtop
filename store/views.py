@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.db import IntegrityError, transaction
 from django.core.validators import validate_email
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.urls import reverse
@@ -257,8 +257,7 @@ def product_catalog(request, brand_name=None):
     available_brands = Marca.objects.annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre') 
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
     
     context = {
         'products': products,
@@ -1022,9 +1021,6 @@ def audio_video_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
 
     context = {
         'products': products,
@@ -1061,9 +1057,7 @@ def seguridad_sensores_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -1100,9 +1094,6 @@ def diagnostico_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
 
     context = {
         'products': products,
@@ -1139,9 +1130,7 @@ def herramientas_medicion_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -1178,9 +1167,7 @@ def medidores_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
+
 
     context = {
         'products': products,
@@ -1255,9 +1242,6 @@ def electronica_general_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
-    # Calcular precio de transferencia
-    for product in products:
-        product.precio_transferencia = product.precio * Decimal('0.97')
 
     context = {
         'products': products,
@@ -1752,6 +1736,8 @@ def retorno_webpay(request):
             if 'cart' in request.session:
                 del request.session['cart']
             
+            enviar_recibo_por_email(pedido)
+            
             messages.success(request, '¡Pago realizado exitosamente!')
             
             # Renderizar página de confirmación
@@ -1977,118 +1963,96 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
     """
     Procesa el retorno desde Mercado Pago.
     """
-    payment_id = request.GET.get('payment_id')
-    status = request.GET.get('status')
-    external_reference = request.GET.get('external_reference')
-    preference_id = request.GET.get('preference_id')
+    print(f"Estado esperado: {estado_esperado}")
     
-    print(f"Parámetros recibidos: payment_id={payment_id}, status={status}, external_reference={external_reference}")
+    # Obtener parámetros de la URL
+    preference_id = request.GET.get('preference_id')
+    payment_id = request.GET.get('payment_id')
+    external_reference = request.GET.get('external_reference')
+    
+    print(f"Parámetros recibidos:")
+    print(f"  - preference_id: {preference_id}")
+    print(f"  - payment_id: {payment_id}")
+    print(f"  - external_reference: {external_reference}")
     
     try:
-        # Buscar la transacción por preference_id o external_reference
-        if preference_id:
+        # Buscar la transacción
+        transaccion = None
+        
+        if payment_id:
+            transaccion = TransaccionMercadoPago.objects.filter(payment_id=payment_id).first()
+        
+        if not transaccion and preference_id:
             transaccion = TransaccionMercadoPago.objects.filter(preference_id=preference_id).first()
-        elif external_reference:
-            pedido = Pedido.objects.get(id=external_reference)
-            transaccion = TransaccionMercadoPago.objects.filter(pedido=pedido).first()
-        else:
-            messages.error(request, 'No se pudo identificar la transacción.')
-            return redirect('home')
+        
+        if not transaccion and external_reference:
+            try:
+                pedido_id = int(external_reference)
+                transaccion = TransaccionMercadoPago.objects.filter(pedido_id=pedido_id).first()
+            except ValueError:
+                pass
         
         if not transaccion:
-            print("ERROR: Transacción no encontrada en BD")
-            messages.error(request, 'Transacción no encontrada.')
+            print("ERROR: No se encontró la transacción")
+            messages.error(request, 'No se pudo verificar el estado del pago.')
             return redirect('home')
         
-        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={transaccion.pedido.id}")
+        pedido = transaccion.pedido
+        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={pedido.id}")
         
-        # Si hay payment_id, consultar detalles del pago
+        # Si el pago ya fue procesado, redirigir
+        if transaccion.estado == 'approved' and pedido.estado == 'procesando':
+            print("Pago ya procesado anteriormente")
+            messages.info(request, 'Este pago ya fue procesado.')
+            return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+        
+        # Configurar SDK
+        sdk = _configurar_mercadopago()
+        
+        # Obtener información del pago
         if payment_id:
-            sdk = _configurar_mercadopago()
-            payment_info = sdk.payment().get(payment_id)
+            print(f"Consultando pago {payment_id} en Mercado Pago...")
+            payment_resource = sdk.payment()
+            payment_data = payment_resource.get(int(payment_id))
             
-            if payment_info["status"] == 200:
-                payment_data = payment_info["response"]
-                
-                # Actualizar transacción con datos del pago
-                transaccion.payment_id = str(payment_id)
-                transaccion.estado = payment_data.get('status', status)
-                transaccion.status_detail = payment_data.get('status_detail', '')
-                transaccion.payment_method_id = payment_data.get('payment_method_id', '')
-                transaccion.payment_type_id = payment_data.get('payment_type_id', '')
-                
-                if 'card' in payment_data and payment_data['card']:
-                    transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
-                
-                if 'payer' in payment_data:
-                    transaccion.payer_email = payment_data['payer'].get('email', '')
-                    if 'identification' in payment_data['payer']:
-                        transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
-                
-                transaccion.save()
-                
-                # Si fue aprobado
-                if payment_data.get('status') == 'approved':
-                    print("¡PAGO APROBADO!")
-                    pedido = transaccion.pedido
-                    pedido.estado = 'procesando'
-                    pedido.save()
-                    
-                    # Limpiar el carrito
-                    if 'cart' in request.session:
-                        del request.session['cart']
-                    
-                    messages.success(request, '¡Pago realizado exitosamente con Mercado Pago!')
-                    
-                    context = {
-                        'pedido': pedido,
-                        'transaccion': transaccion,
-                        'exito': True,
-                        'response': payment_data,
-                        'es_mercadopago': True
-                    }
-                    return render(request, 'store/confirmacion_pago.html', context)
-                
-                elif payment_data.get('status') in ['rejected', 'cancelled']:
-                    print(f"PAGO {payment_data.get('status').upper()}")
-                    pedido = transaccion.pedido
-                    pedido.estado = 'cancelado'
-                    pedido.save()
-                    
-                    # Restaurar stock
-                    for detalle in pedido.detalles.all():
-                        producto = detalle.producto
-                        producto.stock += detalle.cantidad
-                        producto.save()
-                    
-                    messages.error(request, 'El pago fue rechazado. Por favor, intenta nuevamente.')
-                    
-                    context = {
-                        'pedido': pedido,
-                        'transaccion': transaccion,
-                        'exito': False,
-                        'response': payment_data,
-                        'es_mercadopago': True
-                    }
-                    return render(request, 'store/confirmacion_pago.html', context)
-                
-                else:  # pending, in_process, etc.
-                    print(f"PAGO EN ESTADO: {payment_data.get('status')}")
-                    messages.info(request, 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.')
-                    return redirect('home')
-        
-        # Si no hay payment_id pero hay status
-        elif status:
-            transaccion.estado = status
+            if 'response' in payment_data:
+                payment_data = payment_data['response']
+            
+            print(f"Datos del pago: {payment_data}")
+            
+            # Actualizar la transacción
+            transaccion.payment_id = str(payment_id)
+            transaccion.estado = payment_data.get('status', 'unknown')
+            transaccion.status_detail = payment_data.get('status_detail', '')
+            
+            if 'transaction_amount' in payment_data:
+                transaccion.monto = Decimal(str(payment_data['transaction_amount']))
+            
+            transaccion.payment_method_id = payment_data.get('payment_method_id', '')
+            transaccion.payment_type_id = payment_data.get('payment_type_id', '')
+            
+            if 'card' in payment_data and payment_data['card']:
+                transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
+            
+            if 'payer' in payment_data:
+                transaccion.payer_email = payment_data['payer'].get('email', '')
+                if 'identification' in payment_data['payer']:
+                    transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
+            
             transaccion.save()
             
-            if status == 'approved':
+            # Si fue aprobado
+            if payment_data.get('status') == 'approved':
+                print("¡PAGO APROBADO!")
                 pedido = transaccion.pedido
                 pedido.estado = 'procesando'
                 pedido.save()
                 
+                # Limpiar el carrito
                 if 'cart' in request.session:
                     del request.session['cart']
+                
+                enviar_recibo_por_email(pedido)
                 
                 messages.success(request, '¡Pago realizado exitosamente!')
                 return redirect('generar_recibo_pdf', pedido_id=pedido.id)
@@ -2358,6 +2322,8 @@ def gestionar_transferencia_view(request, pago_id):
             pago.pedido.estado = 'procesando'
             pago.pedido.save()
             
+            enviar_recibo_por_email(pago.pedido)
+            
             messages.success(request, f'Pago del pedido #{pago.pedido.id} APROBADO.')
             return redirect('listar_transferencias')
             
@@ -2375,10 +2341,10 @@ def gestionar_transferencia_view(request, pago_id):
                 producto = detalle.producto
                 producto.stock += detalle.cantidad
                 producto.save()
-                
-            messages.warning(request, f'Pago del pedido #{pago.pedido.id} RECHAZADO y stock restaurado.')
+            
+            messages.warning(request, f'Pago del pedido #{pedido.id} RECHAZADO. Stock restaurado.')
             return redirect('listar_transferencias')
-
+    
     return render(request, 'gestion/transferencia_detail.html', {'pago': pago})
 
 
@@ -3054,3 +3020,114 @@ def password_reset_confirm(request, token):
             print(f"Error al actualizar contraseña: {e}")
             messages.error(request, 'Hubo un error al actualizar tu contraseña. Intenta nuevamente.')
             return render(request, 'password_reset_confirm.html', {'token': token})
+        
+def enviar_recibo_por_email(pedido):
+    """
+    Genera un PDF del recibo y lo envía por email al cliente.
+    Retorna True si se envió exitosamente, False si hubo un error.
+    """
+    try:
+        # Obtener datos del pedido
+        detalles = pedido.detalles.select_related('producto').all()
+        
+        # Datos del cliente
+        cliente_nombre_completo = 'Cliente no registrado'
+        cliente_email = None
+        cliente_rut = 'No disponible'
+        
+        if pedido.cliente:
+            cliente_nombre_completo = f"{pedido.cliente.nombre} {pedido.cliente.apellidos}"
+            cliente_email = pedido.cliente.email
+            cliente_rut = getattr(pedido.cliente, 'rut', 'No disponible')
+        
+        # Si no hay email, no podemos enviar
+        if not cliente_email:
+            print(f"No se puede enviar recibo del pedido {pedido.id}: sin email de cliente")
+            return False
+        
+        # Cálculos
+        subtotal = sum(d.precio_unitario * d.cantidad for d in detalles)
+        total_iva = subtotal * Decimal('0.19')
+        costo_envio = Decimal('4500') if pedido.direccion_envio else Decimal('0.00')
+        total_pagado = pedido.total
+        
+        logo_path = f"{settings.STATIC_URL}img/new_black.png"
+        
+        # Contexto para el template
+        context = {
+            'pedido': pedido,
+            'detalles': detalles,
+            'cliente_nombre_completo': cliente_nombre_completo,
+            'cliente_email': cliente_email,
+            'cliente_rut': cliente_rut,
+            'subtotal': subtotal,
+            'total_iva': total_iva,
+            'costo_envio': costo_envio,
+            'total_pagado': total_pagado,
+            'logo_path': logo_path,
+            'fecha_actual': timezone.now()
+        }
+        
+        # Generar HTML del PDF
+        template = get_template('store/recibo_pdf.html')
+        html = template.render(context)
+        
+        # Crear PDF en memoria
+        result = BytesIO()
+        pdf = pisa.CreatePDF(html, dest=result)
+        
+        if pdf.err:
+            print(f"Error al generar PDF del pedido {pedido.id}")
+            return False
+        
+        # Obtener el contenido del PDF
+        pdf_content = result.getvalue()
+        
+        site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+        
+        seguimiento_url = f"{site_url}/seguimiento-compra/"
+        
+        # Crear el email
+        email = EmailMessage(
+            subject=f'Comprobante de Compra - Pedido #{pedido.tracking_number} - Techtop',
+            body=f'''Hola {cliente_nombre_completo},
+
+¡Gracias por tu compra en Techtop!
+
+Adjunto encontrarás el comprobante de tu pedido #{pedido.id}.
+
+Número de Seguimiento: {pedido.tracking_number}
+
+Puedes seguir el estado de tu pedido ingresando a:
+{seguimiento_url}
+
+Si tienes alguna consulta, no dudes en contactarnos.
+
+Saludos,
+Equipo Techtop
+_______________________________________________
+Este es un correo automático, por favor no responder.
+Techtop - Tu tienda de tecnología de confianza
+''',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[cliente_email],
+        )
+        
+        # Adjuntar el PDF
+        email.attach(
+            filename=f'recibo_techtop_{pedido.tracking_number}.pdf',
+            content=pdf_content,
+            mimetype='application/pdf'
+        )
+        
+        # Enviar el email
+        email.send(fail_silently=False)
+        
+        print(f"✅ Recibo enviado por email para el pedido {pedido.id} a {cliente_email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error al enviar recibo por email del pedido {pedido.id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

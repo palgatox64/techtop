@@ -3,7 +3,7 @@
 {% load humanize %}
 {% load custom_filters %}
 
-{% block title %}Detalle Pedido #{{ pedido.tracking_number }}{% endblock %}
+{% block title %}Detalle Pedido #{{ pedido.id }}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
@@ -22,7 +22,7 @@
 <div class="gestion-page">
     <header class="gestion-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h1 style="margin-bottom: 10px;">Pedido #{{ pedido.tracking_number }}</h1>
+            <h1 style="margin-bottom: 10px;">Pedido #{{ pedido.id }}</h1>
             <a href="{% url 'historial_compras' %}" class="btn-back-panel" style="position: static;"><i class='bx bx-arrow-back'></i> Volver al Historial</a>
         </div>
         

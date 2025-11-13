@@ -162,3 +162,5 @@ EMAIL_HOST_USER = os.getenv('AWS_SES_SMTP_USER')
 EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SMTP_PASSWORD')
 DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  # Usar el dominio verificado en SES
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+SITE_URL = 'http://localhost:8000' if DEBUG else 'https://www.techtop.cl'
