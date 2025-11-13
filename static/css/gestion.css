@@ -5,27 +5,39 @@
     padding: 20px;
 }
 
-.gestion-header {
-    text-align: center;
+/* Contenedor para el botón de volver y el encabezado en formularios (crear/editar) */
+.form-header-wrapper {
+    display: flex;
+    align-items: center; /* Alinea verticalmente el botón y el header */
+    justify-content: space-between; /* Espacia el botón a la izquierda y el header al centro */
     margin-bottom: 40px;
-    position: relative; /* Para posicionar el botón */
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+}
+
+/* Estilos para el encabezado principal de las páginas de gestión */
+.gestion-header {
+    text-align: center; /* Centra el texto por defecto */
+    margin-bottom: 40px; /* Margen inferior para separar del contenido */
+    flex-grow: 1; /* Permite que el header ocupe el espacio restante en flex containers */
+    padding: 0 20px; /* Añade padding para que el texto no toque los bordes en flex */
 }
 
 .gestion-header h1 {
     font-size: 2.8rem;
+    margin-top: 0;
+    margin-bottom: 10px;
 }
 
 .gestion-header p {
     font-size: 1.1rem;
     color: #666;
+    margin-bottom: 0;
 }
 
-/* Nuevo estilo para el botón de volver al panel */
+/* Estilo para el botón de volver al panel */
 .btn-back-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: inline-flex;
+    display: inline-flex; /* Para que ocupe solo el espacio necesario y permita alinear */
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
@@ -36,6 +48,8 @@
     font-weight: 600;
     font-size: 0.9rem;
     transition: background-color 0.3s ease;
+    flex-shrink: 0; /* Evita que el botón se encoja en flex containers */
+    margin-bottom: 20px; /* Margen inferior para separarlo del siguiente bloque */
 }
 
 .btn-back-panel:hover {
@@ -49,16 +63,17 @@
 
 /* Ajuste para pantallas pequeñas */
 @media (max-width: 768px) {
-    .btn-back-panel {
-        position: static;
-        margin-bottom: 20px;
-        align-self: flex-start;
-    }
-    
-    .gestion-header {
-        display: flex;
+    .form-header-wrapper {
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    .gestion-header {
+        text-align: left;
+        padding: 0;
+    }
+    .btn-back-panel {
+        width: auto;
     }
 }
 
