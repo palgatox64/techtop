@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestionar Empleados{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>Gestión de Empleados</h1>
+    </header>
+
+    <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
+        <i class='bx bx-arrow-back'></i> Volver al Panel
+    </a>
+
+    <div class="table-actions">
+        <a href="{% url 'crear_empleado' %}" class="btn-create">Añadir Empleado</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>RUT</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Cargo</th>
+                    <th>Estado</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for empleado in page_obj %}
+                <tr>
+                    <td>{{ empleado.id_empleado }}</td>
+                    <td>{{ empleado.nombre }} {{ empleado.apellidos }}</td>
+                    <td>{{ empleado.rut }}</td>
+                    <td>{{ empleado.email }}</td>
+                    <td>{{ empleado.telefono }}</td>
+                    <td>{{ empleado.cargo }}</td>
+                    <td>
+                        {% if empleado.activo %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if empleado.is_superadmin %}
+                            <span class="badge bg-primary">Superadmin</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Empleado</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions-cell">
+                        <a href="{% url 'editar_empleado' empleado.pk %}" class="btn-action edit">Editar</a>
+                        {% if request.session.empleado_id != empleado.id_empleado %}
+                        <button type="button" class="btn-action delete btn-delete-item" 
+                                data-url="{% url 'eliminar_empleado' empleado.pk %}" 
+                                data-item-name="{{ empleado.nombre }} {{ empleado.apellidos }}"
+                                data-action-text="desactivar"
+                                data-csrf-token="{{ csrf_token }}">
+                            Desactivar
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination-container">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_delete.js' %}"></script>
+<script>
+// Pequeña modificación para el texto del modal de desactivación
+document.addEventListener('DOMContentLoaded', function () {
+    // Lógica para el modal de SweetAlert de éxito
+    {% for message in messages %}
+        {% if 'swal-success' in message.tags %}
+            Swal.fire({
+                title: '¡Éxito!',
+                text: '{{ message }}',
+                icon: 'success',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Aceptar'
+            });
+        {% endif %}
+    {% endfor %}
+
+    const deleteButtons = document.querySelectorAll('.btn-delete-item');
+    deleteButtons.forEach(button => {
+        const actionText = button.getAttribute('data-action-text') || 'eliminar';
+        if (actionText === 'desactivar') {
+            button.addEventListener('click', function (event) {
+                event.preventDefault(); // Prevenir la acción por defecto del gestion_delete.js
+                const itemName = this.getAttribute('data-item-name');
+                const url = this.getAttribute('data-url');
+                const csrfToken = this.getAttribute('data-csrf-token');
+
+                Swal.fire({
+                    title: `¿Estás seguro?`,
+                    text: `Estás a punto de desactivar a "${itemName}". Esta acción se puede revertir editando al empleado.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: `Sí, ¡desactivar!`,
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Si se confirma, realizar la petición fetch para desactivar
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken,
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire(
+                                    '¡Desactivado!',
+                                    data.message,
+                                    'success'
+                                ).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Error',
+                                    data.message,
+                                    'error'
+                                );
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -135,6 +135,7 @@ class Empleado(models.Model):
     cargo = models.CharField(max_length=100, default='Empleado')
     fecha_contratacion = models.DateField(auto_now_add=True)
     activo = models.BooleanField(default=True)
+    is_superadmin = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'EMPLEADOS'

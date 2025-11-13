@@ -51,6 +51,13 @@ urlpatterns = [
     path('gestion/marcas/editar/<int:pk>/', views.editar_marca_view, name='editar_marca'),
     path('gestion/marcas/eliminar/<int:pk>/', views.eliminar_marca_view, name='eliminar_marca'),
     path('gestion/marcas/exportar-csv/', views.exportar_marcas_csv, name='exportar_marcas_csv'),
+
+    # URLs para Gestión de Empleados (Superadmin)
+    path('gestion/empleados/', views.gestion_empleados, name='gestion_empleados'),
+    path('gestion/empleados/crear/', views.crear_empleado, name='crear_empleado'),
+    path('gestion/empleados/editar/<int:pk>/', views.editar_empleado, name='editar_empleado'),
+    path('gestion/empleados/eliminar/<int:pk>/', views.eliminar_empleado, name='eliminar_empleado'),
+
     path('checkout/', views.checkout_view, name='checkout'),
     path('procesar-pedido/', views.procesar_pedido_view, name='procesar_pedido'),
     path('pedido/recibo/<int:pedido_id>/', views.generar_recibo_pdf, name='generar_recibo_pdf'),

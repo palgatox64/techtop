@@ -186,3 +186,55 @@ class PerfilUsuarioForm(forms.Form):
     numero = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     ciudad = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     region = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+from .models import Empleado
+from django.contrib.auth.hashers import make_password
+
+class EmpleadoForm(forms.ModelForm):
+    # Campo de contraseña no mapeado directamente al modelo para poder manejar el hasheo
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Dejar en blanco para no cambiar'}),
+        required=False,
+        label="Contraseña"
+    )
+
+    class Meta:
+        model = Empleado
+        fields = ['rut', 'nombre', 'apellidos', 'email', 'telefono', 'cargo', 'activo', 'is_superadmin']
+        widgets = {
+            'rut': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'cargo': forms.TextInput(attrs={'class': 'form-control'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_superadmin': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
+        }
+        labels = {
+            'activo': 'Empleado Activo',
+            'is_superadmin': 'Es Superadministrador',
+            'rut': 'RUT (sin puntos, con guión)',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si es una instancia existente, la contraseña no es obligatoria
+        if self.instance.pk:
+            self.fields['password'].required = False
+        else:
+            # Si es un nuevo empleado, la contraseña es obligatoria
+            self.fields['password'].required = True
+            self.fields['password'].widget.attrs['placeholder'] = 'Contraseña (obligatoria)'
+
+    def save(self, commit=True):
+        empleado = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        
+        # Hashear la contraseña solo si se proporcionó una nueva
+        if password:
+            empleado.pass_hash = make_password(password)
+        
+        if commit:
+            empleado.save()
+        return empleado

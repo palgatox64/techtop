@@ -40,9 +40,83 @@ from django.views.decorators.http import require_http_methods
 
 # Local imports
 from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario, PasswordResetToken
-from .decorators import admin_required
-from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm
+from .decorators import admin_required, superadmin_required
+from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm, EmpleadoForm
 from .validators import validate_chilean_rut
+
+# --- VISTAS PARA GESTIÓN DE EMPLEADOS (SOLO SUPERADMIN) ---
+
+@superadmin_required
+def gestion_empleados(request):
+    """
+    Lista todos los empleados para que el superadmin los gestione.
+    """
+    empleados_list = Empleado.objects.all().order_by('apellidos', 'nombre')
+    
+    paginator = Paginator(empleados_list, 10) # 10 empleados por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'gestion/empleados_list.html', {'page_obj': page_obj})
+
+@superadmin_required
+def crear_empleado(request):
+    """
+    Muestra el formulario para crear un nuevo empleado y procesa su creación.
+    """
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST)
+        if form.is_valid():
+            form.save() # El método save del form ya hashea la contraseña
+            messages.success(request, '¡Empleado creado exitosamente!', extra_tags='swal-success')
+            return redirect('gestion_empleados')
+    else:
+        form = EmpleadoForm()
+    
+    return render(request, 'gestion/crear_form.html', {
+        'form': form,
+        'titulo': 'Crear Nuevo Empleado'
+    })
+
+@superadmin_required
+def editar_empleado(request, pk):
+    """
+    Muestra el formulario para editar un empleado existente y procesa los cambios.
+    """
+    empleado = get_object_or_404(Empleado, pk=pk)
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST, instance=empleado)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'¡Empleado "{empleado.nombre} {empleado.apellidos}" actualizado exitosamente!', extra_tags='swal-success')
+            return redirect('gestion_empleados')
+    else:
+        form = EmpleadoForm(instance=empleado)
+    
+    return render(request, 'gestion/editar_form.html', {
+        'form': form,
+        'titulo': f'Editar Empleado: {empleado.nombre} {empleado.apellidos}',
+        'objeto_id': empleado.pk,
+        'volver_url': 'gestion_empleados'
+    })
+
+@superadmin_required
+@require_http_methods(["POST"])
+def eliminar_empleado(request, pk):
+    """
+    Desactiva la cuenta de un empleado en lugar de eliminarla.
+    """
+    empleado = get_object_or_404(Empleado, pk=pk)
+    
+    # Evitar que un superadmin se desactive a sí mismo
+    if empleado.id_empleado == request.session.get('empleado_id'):
+        return JsonResponse({'success': False, 'message': 'No puedes desactivar tu propia cuenta.'}, status=403)
+
+    empleado.activo = False
+    empleado.save()
+    
+    return JsonResponse({'success': True, 'message': f'Empleado "{empleado.nombre} {empleado.apellidos}" ha sido desactivado.'})
+
 
 def home(request):
     return render(request, 'home.html')
@@ -527,7 +601,8 @@ def login_view(request):
                 request.session['empleado_id'] = empleado.id_empleado
                 request.session['empleado_nombre'] = empleado.nombre
                 request.session['empleado_cargo'] = empleado.cargo
-                request.session['user_type'] = 'empleado'  
+                request.session['user_type'] = 'empleado'
+                request.session['is_superadmin'] = empleado.is_superadmin  # <-- AÑADIR ESTO
                 
                 return JsonResponse({
                     'success': True,
@@ -740,7 +815,17 @@ def logout_view(request):
 
 @admin_required
 def panel_gestion_view(request):
-    return render(request, 'gestion/panel.html')
+    try:
+        empleado = Empleado.objects.get(id_empleado=request.session.get('empleado_id'))
+    except Empleado.DoesNotExist:
+        # Si por alguna razón el empleado no existe, redirigir al login.
+        messages.error(request, "No se pudo encontrar tu perfil de empleado.")
+        return redirect('login')
+        
+    context = {
+        'empleado': empleado
+    }
+    return render(request, 'gestion/panel.html', context)
 
 @admin_required
 def crear_categoria_view(request):

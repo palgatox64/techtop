@@ -45,7 +45,12 @@
                         </div>
                     </div>
                     <span style="margin-left: 8px; font-size: 0.9rem; color: #666;">
-                        {{ request.session.empleado_nombre }} ({{ request.session.empleado_cargo }})
+                        {{ request.session.empleado_nombre }} 
+                        {% if request.session.is_superadmin %}
+                            (Superadministrador)
+                        {% else %}
+                            ({{ request.session.empleado_cargo }})
+                        {% endif %}
                     </span>
                 </div>
 
@@ -196,9 +201,10 @@
                 </ul>
             </div>
             <div class="footer-column">
-                <h3>Comunidad</h3>
+                <h3>Redes Sociales</h3>
                 <ul>
                     <li><a href="https://www.instagram.com/techtop.chile/" target="_blank"><i class='bx bxl-instagram'></i> Instagram</a></li>
+                    <li><a href="https://api.whatsapp.com/send?phone=56966526672&text=Hola!" target="_blank"><i class='bx bxl-whatsapp'></i> WhatsApp</a></li>
                     <li><a href="https://www.facebook.com/profile.php?id=100064087001310" target="_blank"><i class='bx bxl-facebook-square'></i> Facebook</a></li>
                     <li><a href="https://www.youtube.com/@techtopchile4617/featured" target="_blank"><i class='bx bxl-youtube'></i> YouTube</a></li>
                 </ul>

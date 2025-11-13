@@ -6,14 +6,15 @@
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
 
 <div class="gestion-page form-container">
-    <header class="gestion-header">
-        <h1>{{ titulo }}</h1>
-        <p>Completa el formulario para añadir un nuevo ítem.</p>
-        <!-- Nuevo botón para volver al panel principal -->
+    <div class="form-header-wrapper">
         <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
             <i class='bx bx-arrow-back'></i> Volver al Panel
         </a>
-    </header>
+        <header class="gestion-header">
+            <h1>{{ titulo }}</h1>
+            <p>Completa el formulario para añadir un nuevo ítem.</p>
+        </header>
+    </div>
 
     <form method="POST" enctype="multipart/form-data" class="gestion-form">
         {% csrf_token %}

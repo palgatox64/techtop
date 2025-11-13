@@ -50,6 +50,14 @@
             <h3>Gestionar Comentarios</h3>
             <p>Aprobar o rechazar reseñas de productos.</p>
         </a>
+
+        {% if empleado.is_superadmin %}
+        <a href="{% url 'gestion_empleados' %}" class="menu-card admin-only">
+            <div class="card-icon"><i class='bx bxs-user-account'></i></div>
+            <h3>Gestión de Empleados</h3>
+            <p>Añadir, editar o desactivar cuentas de empleados.</p>
+        </a>
+        {% endif %}
     </main>
 </div>
 {% endblock %}
