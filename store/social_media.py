@@ -3,13 +3,10 @@ import requests
 from django.conf import settings
 from .models import SocialMediaConfig, SocialMediaPost, Producto
 
-
 class SocialMediaService:
-    """Servicio para manejar publicaciones en redes sociales"""
     
     @staticmethod
     def format_message(template, producto):
-        """Formatea el mensaje usando la plantilla y los datos del producto"""
         return template.format(
             nombre=producto.nombre,
             descripcion=producto.descripcion or '',
@@ -20,16 +17,6 @@ class SocialMediaService:
     
     @staticmethod
     def publish_to_facebook(producto, config):
-        """
-        Publica un producto en Facebook.
-        
-        Args:
-            producto: Instancia del modelo Producto
-            config: Instancia del modelo SocialMediaConfig para Facebook
-            
-        Returns:
-            dict: Resultado de la publicación con 'success', 'post_id' y 'message'
-        """
         try:
             # Inicializar el SDK de Facebook
             graph = facebook.GraphAPI(access_token=config.access_token)
@@ -76,20 +63,7 @@ class SocialMediaService:
     
     @staticmethod
     def publish_to_instagram(producto, config):
-        """
-        Publica un producto en Instagram.
-        
-        Instagram requiere un proceso de dos pasos:
-        1. Crear un contenedor de medios
-        2. Publicar el contenedor
-        
-        Args:
-            producto: Instancia del modelo Producto
-            config: Instancia del modelo SocialMediaConfig para Instagram
-            
-        Returns:
-            dict: Resultado de la publicación con 'success', 'post_id' y 'message'
-        """
+
         try:
             # Formatear el mensaje (caption)
             caption = SocialMediaService.format_message(config.template_message, producto)
@@ -164,15 +138,7 @@ class SocialMediaService:
     
     @staticmethod
     def publish_producto(producto_id):
-        """
-        Publica un producto en todas las redes sociales habilitadas.
-        
-        Args:
-            producto_id: ID del producto a publicar
-            
-        Returns:
-            list: Lista de resultados de cada publicación
-        """
+
         try:
             producto = Producto.objects.get(pk=producto_id)
         except Producto.DoesNotExist:
