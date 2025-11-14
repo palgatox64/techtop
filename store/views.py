@@ -642,7 +642,6 @@ def login_view(request):
                 })
         
         except Exception as e:
-            print(f"Error en login_view: {e}")
             return JsonResponse({
                 'success': False,
                 'message': 'Error interno del servidor. Intenta de nuevo.'
@@ -653,7 +652,6 @@ def register_view(request):
         return render(request, 'register.html')
 
     if request.method == 'POST':
-        print(">>> Petición POST recibida en register_view.")
 
         rut = request.POST.get('rut', '').strip()
         nombre = request.POST.get('nombre', '').strip()
@@ -662,8 +660,6 @@ def register_view(request):
         telefono = request.POST.get('telefono', '').strip()
         password = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
-        
-        print(f">>> Datos recibidos: RUT={rut}, Correo={correo}, Nombre={nombre}")
 
         # Validaciones del backend
         
@@ -752,10 +748,8 @@ def register_view(request):
             return redirect('register')
 
         try:
-            print(">>> Validaciones pasadas. Hasheando contraseña...")
             hashed_password = make_password(password)
 
-            print(">>> Creando el objeto Cliente...")
             nuevo_cliente = Cliente(
                 rut=rut,
                 nombre=nombre,
@@ -771,7 +765,6 @@ def register_view(request):
             return redirect('login')
         
         except IntegrityError as e:
-            print(f"Error de integridad en la base de datos: {e}")
             if 'rut' in str(e).lower():
                 messages.error(request, 'El RUT ya está en uso.')
             elif 'UNIQUE constraint' in str(e) or 'unique' in str(e).lower():
@@ -781,7 +774,6 @@ def register_view(request):
             return redirect('register')
         
         except Exception as e:
-            print(f"Error inesperado al guardar en la base de datos: {e}")
             messages.error(request, 'Ocurrió un error inesperado al crear tu cuenta. Contacta a soporte.')
             return redirect('register')
 
@@ -1546,7 +1538,6 @@ def procesar_pedido_view(request):
                 # fecha_pedido y tracking_number se generan automáticamente
             )
         except Exception as e:
-             print(f"ERROR CRÍTICO AL CREAR PEDIDO: {e}")
              return JsonResponse({'success': False, 'message': 'Error interno al crear el pedido. Intenta nuevamente.'})
 
         # --- 6. GUARDAR DETALLES Y ACTUALIZAR STOCK ---
@@ -1663,7 +1654,6 @@ def generar_recibo_pdf(request, pedido_id):
         response['Content-Disposition'] = f'attachment; filename="recibo_techtop_{pedido.id}.pdf"'
         return response
     else:
-        print(f"xhtml2pdf error: {pdf.err}")
         return HttpResponse(f"Error al generar el PDF: {pdf.err}. Revisa los logs.", status=500)
 
 
@@ -1695,11 +1685,10 @@ def iniciar_pago_webpay(request, pedido_id):
     Inicia el proceso de pago con Webpay Plus.
     Crea el token y redirige al usuario a Transbank.
     """
-    print(f"=== INICIANDO PAGO WEBPAY PARA PEDIDO {pedido_id} ===")
+
     try:
         # Obtener el pedido
         pedido = get_object_or_404(Pedido, id=pedido_id)
-        print(f"Pedido encontrado: ID={pedido.id}, Total={pedido.total}")
         
         # Verificar que no exista ya una transacción autorizada para este pedido
         transaccion_existente = TransaccionWebpay.objects.filter(
@@ -1708,32 +1697,25 @@ def iniciar_pago_webpay(request, pedido_id):
         ).first()
         
         if transaccion_existente:
-            print(f"Transacción ya existe y está autorizada")
             messages.warning(request, 'Este pedido ya fue pagado.')
             return redirect('generar_recibo_pdf', pedido_id=pedido.id)
         
-        # Configurar Transbank
-        print("Configurando Transbank...")
         _configurar_transbank()
         
         # Generar un buy_order único
         buy_order = f"ORD-{pedido.id}-{uuid.uuid4().hex[:8].upper()}"
-        print(f"Buy Order generado: {buy_order}")
         
         # Obtener el monto (convertir a entero, Transbank no acepta decimales)
         monto = int(pedido.total)
-        print(f"Monto a cobrar: {monto}")
+
         
         # URLs de retorno
         return_url = request.build_absolute_uri(reverse('retorno_webpay'))
-        print(f"URL de retorno: {return_url}")
         
         # Crear la transacción en Webpay
-        print("Creando transacción en Transbank...")
         # El SDK v4.0.0 usa esta firma: create(buy_order, session_id, amount, return_url)
         tx = Transaction()
         response = tx.create(buy_order, str(request.session.session_key or 'SESSION'), monto, return_url)
-        print(f"Respuesta de Transbank: {response}")
         
         # Guardar la transacción en la base de datos
         transaccion = TransaccionWebpay.objects.create(
@@ -1743,20 +1725,17 @@ def iniciar_pago_webpay(request, pedido_id):
             monto=pedido.total,
             estado='PENDIENTE'
         )
-        print(f"Transacción guardada en BD: ID={transaccion.id}")
         
         # Guardar el token en la sesión para validar posteriormente
         request.session[f'webpay_token_{pedido.id}'] = response['token']
         
         # Construir la URL de Webpay
         webpay_url = response['url'] + '?token_ws=' + response['token']
-        print(f"Redirigiendo a: {webpay_url}")
         
         # Redirigir al usuario a Webpay
         return redirect(webpay_url)
         
     except Exception as e:
-        print(f"Error al iniciar pago Webpay: {e}")
         messages.error(request, f'Error al procesar el pago: {str(e)}')
         return redirect('checkout')
 
@@ -1769,8 +1748,6 @@ def retorno_webpay(request):
     """
     token_ws = request.GET.get('token_ws') or request.POST.get('token_ws')
     
-    print(f"=== RETORNO DE WEBPAY ===")
-    print(f"Token recibido: {token_ws}")
     
     if not token_ws:
         messages.error(request, 'Token de transacción no válido.')
@@ -1780,21 +1757,15 @@ def retorno_webpay(request):
         # Configurar Transbank
         _configurar_transbank()
         
-        # Confirmar la transacción con Transbank
-        print("Confirmando transacción con Transbank...")
         tx = Transaction()
         response = tx.commit(token_ws)
-        print(f"Respuesta de confirmación: {response}")
         
         # Buscar la transacción en la base de datos
         transaccion = TransaccionWebpay.objects.filter(token=token_ws).first()
         
         if not transaccion:
-            print("ERROR: Transacción no encontrada en BD")
             messages.error(request, 'Transacción no encontrada.')
             return redirect('home')
-        
-        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={transaccion.pedido.id}")
         
         # Actualizar la transacción con los datos de respuesta
         transaccion.response_code = str(response.get('response_code', ''))
@@ -1806,9 +1777,7 @@ def retorno_webpay(request):
             transaccion.card_number = response['card_detail']['card_number']
         
         # Verificar si el pago fue aprobado
-        print(f"Estado de respuesta: response_code={response.get('response_code')}, status={response.get('status')}")
         if response.get('response_code') == 0 and response.get('status') == 'AUTHORIZED':
-            print("¡PAGO APROBADO!")
             transaccion.estado = 'AUTORIZADO'
             transaccion.save()
             
@@ -1860,7 +1829,6 @@ def retorno_webpay(request):
             return render(request, 'store/confirmacion_pago.html', context)
             
     except Exception as e:
-        print(f"Error en retorno Webpay: {e}")
         messages.error(request, f'Error al procesar el pago: {str(e)}')
         return redirect('home')
 
@@ -1907,7 +1875,6 @@ def anular_transaccion_webpay(request, transaccion_id):
             messages.error(request, 'No se pudo anular la transacción.')
         
     except Exception as e:
-        print(f"Error al anular transacción: {e}")
         messages.error(request, f'Error: {str(e)}')
     
     return redirect('panel_gestion')
@@ -1928,11 +1895,9 @@ def iniciar_pago_mercadopago(request, pedido_id):
     """
     Crea una preferencia de pago en Mercado Pago y redirige al usuario.
     """
-    print(f"=== INICIANDO PAGO MERCADO PAGO PARA PEDIDO {pedido_id} ===")
     try:
         # Obtener el pedido
         pedido = get_object_or_404(Pedido, id=pedido_id)
-        print(f"Pedido encontrado: ID={pedido.id}, Total={pedido.total}")
         
         # Verificar que no exista ya una transacción aprobada
         transaccion_existente = TransaccionMercadoPago.objects.filter(
@@ -1941,12 +1906,9 @@ def iniciar_pago_mercadopago(request, pedido_id):
         ).first()
         
         if transaccion_existente:
-            print(f"Transacción ya existe y está aprobada")
             messages.warning(request, 'Este pedido ya fue pagado.')
             return redirect('generar_recibo_pdf', pedido_id=pedido.id)
         
-        # Configurar Mercado Pago
-        print("Configurando Mercado Pago...")
         sdk = _configurar_mercadopago()
         
         # Preparar items del pedido
@@ -1959,17 +1921,12 @@ def iniciar_pago_mercadopago(request, pedido_id):
                 "currency_id": "CLP"
             })
         
-        print(f"Items preparados: {len(items)} productos")
         
         # URLs de retorno
         success_url = request.build_absolute_uri(reverse('retorno_mercadopago_success'))
         failure_url = request.build_absolute_uri(reverse('retorno_mercadopago_failure'))
         pending_url = request.build_absolute_uri(reverse('retorno_mercadopago_pending'))
         
-        print(f"URLs configuradas:")
-        print(f"  - Success: {success_url}")
-        print(f"  - Failure: {failure_url}")
-        print(f"  - Pending: {pending_url}")
         
         # Crear preferencia de pago (sin auto_return por ahora)
         preference_data = {
@@ -1983,20 +1940,16 @@ def iniciar_pago_mercadopago(request, pedido_id):
             "statement_descriptor": "TechTop"
         }
         
-        print("Creando preferencia en Mercado Pago...")
         preference_response = sdk.preference().create(preference_data)
-        print(f"Respuesta completa: {preference_response}")
         
         # Verificar si hay error en la respuesta
         if preference_response.get('status') != 201:
             error_msg = preference_response.get('response', {}).get('message', 'Error desconocido')
-            print(f"ERROR en API de Mercado Pago: {error_msg}")
             raise Exception(f"Error de Mercado Pago: {error_msg}")
         
         # La respuesta exitosa viene en preference_response["response"]
         preference = preference_response["response"]
         
-        print(f"Preferencia creada exitosamente: {preference['id']}")
         
         # Guardar la transacción en la base de datos
         transaccion = TransaccionMercadoPago.objects.create(
@@ -2005,18 +1958,14 @@ def iniciar_pago_mercadopago(request, pedido_id):
             monto=pedido.total,
             estado='pending'
         )
-        print(f"Transacción guardada en BD: ID={transaccion.id}")
         
         # Obtener la URL de inicio de pago (usar sandbox para ambiente de pruebas)
         init_point = preference.get('sandbox_init_point') or preference.get('init_point')
-        print(f"Redirigiendo a: {init_point}")
-        print(f"NOTA: Las back_urls pueden no funcionar con localhost. Considera usar ngrok para pruebas.")
         
         # Redirigir al usuario a Mercado Pago
         return redirect(init_point)
         
     except Exception as e:
-        print(f"Error al iniciar pago Mercado Pago: {e}")
         import traceback
         traceback.print_exc()
         messages.error(request, f'Error al procesar el pago: {str(e)}')
@@ -2026,21 +1975,18 @@ def iniciar_pago_mercadopago(request, pedido_id):
 @transaction.atomic
 def retorno_mercadopago_success(request):
     """Maneja el retorno exitoso desde Mercado Pago"""
-    print(f"=== RETORNO EXITOSO DE MERCADO PAGO ===")
     return _procesar_retorno_mercadopago(request, 'approved')
 
 
 @transaction.atomic
 def retorno_mercadopago_failure(request):
     """Maneja el retorno fallido desde Mercado Pago"""
-    print(f"=== RETORNO FALLIDO DE MERCADO PAGO ===")
     return _procesar_retorno_mercadopago(request, 'rejected')
 
 
 @transaction.atomic
 def retorno_mercadopago_pending(request):
     """Maneja el retorno pendiente desde Mercado Pago"""
-    print(f"=== RETORNO PENDIENTE DE MERCADO PAGO ===")
     return _procesar_retorno_mercadopago(request, 'pending')
 
 
@@ -2048,17 +1994,12 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
     """
     Procesa el retorno desde Mercado Pago.
     """
-    print(f"Estado esperado: {estado_esperado}")
     
     # Obtener parámetros de la URL
     preference_id = request.GET.get('preference_id')
     payment_id = request.GET.get('payment_id')
     external_reference = request.GET.get('external_reference')
     
-    print(f"Parámetros recibidos:")
-    print(f"  - preference_id: {preference_id}")
-    print(f"  - payment_id: {payment_id}")
-    print(f"  - external_reference: {external_reference}")
     
     try:
         # Buscar la transacción
@@ -2078,16 +2019,13 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
                 pass
         
         if not transaccion:
-            print("ERROR: No se encontró la transacción")
             messages.error(request, 'No se pudo verificar el estado del pago.')
             return redirect('home')
         
         pedido = transaccion.pedido
-        print(f"Transacción encontrada: ID={transaccion.id}, Pedido={pedido.id}")
         
         # Si el pago ya fue procesado, redirigir
         if transaccion.estado == 'approved' and pedido.estado == 'procesando':
-            print("Pago ya procesado anteriormente")
             messages.info(request, 'Este pago ya fue procesado.')
             return redirect('generar_recibo_pdf', pedido_id=pedido.id)
         
@@ -2096,14 +2034,13 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
         
         # Obtener información del pago
         if payment_id:
-            print(f"Consultando pago {payment_id} en Mercado Pago...")
+
             payment_resource = sdk.payment()
             payment_data = payment_resource.get(int(payment_id))
             
             if 'response' in payment_data:
                 payment_data = payment_data['response']
             
-            print(f"Datos del pago: {payment_data}")
             
             # Actualizar la transacción
             transaccion.payment_id = str(payment_id)
@@ -2128,7 +2065,6 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
             
             # Si fue aprobado
             if payment_data.get('status') == 'approved':
-                print("¡PAGO APROBADO!")
                 pedido = transaccion.pedido
                 pedido.estado = 'procesando'
                 pedido.save()
@@ -2146,7 +2082,6 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
                 return redirect('checkout')
         
     except Exception as e:
-        print(f"Error en retorno Mercado Pago: {e}")
         import traceback
         traceback.print_exc()
         messages.error(request, f'Error al procesar el pago: {str(e)}')
@@ -2343,7 +2278,6 @@ def subir_comprobante(request, pedido_id):
                 return redirect('generar_recibo_pdf', pedido_id=pedido.id)
 
             except Exception as e:
-                print(f"Error al subir comprobantes: {e}")
                 messages.error(request, 'Hubo un error al guardar tus comprobantes. Intenta de nuevo.')
     else:
         form = ComprobantePagoForm()
@@ -2463,7 +2397,6 @@ def cancelar_pedido_transferencia(request, pedido_id):
         messages.info(request, 'El pedido ha sido cancelado correctamente.')
 
     except Exception as e:
-        print(f"Error al cancelar pedido {pedido_id}: {e}")
         messages.error(request, 'Hubo un error al intentar cancelar el pedido.')
 
     return redirect('home') 
@@ -2747,7 +2680,6 @@ def chatbot_view(request):
         response = generate_chatbot_response(user_message)
         return JsonResponse(response)
     except Exception as e:
-        print(f"Chatbot Error: {e}")
         return JsonResponse({'message': 'Lo siento, tuve un error interno.', 'data': None}, status=500)
 
 def generate_chatbot_response(message_raw):
@@ -3030,7 +2962,6 @@ Equipo Techtop''',
                 
                 messages.success(request, f'Se ha enviado un enlace de recuperación a {email}. Revisa tu bandeja de entrada.')
             except Exception as e:
-                print(f"Error al enviar email: {e}")
                 messages.error(request, 'Hubo un error al enviar el correo. Por favor, intenta nuevamente.')
                 return redirect('password_reset_request')
                 
@@ -3102,7 +3033,6 @@ def password_reset_confirm(request, token):
             return redirect('login')
             
         except Exception as e:
-            print(f"Error al actualizar contraseña: {e}")
             messages.error(request, 'Hubo un error al actualizar tu contraseña. Intenta nuevamente.')
             return render(request, 'password_reset_confirm.html', {'token': token})
         
@@ -3127,7 +3057,6 @@ def enviar_recibo_por_email(pedido):
         
         # Si no hay email, no podemos enviar
         if not cliente_email:
-            print(f"No se puede enviar recibo del pedido {pedido.id}: sin email de cliente")
             return False
         
         # Cálculos
@@ -3162,7 +3091,6 @@ def enviar_recibo_por_email(pedido):
         pdf = pisa.CreatePDF(html, dest=result)
         
         if pdf.err:
-            print(f"Error al generar PDF del pedido {pedido.id}")
             return False
         
         # Obtener el contenido del PDF
@@ -3207,12 +3135,9 @@ Techtop - Tu tienda de tecnología de confianza
         
         # Enviar el email
         email.send(fail_silently=False)
-        
-        print(f"✅ Recibo enviado por email para el pedido {pedido.id} a {cliente_email}")
         return True
         
     except Exception as e:
-        print(f"❌ Error al enviar recibo por email del pedido {pedido.id}: {e}")
         import traceback
         traceback.print_exc()
         return False
