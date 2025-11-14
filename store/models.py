@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from .validators import validate_chilean_phone, validate_name, validate_email_extended, validate_chilean_rut
+from .image_utils import optimize_product_image, optimize_additional_image, optimize_comprobante_image  # AGREGAR optimize_comprobante_image
 import os
 import random
 import string
@@ -64,6 +65,10 @@ class Producto(models.Model):
         return self.nombre
     
     def save(self, *args, **kwargs):
+        # Optimizar imagen principal antes de guardar
+        if self.imagen and hasattr(self.imagen, 'file'):
+            self.imagen = optimize_product_image(self.imagen)
+        
         if self.stock == 0:
             self.activo = False
         super().save(*args, **kwargs)
@@ -103,6 +108,12 @@ class ImagenProducto(models.Model):
 
     def __str__(self):
         return f"Imagen de {self.producto.nombre} (Orden: {self.orden})"
+    
+    def save(self, *args, **kwargs):
+        # Optimizar imagen adicional antes de guardar
+        if self.imagen and hasattr(self.imagen, 'file'):
+            self.imagen = optimize_additional_image(self.imagen)
+        super().save(*args, **kwargs)
 
 
 class Comentario(models.Model):
@@ -329,6 +340,12 @@ class ComprobanteTransferencia(models.Model):
 
     def __str__(self):
         return f"Comprobante {self.id} para Pedido #{self.pago.pedido.tracking_number or self.pago.pedido.id}"
+    
+    def save(self, *args, **kwargs):
+        # Optimizar comprobante antes de guardar
+        if self.imagen and hasattr(self.imagen, 'file'):
+            self.imagen = optimize_comprobante_image(self.imagen)
+        super().save(*args, **kwargs)
 
 class PasswordResetToken(models.Model):
     """Tokens para recuperación de contraseña"""
