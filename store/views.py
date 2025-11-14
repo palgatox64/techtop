@@ -3174,7 +3174,7 @@ def enviar_recibo_por_email(pedido):
         
         # Crear el email
         email = EmailMessage(
-            subject=f'Comprobante de Compra - Pedido #{pedido.tracking_number} - Techtop',
+            subject=f'Comprobante de Compra - Pedido #{pedido.id} - Techtop',
             body=f'''Hola {cliente_nombre_completo},
 
 ¡Gracias por tu compra en Techtop!
