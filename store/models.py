@@ -369,3 +369,20 @@ class PasswordResetToken(models.Model):
     
     def __str__(self):
         return f"Token para {self.cliente.email}"
+    
+
+
+class MensajeContacto(models.Model):
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    email = models.EmailField()
+    mensaje = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Mensaje de Contacto"
+        verbose_name_plural = "Mensajes de Contacto"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Mensaje de {self.nombre} ({self.email})"

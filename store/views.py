@@ -43,7 +43,7 @@ from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, Detal
 from .decorators import admin_required, superadmin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm, EmpleadoForm
 from .validators import validate_chilean_rut
-
+from .models import MensajeContacto
 # --- VISTAS PARA GESTIÓN DE EMPLEADOS (SOLO SUPERADMIN) ---
 
 @superadmin_required
@@ -2237,52 +2237,65 @@ def ver_metricas(request):
     return render(request, 'gestion/metrics.html', {'metrics_data': metrics_data})
 
 def subir_comprobante(request, pedido_id):
+    # 1. Obtenemos el pedido
     pedido = get_object_or_404(Pedido, id=pedido_id)
     
-    # Evitar que suban comprobantes a pedidos que no son de transferencia o ya pagados
-    if pedido.estado != 'procesando' and pedido.estado != 'pendiente': # Ajusta según tus estados iniciales
+    # 2. Validaciones de seguridad (para que no entren si no corresponde)
+    if pedido.estado != 'procesando' and pedido.estado != 'pendiente': 
          messages.error(request, 'Este pedido no requiere subida de comprobantes actualmente.')
          return redirect('home')
 
-    # Verificar si ya existe un pago en revisión
+    # 3. Verificar si ya subió algo antes (para no duplicar)
+    # Nota: Si ya existe un pago PENDIENTE, asumimos que está esperando revisión.
+    # Si quisieras permitir re-subir en caso de error, podrías quitar este bloque.
     if hasattr(pedido, 'pago_transferencia'):
-        if pedido.pago_transferencia.estado == 'PENDIENTE':
-             messages.info(request, 'Ya has subido un comprobante para este pedido. Está en revisión.')
-             return redirect('home') # O a una página de "gracias"
+        if pedido.pago_transferencia.estado == 'PENDIENTE' and request.method == 'GET':
+             # Si es GET y ya tiene pago, mostramos la vista de "Ya enviado"
+             return render(request, 'store/subir_comprobante.html', {
+                 'pedido': pedido,
+                 'upload_exitoso': True # Forzamos la vista de éxito
+             })
 
+    # 4. Procesar el formulario cuando se envía (POST)
     if request.method == 'POST':
         form = ComprobantePagoForm(request.POST, request.FILES)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Crear el registro de PagoTransferencia
-                    pago_transferencia = PagoTransferencia.objects.create(
+                    # A. Crear el registro de PagoTransferencia
+                    # Usamos get_or_create para evitar duplicados si el usuario refresca
+                    pago_transferencia, created = PagoTransferencia.objects.get_or_create(
                         pedido=pedido,
-                        comentario_usuario=form.cleaned_data['comentario'],
-                        estado='PENDIENTE'
+                        defaults={
+                            'comentario_usuario': form.cleaned_data['comentario'],
+                            'estado': 'PENDIENTE'
+                        }
                     )
                     
-                    # 2. Guardar cada imagen subida (se van directo a Azure por el modelo)
+                    # B. Guardar las imágenes
                     imagenes = request.FILES.getlist('imagenes')
                     for imagen in imagenes:
                         ComprobanteTransferencia.objects.create(
                             pago=pago_transferencia,
                             imagen=imagen
                         )
-                    
-                    # 3. Actualizar estado del pedido (opcional, para indicar que espera revisión)
-                    # pedido.estado = 'esperando_validacion' 
-                    # pedido.save()
-
-                messages.success(request, 'Comprobante subido exitosamente. Te notificaremos cuando sea aprobado.')
-                return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+                
+                # === CORRECCIÓN CLAVE AQUÍ ===
+                # En lugar de redirigir al PDF, nos quedamos aquí y mostramos éxito.
+                context = {
+                    'pedido': pedido,
+                    'upload_exitoso': True  # Esta variable activa la pantalla de éxito
+                }
+                messages.success(request, '¡Comprobantes recibidos correctamente!')
+                return render(request, 'store/subir_comprobante.html', context)
+                # =============================
 
             except Exception as e:
-                messages.error(request, 'Hubo un error al guardar tus comprobantes. Intenta de nuevo.')
+                messages.error(request, f'Hubo un error al guardar tus comprobantes: {e}')
     else:
         form = ComprobantePagoForm()
 
-    # Datos de cuentas bancarias ficticias
+    # 5. Datos para la vista normal (cuando aún no paga)
     cuentas_bancarias = [
         {
             'banco': 'Banco de Chile',
@@ -3141,3 +3154,77 @@ Techtop - Tu tienda de tecnología de confianza
         import traceback
         traceback.print_exc()
         return False
+    
+# store/views.py
+
+# Agregar estos imports al inicio si no los tienes
+import re
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from .models import MensajeContacto
+
+def contacto(request):
+    if request.method == 'POST':
+        # 1. Capturar datos y limpiar espacios (strip)
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        email = request.POST.get('email', '').strip()
+        mensaje = request.POST.get('mensaje', '').strip()
+
+        # --- INICIO VALIDACIONES ---
+
+        # A. Validar campos vacíos
+        if not all([nombre, apellido, email, mensaje]):
+            messages.error(request, 'Por favor, completa todos los campos.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+
+        # B. Validar Nombre (Solo letras y espacios, máx 50 caracteres)
+        # Regex permite letras mayúsculas, minúsculas, tildes y ñ
+        name_regex = r'^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$'
+        
+        if len(nombre) > 50:
+            messages.error(request, 'El nombre no puede tener más de 50 caracteres.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+            
+        if not re.match(name_regex, nombre):
+            messages.error(request, 'El nombre solo debe contener letras.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+
+        # C. Validar Apellido (Igual que nombre)
+        if len(apellido) > 50:
+            messages.error(request, 'El apellido no puede tener más de 50 caracteres.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+
+        if not re.match(name_regex, apellido):
+            messages.error(request, 'El apellido solo debe contener letras.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+
+        # D. Validar Email (Formato correcto)
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, 'Por favor, ingresa un correo electrónico válido.')
+            return render(request, 'contacto.html', {'nombre': nombre, 'apellido': apellido, 'email': email, 'mensaje': mensaje})
+
+        # --- FIN VALIDACIONES ---
+
+        try:
+            # Guardar (esto dispara el Signal que envía a n8n)
+            MensajeContacto.objects.create(
+                nombre=nombre,
+                apellido=apellido,
+                email=email,
+                mensaje=mensaje
+            )
+            
+            # Mensaje de éxito específico para que lo detecte SweetAlert
+            messages.success(request, 'Su solicitud de contacto fue enviada correctamente')
+            
+            # Redirigir para limpiar el formulario (patrón PRG)
+            return redirect('contacto')
+            
+        except Exception as e:
+            print(f"Error guardando contacto: {e}")
+            messages.error(request, 'Ocurrió un error interno. Intenta nuevamente.')
+
+    return render(request, 'contacto.html')

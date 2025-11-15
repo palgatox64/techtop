@@ -5,6 +5,7 @@ import requests
 import logging
 import threading
 import os
+from .models import Producto, Pedido, MensajeContacto 
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,9 @@ WEBHOOK_URL_COMPRAS = os.getenv(
     'WEBHOOK_URL_COMPRAS',
 )
 
+WEBHOOK_URL_CONTACTO = os.getenv(
+    'WEBHOOK_URL_CONTACTO'
+)
 def send_webhook_request(payload, webhook_url):
     """
     Función auxiliar para enviar la petición al webhook en un thread separado.
@@ -69,7 +73,34 @@ def notify_webhook_on_product_creation(sender, instance, created, **kwargs):
         thread.daemon = True
         thread.start()
 
-
+@receiver(post_save, sender=MensajeContacto)
+def notify_webhook_on_contact_message(sender, instance, created, **kwargs):
+    """
+    Envía notificación al webhook cuando se guarda un nuevo mensaje de contacto.
+    """
+    if created:
+        logger.info(f"Nuevo mensaje de contacto recibido de {instance.email}")
+        
+        # Preparar el payload para n8n
+        payload = {
+            "tipo": "Nuevo Mensaje de Contacto",
+            "id_mensaje": instance.id,
+            "nombre": instance.nombre,
+            "apellido": instance.apellido,
+            "email": instance.email,
+            "mensaje": instance.mensaje,
+            # Formateamos la fecha a string
+            "fecha": instance.fecha.strftime("%Y-%m-%d %H:%M:%S") 
+        }
+        
+        # Enviar en segundo plano usando la función auxiliar y la URL leída arriba
+        thread = threading.Thread(
+            target=send_webhook_request, 
+            args=(payload, WEBHOOK_URL_CONTACTO)
+        )
+        thread.daemon = True
+        thread.start()
+        
 @receiver(post_save, sender=Pedido)
 def notify_webhook_on_successful_purchase(sender, instance, created, update_fields, **kwargs):
     """
@@ -161,3 +192,5 @@ def notify_webhook_on_successful_purchase(sender, instance, created, update_fiel
         
     except Exception as e:
         logger.error(f"Error al preparar notificación de compra para pedido {instance.id}: {str(e)}")
+        
+    

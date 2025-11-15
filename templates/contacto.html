@@ -6,6 +6,8 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/contacto.css' %}">
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <div class="contacto-container">
     <div class="contacto-header">
         <h1>Contáctanos</h1>
@@ -13,27 +15,52 @@
     </div>
     
     <div class="contacto-content">
-        <!-- Formulario de contacto -->
         <div class="form-section">
-            <form class="contact-form">
+            
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'error' %}
+                        <div class="alert alert-danger" style="padding: 15px; margin-bottom: 20px; border-radius: 5px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                            <i class='bx bx-error-circle'></i> {{ message }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <form class="contact-form" method="POST" novalidate> {% csrf_token %}
+                
                 <div class="form-group">
                     <label for="nombre">Nombre</label>
-                    <input type="text" id="nombre" name="nombre" required>
-                </div>
+                    <input type="text" id="nombre" name="nombre" 
+                           required 
+                           maxlength="50"
+                           pattern="[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+"
+                           title="Solo se permiten letras"
+                           placeholder="Tu nombre"
+                           value="{{ nombre|default:'' }}"> </div>
                 
                 <div class="form-group">
                     <label for="apellido">Apellido</label>
-                    <input type="text" id="apellido" name="apellido" required>
+                    <input type="text" id="apellido" name="apellido" 
+                           required 
+                           maxlength="50"
+                           pattern="[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+"
+                           title="Solo se permiten letras"
+                           placeholder="Tu apellido"
+                           value="{{ apellido|default:'' }}">
                 </div>
                 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" 
+                           required 
+                           placeholder="nombre@correo.com"
+                           value="{{ email|default:'' }}">
                 </div>
                 
                 <div class="form-group">
                     <label for="mensaje">Mensaje</label>
-                    <textarea id="mensaje" name="mensaje" rows="6" required placeholder="Escribe tu mensaje aquí..."></textarea>
+                    <textarea id="mensaje" name="mensaje" rows="6" required placeholder="¿En qué podemos ayudarte?">{{ mensaje|default:'' }}</textarea>
                 </div>
                 
                 <button type="submit" class="submit-btn">
@@ -43,7 +70,6 @@
             </form>
         </div>
         
-        <!-- Información de contacto -->
         <div class="contact-info">
             <h3>Información de Contacto</h3>
             <div class="info-item">
@@ -57,4 +83,23 @@
         </div>
     </div>
 </div>
+
+{% if messages %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    Swal.fire({
+                        title: '¡Enviado!',
+                        text: '{{ message }}',  // Aquí aparecerá "Su solicitud de contacto fue enviada correctamente"
+                        icon: 'success',
+                        confirmButtonColor: '#6a0dad',
+                        confirmButtonText: 'Aceptar'
+                    });
+                {% endif %}
+            {% endfor %}
+        });
+    </script>
+{% endif %}
+
 {% endblock %}
