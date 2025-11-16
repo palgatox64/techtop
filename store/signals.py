@@ -1,11 +1,11 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Producto, Pedido
+from .models import Producto, Pedido, MensajeContacto, PagoTransferencia
 import requests
 import logging
 import threading
 import os
-from .models import Producto, Pedido, MensajeContacto 
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,9 @@ WEBHOOK_URL_COMPRAS = os.getenv(
 )
 
 WEBHOOK_URL_CONTACTO = os.getenv(
-    'WEBHOOK_URL_CONTACTO'
+    'WEBHOOK_URL_CONTACTO',
 )
+
 def send_webhook_request(payload, webhook_url):
     """
     Función auxiliar para enviar la petición al webhook en un thread separado.
@@ -73,6 +74,7 @@ def notify_webhook_on_product_creation(sender, instance, created, **kwargs):
         thread.daemon = True
         thread.start()
 
+
 @receiver(post_save, sender=MensajeContacto)
 def notify_webhook_on_contact_message(sender, instance, created, **kwargs):
     """
@@ -81,7 +83,9 @@ def notify_webhook_on_contact_message(sender, instance, created, **kwargs):
     if created:
         logger.info(f"Nuevo mensaje de contacto recibido de {instance.email}")
         
-        # Preparar el payload para n8n
+        # Convertir fecha a hora local de Chile (usando timezone.localtime)
+        fecha_local = timezone.localtime(instance.fecha)
+        
         payload = {
             "tipo": "Nuevo Mensaje de Contacto",
             "id_mensaje": instance.id,
@@ -89,44 +93,25 @@ def notify_webhook_on_contact_message(sender, instance, created, **kwargs):
             "apellido": instance.apellido,
             "email": instance.email,
             "mensaje": instance.mensaje,
-            # Formateamos la fecha a string
-            "fecha": instance.fecha.strftime("%Y-%m-%d %H:%M:%S") 
+            "fecha": fecha_local.strftime("%d/%m/%Y %H:%M:%S")
         }
         
-        # Enviar en segundo plano usando la función auxiliar y la URL leída arriba
         thread = threading.Thread(
             target=send_webhook_request, 
             args=(payload, WEBHOOK_URL_CONTACTO)
         )
         thread.daemon = True
         thread.start()
-        
-@receiver(post_save, sender=Pedido)
-def notify_webhook_on_successful_purchase(sender, instance, created, update_fields, **kwargs):
+
+
+def enviar_notificacion_compra_webhook(pedido):
     """
-    Envía notificación al webhook cuando un pedido cambia a estado 'procesando'.
-    Solo notifica para pagos con Webpay y Mercado Pago.
+    Función auxiliar para preparar y enviar la notificación de compra al webhook.
+    Esta función puede ser llamada desde signals o directamente desde views.
     """
-    # Solo procesar si NO es una creación y el pedido cambió a 'procesando'
-    if created:
-        return
-    
-    # Verificar si el pedido acaba de cambiar a 'procesando'
-    if instance.estado != 'procesando':
-        return
-    
-    # Solo notificar para Webpay y Mercado Pago
-    if instance.metodo_pago not in ['webpay', 'mercadopago']:
-        logger.info(f"Pedido {instance.id} con método {instance.metodo_pago} - no se notifica al webhook")
-        return
-    
-    # Verificar si ya se notificó anteriormente (para evitar duplicados)
-    if hasattr(instance, '_webhook_notificado') and instance._webhook_notificado:
-        return
-    
     try:
         # Obtener los detalles del pedido
-        detalles = instance.detalles.select_related('producto').all()
+        detalles = pedido.detalles.select_related('producto').all()
         
         # Información del cliente
         cliente_info = {
@@ -136,23 +121,23 @@ def notify_webhook_on_successful_purchase(sender, instance, created, update_fiel
             'telefono': 'No disponible'
         }
         
-        if instance.cliente:
+        if pedido.cliente:
             cliente_info = {
-                'nombre_completo': f"{instance.cliente.nombre} {instance.cliente.apellidos}",
-                'email': instance.cliente.email,
-                'rut': getattr(instance.cliente, 'rut', 'No disponible'),
-                'telefono': instance.cliente.telefono or 'No disponible'
+                'nombre_completo': f"{pedido.cliente.nombre} {pedido.cliente.apellidos}",
+                'email': pedido.cliente.email,
+                'rut': getattr(pedido.cliente, 'rut', 'No disponible'),
+                'telefono': pedido.cliente.telefono or 'No disponible'
             }
         
         # Información de la dirección de envío
         direccion_info = None
-        if instance.direccion_envio:
+        if pedido.direccion_envio:
             direccion_info = {
-                'calle': instance.direccion_envio.calle,
-                'numero': instance.direccion_envio.numero,
-                'ciudad': instance.direccion_envio.ciudad,
-                'region': instance.direccion_envio.region,
-                'codigo_postal': instance.direccion_envio.codigo_postal or 'No especificado'
+                'calle': pedido.direccion_envio.calle,
+                'numero': pedido.direccion_envio.numero,
+                'ciudad': pedido.direccion_envio.ciudad,
+                'region': pedido.direccion_envio.region,
+                'codigo_postal': pedido.direccion_envio.codigo_postal or 'No especificado'
             }
         
         # Construir lista de productos
@@ -165,32 +150,88 @@ def notify_webhook_on_successful_purchase(sender, instance, created, update_fiel
                 'subtotal': str(detalle.precio_unitario * detalle.cantidad)
             })
         
+        # Convertir fecha a hora local de Chile (usando timezone.localtime)
+        fecha_pedido_local = timezone.localtime(pedido.fecha_pedido)
+        
         # Preparar payload para el webhook
         payload = {
-            'pedido_id': instance.id,
-            'tracking_number': instance.tracking_number,
-            'fecha_pedido': instance.fecha_pedido.isoformat(),
-            'total': str(instance.total),
-            'estado': instance.estado,
-            'metodo_pago': instance.get_metodo_pago_display(),
-            'tipo_entrega': 'Despacho a Domicilio' if instance.direccion_envio else 'Retiro en Tienda',
+            'pedido_id': pedido.id,
+            'tracking_number': pedido.tracking_number,
+            'fecha_pedido': fecha_pedido_local.strftime("%d/%m/%Y %H:%M:%S"),  # Formato legible en hora local
+            'total': str(pedido.total),
+            'estado': pedido.estado,
+            'metodo_pago': pedido.get_metodo_pago_display(),
+            'tipo_entrega': 'Despacho a Domicilio' if pedido.direccion_envio else 'Retiro en Tienda',
             'cliente': cliente_info,
             'direccion_envio': direccion_info,
             'productos': productos_list,
             'cantidad_productos': len(productos_list),
-            'url_detalle_pedido': f"http://localhost:8000/gestion/pedidos/{instance.id}/"
+            'url_detalle_pedido': f"http://localhost:8000/gestion/pedidos/{pedido.id}/"
         }
         
         # Enviar notificación al webhook en un thread separado
-        logger.info(f"Enviando notificación de compra exitosa para pedido {instance.id}")
+        logger.info(f"Enviando notificación de compra exitosa para pedido {pedido.id}")
         thread = threading.Thread(target=send_webhook_request, args=(payload, WEBHOOK_URL_COMPRAS))
         thread.daemon = True
         thread.start()
         
-        # Marcar como notificado para evitar duplicados
-        instance._webhook_notificado = True
+        return True
         
     except Exception as e:
-        logger.error(f"Error al preparar notificación de compra para pedido {instance.id}: {str(e)}")
-        
+        logger.error(f"Error al preparar notificación de compra para pedido {pedido.id}: {str(e)}")
+        return False
+
+
+@receiver(post_save, sender=Pedido)
+def notify_webhook_on_successful_purchase(sender, instance, created, update_fields, **kwargs):
+    """
+    Envía notificación al webhook cuando un pedido cambia a estado 'procesando'.
+    Solo notifica para pagos con Webpay y Mercado Pago (las transferencias se notifican desde la vista).
+    """
+    # Solo procesar si NO es una creación y el pedido cambió a 'procesando'
+    if created:
+        return
     
+    # Verificar si el pedido acaba de cambiar a 'procesando'
+    if instance.estado != 'procesando':
+        return
+    
+    # Solo notificar para Webpay y Mercado Pago (las transferencias se manejan en la vista)
+    if instance.metodo_pago not in ['webpay', 'mercadopago']:
+        logger.info(f"Pedido {instance.id} con método {instance.metodo_pago} - no se notifica automáticamente")
+        return
+    
+    # Verificar si ya se notificó anteriormente (para evitar duplicados)
+    if hasattr(instance, '_webhook_notificado') and instance._webhook_notificado:
+        return
+    
+    # Usar la función auxiliar para enviar la notificación
+    if enviar_notificacion_compra_webhook(instance):
+        # Marcar como notificado para evitar duplicados
+        instance._webhook_notificado = True
+
+
+@receiver(post_save, sender=PagoTransferencia)
+def notify_webhook_on_transfer_approval(sender, instance, created, **kwargs):
+    """
+    Envía notificación al webhook cuando una transferencia es APROBADA.
+    """
+    # Solo notificar si NO es una creación y el estado cambió a APROBADO
+    if created:
+        return
+    
+    # Solo procesar si el estado es APROBADO
+    if instance.estado != 'APROBADO':
+        return
+    
+    # Verificar si ya se notificó (para evitar duplicados si se guarda múltiples veces)
+    if hasattr(instance, '_webhook_notificado') and instance._webhook_notificado:
+        return
+    
+    logger.info(f"Transferencia aprobada para pedido {instance.pedido.id}, notificando webhook...")
+    
+    # Usar la función auxiliar para enviar la notificación
+    if enviar_notificacion_compra_webhook(instance.pedido):
+        # Marcar como notificado
+        instance._webhook_notificado = True
+
