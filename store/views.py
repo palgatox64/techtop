@@ -319,6 +319,55 @@ def accesorios_catalog(request):
 
     return render(request, 'store/tienda.html', context)
 
+def otros_catalog(request):
+    excluded_categories = [
+        'RADIO ANDROID',
+        'Electronica Automotriz',
+        'Electronica General',
+        'Electronica',
+        'Audio', 
+        'Seguridad-y-Sensores', 
+        'Diagnostico-Automotriz',
+        'Herramientas-de-Medicion',
+        'Medidores',
+        'Parlante',     
+        'Scanner',
+        'Compresor',
+        'Cargador'
+    ]
+    
+   
+    products = Producto.objects.exclude(categoria__nombre__in=excluded_categories).filter(activo=True)
+    
+    selected_brands = request.GET.getlist('marca')
+    selected_prices = request.GET.getlist('precio')
+
+    if selected_brands:
+        products = products.filter(marca__nombre__in=selected_brands)
+
+    if selected_prices:
+        price_queries = Q()
+        for price_range in selected_prices:
+            min_price, max_price = price_range.split('-')
+            price_queries |= Q(precio__range=(min_price, max_price))
+        products = products.filter(price_queries)
+
+    available_brands = Marca.objects.filter(
+        producto__in=products
+    ).annotate(
+        product_count=Count('producto')
+    ).filter(product_count__gt=0).order_by('nombre')
+
+    context = {
+        'products': products,
+        'available_brands': available_brands,
+        'selected_brands_from_form': selected_brands,
+        'selected_prices_from_form': selected_prices,
+        'category_type': 'otros'
+    }
+
+    return render(request, 'store/tienda.html', context)
+
 def product_catalog(request, brand_name=None):
     products = Producto.objects.filter(activo=True)
     if brand_name:
@@ -355,10 +404,6 @@ def get_cart_data(request):
             pid_str = str(p.id)
             if pid_str in cart:
                 qty = cart[pid_str]['quantity']
-                
-                # --- CORRECCIÓN AQUÍ ---
-                # Usamos precio_oferta en lugar de p.precio para que el minicart
-                # muestre el precio real que pagará el cliente (antes de elegir transferencia)
                 precio_actual = p.precio_oferta
                 
                 total_price += precio_actual * qty
@@ -367,7 +412,7 @@ def get_cart_data(request):
                     'id': p.id,
                     'name': p.nombre,
                     'quantity': qty,
-                    'price': float(precio_actual), # Enviamos el precio con oferta
+                    'price': float(precio_actual), 
                     'image_url': p.imagen.url if p.imagen and hasattr(p.imagen, 'url') else ''
                 })
 
