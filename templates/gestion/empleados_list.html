@@ -107,9 +107,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{% static 'js/gestion_delete.js' %}"></script>
 <script>
-// Pequeña modificación para el texto del modal de desactivación
 document.addEventListener('DOMContentLoaded', function () {
-    // Lógica para el modal de SweetAlert de éxito
     {% for message in messages %}
         {% if 'swal-success' in message.tags %}
             Swal.fire({
@@ -127,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const actionText = button.getAttribute('data-action-text') || 'eliminar';
         if (actionText === 'desactivar') {
             button.addEventListener('click', function (event) {
-                event.preventDefault(); // Prevenir la acción por defecto del gestion_delete.js
+                event.preventDefault(); 
                 const itemName = this.getAttribute('data-item-name');
                 const url = this.getAttribute('data-url');
                 const csrfToken = this.getAttribute('data-csrf-token');
@@ -143,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Si se confirma, realizar la petición fetch para desactivar
                         fetch(url, {
                             method: 'POST',
                             headers: {

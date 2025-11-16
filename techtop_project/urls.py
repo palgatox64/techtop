@@ -20,6 +20,7 @@ urlpatterns = [
     path('electronica/', views.electronica_catalog, name='electronica_catalog'),
     path('api/get-cart/', views.get_cart_data, name='get_cart_data'),
     path('accesorios/', views.accesorios_catalog, name='accesorios_catalog'),
+    path('otros/', views.otros_catalog, name='otros_catalog'),
     path('categoria/<str:categoria_nombre>/', views.category_catalog, name='category_catalog'),
     path('producto/<int:product_id>/', views.product_detail, name='product_detail'),
     path('carro/', views.view_cart, name='view_cart'),
