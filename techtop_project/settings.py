@@ -6,9 +6,9 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zmwjx@35r3hbyyzn$rc0^(2!0vptp3ttzac=bo5%9d-gh0&jb2'
-DEBUG = True
+DEBUG = False  # IMPORTANTE: Cambiar a False en producción
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['techtop.warevision.net', 'www.techtop.warevision.net']
 
 
 INSTALLED_APPS = [
@@ -164,4 +164,12 @@ EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SMTP_PASSWORD')
 DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  # Usar el dominio verificado en SES
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
-SITE_URL = 'http://localhost:8000' if DEBUG else 'https://www.techtop.cl'
+SITE_URL = 'https://techtop.warevision.net'
+
+# Configuración de seguridad para HTTPS
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
