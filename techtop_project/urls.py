@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path
 from store import views
-import techtop_project.settings as settings
+import os
+from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
@@ -91,3 +92,8 @@ urlpatterns = [
     path('recuperar-contrasena/', views.password_reset_request, name='password_reset_request'),
     path('restablecer-contrasena/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
 ]
+
+# Servir archivos estáticos en desarrollo
+if settings.DEBUG or not settings.PRODUCTION:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=os.path.join(settings.BASE_DIR, 'static'))

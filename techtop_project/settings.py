@@ -1,12 +1,19 @@
 from pathlib import Path
 import os
+import platform
 from dotenv import load_dotenv
 load_dotenv()  
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zmwjx@35r3hbyyzn$rc0^(2!0vptp3ttzac=bo5%9d-gh0&jb2'
-DEBUG = False  # IMPORTANTE: Cambiar a False en producción
+
+# Detectar sistema operativo
+IS_LINUX = platform.system() == 'Linux'
+IS_WINDOWS = platform.system() == 'Windows'
+
+# Configuración según entorno
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+PRODUCTION = os.getenv('PRODUCTION', 'False') == 'True'
 
 ALLOWED_HOSTS = ['techtop.warevision.net', 'www.techtop.warevision.net', 'localhost', '127.0.0.1']
 
@@ -108,25 +115,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# Configuración para encontrar archivos estáticos
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
 
-
-
-# Azure Blob Storage Configuration
+# Azure Blob Storage Configuration (solo para archivos de media)
 AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
 AZURE_ACCOUNT_KEY = os.getenv('AZURE_STORAGE_KEY')
 AZURE_CONTAINER = os.getenv('AZURE_CONTAINER')
-
 
 STORAGES = {
     "default": {
@@ -164,21 +169,60 @@ EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SMTP_PASSWORD')
 DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  # Usar el dominio verificado en SES
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
-SITE_URL = 'https://techtop.warevision.net'
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 
-# Configuración de seguridad para HTTPS con Cloudflare Tunnel
-# NO usar SECURE_SSL_REDIRECT con Cloudflare Tunnel (causa bucle de redirección)
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+# Configuración de seguridad para HTTPS (solo en producción)
+if PRODUCTION:
+    SECURE_SSL_REDIRECT = False  # Cloudflare Tunnel maneja SSL
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Configuración para confiar en los headers de proxy de Cloudflare
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+    
+    CSRF_TRUSTED_ORIGINS = [
+        'https://techtop.warevision.net', 
+        'https://www.techtop.warevision.net'
+    ]
+else:
+    # Configuración para desarrollo
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000'
+    ]
 
-# Configuración para confiar en los headers de proxy de Cloudflare
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
-USE_X_FORWARDED_PORT = True
-
-# Orígenes confiables para CSRF (necesario para formularios con HTTPS)
-CSRF_TRUSTED_ORIGINS = ['https://techtop.warevision.net', 'https://www.techtop.warevision.net']
+# Logging para debug en Linux
+if IS_LINUX:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': os.path.join(BASE_DIR, 'debug.log'),
+            },
+            'console': {
+                'level': 'DEBUG',
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console', 'file'],
+                'level': 'INFO',
+            },
+            'django.staticfiles': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+        },
+    }
