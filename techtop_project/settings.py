@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zmwjx@35r3hbyyzn$rc0^(2!0vptp3ttzac=bo5%9d-gh0&jb2'
 DEBUG = False  # IMPORTANTE: Cambiar a False en producción
 
-ALLOWED_HOSTS = ['techtop.warevision.net', 'www.techtop.warevision.net']
+ALLOWED_HOSTS = ['techtop.warevision.net', 'www.techtop.warevision.net', 'localhost', '127.0.0.1']
 
 
 INSTALLED_APPS = [
@@ -166,10 +166,19 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 SITE_URL = 'https://techtop.warevision.net'
 
-# Configuración de seguridad para HTTPS
-SECURE_SSL_REDIRECT = True
+# Configuración de seguridad para HTTPS con Cloudflare Tunnel
+# NO usar SECURE_SSL_REDIRECT con Cloudflare Tunnel (causa bucle de redirección)
+SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# Configuración para confiar en los headers de proxy de Cloudflare
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# Orígenes confiables para CSRF (necesario para formularios con HTTPS)
+CSRF_TRUSTED_ORIGINS = ['https://techtop.warevision.net', 'https://www.techtop.warevision.net']
