@@ -6,4 +6,4 @@ class StoreConfig(AppConfig):
     name = 'store'
     
     def ready(self):
-        import store.signals  # Importar signals cuando la app esté lista
+        import store.signals  

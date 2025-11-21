@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from .validators import validate_chilean_phone, validate_name, validate_email_extended, validate_chilean_rut
-from .image_utils import optimize_product_image, optimize_additional_image, optimize_comprobante_image  # AGREGAR optimize_comprobante_image
+from .image_utils import optimize_product_image, optimize_additional_image, optimize_comprobante_image  
 import os
 import random
 import string
@@ -10,22 +10,18 @@ from decimal import Decimal
 from django.utils import timezone
 import datetime
 
-# =========================================
-# FUNCIONES AUXILIARES
-# =========================================
+
 
 def generate_tracking_number():
     """Genera un código aleatorio de 8 DÍGITOS (solo números)"""
-    # CAMBIO AQUÍ: Usamos solo string.digits
+    
     return ''.join(random.choices(string.digits, k=8))
 
 def transferencia_upload_path(instance, filename):
     """Define la ruta de subida para comprobantes: transferencias/ID_PEDIDO/archivo"""
     return f'transferencias/{instance.pago.pedido.id}/{filename}'
 
-# =========================================
-# MODELOS BASE (INDEPENDIENTES)
-# =========================================
+
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
@@ -40,9 +36,7 @@ class Marca(models.Model):
     def __str__(self):
         return self.nombre
 
-# =========================================
-# MODELOS DE PRODUCTO
-# =========================================
+
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
@@ -65,7 +59,7 @@ class Producto(models.Model):
         return self.nombre
     
     def save(self, *args, **kwargs):
-        # Optimizar imagen principal antes de guardar
+        
         if self.imagen and hasattr(self.imagen, 'file'):
             self.imagen = optimize_product_image(self.imagen)
         
@@ -79,7 +73,7 @@ class Producto(models.Model):
         if self.descuento > 0:
             descuento_decimal = Decimal(self.descuento) / Decimal(100)
             precio_final = self.precio * (1 - descuento_decimal)
-            return int(precio_final) # Redondeo a entero para CLP
+            return int(precio_final) 
         return int(self.precio)
 
     @property
@@ -88,11 +82,11 @@ class Producto(models.Model):
         Calcula el precio final para transferencia.
         Aplica el 3% EXTRA sobre el precio que ya tiene oferta (si existe).
         """
-        # Primero obtenemos el precio base (normal u oferta)
+        
         base = self.precio_oferta
-        # Aplicamos el 3% adicional de transferencia
+        
         precio_final = base * Decimal('0.97')
-        return int(precio_final) # Redondeo a entero para CLP
+        return int(precio_final) 
 
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, related_name='imagenes_adicionales', on_delete=models.CASCADE)
@@ -110,7 +104,7 @@ class ImagenProducto(models.Model):
         return f"Imagen de {self.producto.nombre} (Orden: {self.orden})"
     
     def save(self, *args, **kwargs):
-        # Optimizar imagen adicional antes de guardar
+        
         if self.imagen and hasattr(self.imagen, 'file'):
             self.imagen = optimize_additional_image(self.imagen)
         super().save(*args, **kwargs)
@@ -131,9 +125,7 @@ class Comentario(models.Model):
         estado = "Aprobado" if self.aprobado else "Pendiente"
         return f'Comentario de {self.cliente.nombre} en {self.producto.nombre} ({estado})'
 
-# =========================================
-# MODELOS DE USUARIO (CLIENTE / EMPLEADO)
-# =========================================
+
 
 class Empleado(models.Model):
     id_empleado = models.AutoField(primary_key=True)
@@ -181,9 +173,7 @@ class Direccion(models.Model):
     def __str__(self):
         return f"{self.calle}, {self.ciudad}"
 
-# =========================================
-# MODELOS DE PEDIDO Y NOTIFICACIONES
-# =========================================
+
 
 class Pedido(models.Model):
     ESTADO_CHOICES = [
@@ -243,9 +233,7 @@ class Notificacion(models.Model):
     def __str__(self):
         return f"Notificación para {self.cliente.nombre} - {self.fecha_creacion}"
 
-# =========================================
-# MODELOS DE PAGO (TRANSACTIONALES)
-# =========================================
+
 
 class TransaccionWebpay(models.Model):
     ESTADO_CHOICES = [
@@ -342,7 +330,7 @@ class ComprobanteTransferencia(models.Model):
         return f"Comprobante {self.id} para Pedido #{self.pago.pedido.tracking_number or self.pago.pedido.id}"
     
     def save(self, *args, **kwargs):
-        # Optimizar comprobante antes de guardar
+        
         if self.imagen and hasattr(self.imagen, 'file'):
             self.imagen = optimize_comprobante_image(self.imagen)
         super().save(*args, **kwargs)

@@ -1,4 +1,4 @@
-// Chatbot functionality
+
 class TechTopChatbot {
     constructor() {
         this.isOpen = false;
@@ -106,7 +106,7 @@ class TechTopChatbot {
     }
 
     showQuickReplies() {
-        // LISTA EXPANDIDA DE BOTONES
+        
         const quickReplies = [
             '🔍 Ver productos',
             '🔥 Ofertas',
@@ -132,15 +132,15 @@ class TechTopChatbot {
     }
 
     handleQuickReply(reply) {
-        // Remove quick replies
+        
         const quickRepliesElement = document.querySelector('.quick-replies');
         if (quickRepliesElement) {
             quickRepliesElement.remove();
         }
 
-        // Send the quick reply as a message
+        
         const input = document.getElementById('chatbot-input');
-        // REGEX ACTUALIZADA PARA LIMPIAR TODOS LOS ICONOS NUEVOS
+        
         const cleanReply = reply.replace(/[🔍📦💳📞🔥🚚🛡️❓]/g, '').trim();
         input.value = cleanReply;
         this.sendMessage();
@@ -152,7 +152,7 @@ class TechTopChatbot {
 
         if (!message) return;
 
-        // Add user message
+        
         this.addMessage({
             type: 'user',
             text: message,
@@ -161,17 +161,17 @@ class TechTopChatbot {
 
         input.value = '';
         
-        // Show typing indicator
+        
         this.showTypingIndicator();
 
         try {
-            // Send message to backend
+            
             const response = await this.sendToBackend(message);
             
-            // Remove typing indicator
+            
             this.removeTypingIndicator();
 
-            // Add bot response
+            
             this.addMessage({
                 type: 'bot',
                 text: response.message,
@@ -179,8 +179,8 @@ class TechTopChatbot {
                 data: response.data
             });
             
-            // --- ¡CAMBIO CLAVE! ---
-            // Vuelve a mostrar las opciones rápidas después de la respuesta
+            
+            
             this.showQuickReplies();
 
         } catch (error) {
@@ -192,8 +192,8 @@ class TechTopChatbot {
                 timestamp: new Date()
             });
             
-            // --- ¡CAMBIO CLAVE! ---
-            // También las mostramos si hay un error, para que el usuario no se atasque
+            
+            
             this.showQuickReplies();
         }
     }
@@ -293,7 +293,7 @@ class TechTopChatbot {
     }
 }
 
-// Initialize chatbot when DOM is ready
+
 let chatbot;
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
