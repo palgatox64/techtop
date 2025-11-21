@@ -23,7 +23,7 @@
             </form>
         <div class="header-actions">
             {% if request.session.user_type == 'empleado' %}
-                {# === Menú para EMPLEADOS === #}
+                
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
@@ -55,7 +55,7 @@
                 </div>
 
             {% elif request.session.user_type == 'cliente' %}
-                {# === Menú para CLIENTES (MODIFICADO) === #}
+                
                 <div class="user-info">
                     <div class="user-menu">
                         <div id="user-menu-button-loggedin" class="action-item">
@@ -82,7 +82,7 @@
                 </div>
 
             {% else %}
-                {# === Menú para VISITANTES (MODIFICADO) === #}
+                
                 <div class="user-menu">
                     <div id="user-menu-button" class="action-item">
                         <i class='bx bx-user'></i>

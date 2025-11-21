@@ -18,30 +18,30 @@ class SocialMediaService:
     @staticmethod
     def publish_to_facebook(producto, config):
         try:
-            # Inicializar el SDK de Facebook
+            
             graph = facebook.GraphAPI(access_token=config.access_token)
             
-            # Formatear el mensaje
+            
             message = SocialMediaService.format_message(config.template_message, producto)
             
-            # Preparar datos para la publicación
+            
             post_data = {
                 'message': message,
             }
             
-            # Si el producto tiene imagen, incluirla
+            
             if producto.imagen:
-                # Obtener URL completa de la imagen
+                
                 image_url = producto.imagen.url
                 if not image_url.startswith('http'):
-                    # Si es una URL relativa, convertirla a absoluta
+                    
                     from django.contrib.sites.models import Site
                     current_site = Site.objects.get_current()
                     image_url = f"https://{current_site.domain}{image_url}"
                 
                 post_data['link'] = image_url
             
-            # Publicar en Facebook
+            
             post = graph.put_object(
                 parent_object=config.page_id,
                 connection_name='feed',
@@ -65,10 +65,10 @@ class SocialMediaService:
     def publish_to_instagram(producto, config):
 
         try:
-            # Formatear el mensaje (caption)
+            
             caption = SocialMediaService.format_message(config.template_message, producto)
             
-            # Verificar que el producto tenga imagen (requerido para Instagram)
+            
             if not producto.imagen:
                 return {
                     'success': False,
@@ -76,17 +76,17 @@ class SocialMediaService:
                     'message': caption
                 }
             
-            # Obtener URL completa de la imagen
+            
             image_url = producto.imagen.url
             if not image_url.startswith('http'):
                 from django.contrib.sites.models import Site
                 current_site = Site.objects.get_current()
                 image_url = f"https://{current_site.domain}{image_url}"
             
-            # URL base de la API de Instagram
+            
             base_url = f"https://graph.facebook.com/v18.0/{config.page_id}"
             
-            # Paso 1: Crear contenedor de medios
+            
             container_url = f"{base_url}/media"
             container_params = {
                 'image_url': image_url,
@@ -106,7 +106,7 @@ class SocialMediaService:
             
             creation_id = container_data['id']
             
-            # Paso 2: Publicar el contenedor
+            
             publish_url = f"{base_url}/media_publish"
             publish_params = {
                 'creation_id': creation_id,
@@ -146,11 +146,11 @@ class SocialMediaService:
         
         results = []
         
-        # Obtener configuraciones activas
+        
         configs = SocialMediaConfig.objects.filter(enabled=True)
         
         for config in configs:
-            # Publicar según la plataforma
+            
             if config.platform == 'facebook':
                 result = SocialMediaService.publish_to_facebook(producto, config)
             elif config.platform == 'instagram':
@@ -158,7 +158,7 @@ class SocialMediaService:
             else:
                 result = {'success': False, 'error': f'Plataforma no soportada: {config.platform}'}
             
-            # Registrar la publicación en la base de datos
+            
             post = SocialMediaPost.objects.create(
                 producto=producto,
                 platform=config.platform,

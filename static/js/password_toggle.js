@@ -1,7 +1,4 @@
-/**
- * Función para alternar la visibilidad de las contraseñas
- * @param {string} fieldId - ID del campo de contraseña
- */
+
 function togglePassword(fieldId) {
     const passwordField = document.getElementById(fieldId);
     const toggleIcon = document.getElementById(fieldId + '-toggle-icon');
@@ -11,7 +8,7 @@ function togglePassword(fieldId) {
         return;
     }
     
-    // Alternar el tipo de input
+    
     if (passwordField.type === 'password') {
         passwordField.type = 'text';
         toggleIcon.className = 'bx bx-show';
@@ -23,9 +20,9 @@ function togglePassword(fieldId) {
     }
 }
 
-// Configurar los tooltips iniciales cuando el DOM esté listo
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar tooltips para todos los toggles de contraseña
+    
     const passwordToggles = document.querySelectorAll('.password-toggle');
     
     passwordToggles.forEach(toggle => {
@@ -35,27 +32,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Agregar eventos de teclado para mejorar la accesibilidad
+    
     passwordToggles.forEach(toggle => {
         toggle.addEventListener('keydown', function(e) {
-            // Permitir activar con Enter o Espacio
+            
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 this.click();
             }
         });
         
-        // Hacer el botón focusable
+        
         toggle.setAttribute('tabindex', '0');
     });
 });
 
-// Función adicional para mejorar la experiencia de usuario
+
 function initPasswordToggles() {
     const toggles = document.querySelectorAll('.password-toggle');
     
     toggles.forEach(toggle => {
-        // Añadir efecto visual al hacer hover
+        
         toggle.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-50%) scale(1.1)';
         });
@@ -64,7 +61,7 @@ function initPasswordToggles() {
             this.style.transform = 'translateY(-50%) scale(1)';
         });
         
-        // Añadir efecto de "click" visual
+        
         toggle.addEventListener('mousedown', function() {
             this.style.transform = 'translateY(-50%) scale(0.95)';
         });
@@ -75,5 +72,5 @@ function initPasswordToggles() {
     });
 }
 
-// Inicializar cuando el DOM esté listo
+
 document.addEventListener('DOMContentLoaded', initPasswordToggles);

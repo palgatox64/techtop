@@ -40,7 +40,7 @@
     position: relative;
 }
 
-/* Tooltips - OCULTOS POR DEFECTO - APARECEN HACIA ARRIBA */
+
 .tooltip {
     position: absolute;
     bottom: 100%;
@@ -84,7 +84,7 @@
     border-top: 6px solid #764ba2;
 }
 
-/* MOSTRAR TOOLTIP SOLO CUANDO EL INPUT TIENE FOCUS */
+
 .input-container input:focus + .validation-icon + .tooltip {
     opacity: 1;
     visibility: visible;
@@ -93,7 +93,7 @@
 
 .form-group input {
     width: 100%;
-    padding: 12px 40px 12px 12px; /* Más espacio a la derecha para los iconos */
+    padding: 12px 40px 12px 12px; 
     border: 2px solid #e1e5e9;
     border-radius: 6px;
     font-size: 1rem;
@@ -121,7 +121,7 @@
 
 .validation-icon {
     position: absolute;
-    right: 35px; /* Movido a la izquierda para dejar espacio al ojo */
+    right: 35px; 
     top: 50%;
     transform: translateY(-50%);
     font-size: 1.2rem;
@@ -137,7 +137,7 @@
     color: #dc3545;
 }
 
-/* ESTILOS PARA EL ICONO DEL OJO */
+
 .password-toggle {
     position: absolute;
     right: 12px;
@@ -162,9 +162,9 @@
     color: #667eea;
 }
 
-/* Ajustar la posición del icono de validación cuando hay toggle */
+
 .input-container.has-toggle .validation-icon {
-    right: 45px; /* Más a la izquierda cuando hay toggle */
+    right: 45px; 
 }
 
 .btn-register {
@@ -217,7 +217,7 @@
     border: 1px solid #f5c6cb;
 }
 
-/* Responsive */
+
 @media (max-width: 768px) {
     .register-container {
         padding: 30px 20px;

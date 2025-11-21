@@ -23,22 +23,22 @@
     color: #888;
 }
 
-/* --- Nuevos Estilos para Banners Visuales --- */
+
 .visual-banner {
-    background-color: #f0f8ff; /* Un azul claro para un toque de calma */
+    background-color: #f0f8ff; 
     border: 1px solid #cceeff;
     border-radius: 8px;
     padding: 25px;
     text-align: center;
     margin-bottom: 40px;
-    color: #004085; /* Azul oscuro para el texto */
+    color: #004085; 
 }
 
 .visual-banner i {
     font-size: 3.5rem;
-    color: #2c2c2c; /* Color principal de tu marca */
+    color: #2c2c2c; 
     margin-bottom: 15px;
-    display: block; /* Para que el icono esté en su propia línea */
+    display: block; 
 }
 
 .visual-banner h3 {
@@ -54,25 +54,25 @@
     margin: 0;
 }
 
-/* Estilos específicos para cada banner si quieres variarlos */
+
 .privacy-banner {
-    background-color: #e6f7ff; /* Ligeramente diferente */
+    background-color: #e6f7ff; 
     border-color: #91d5ff;
 }
 .terms-banner {
-    background-color: #e0ffe0; /* Un verde claro para el acuerdo */
+    background-color: #e0ffe0; 
     border-color: #a0d9b5;
 }
 
 
-/* --- Contenido de las Secciones --- */
+
 .legal-content section {
     margin-bottom: 30px;
 }
 
-/* Títulos de Sección con Icono */
+
 .legal-content h2.section-title {
-    display: flex; /* Para alinear el icono y el texto */
+    display: flex; 
     align-items: center;
     font-size: 1.8rem;
     margin-bottom: 15px;
@@ -82,9 +82,9 @@
 }
 
 .legal-content h2.section-title .icon-left {
-    font-size: 1.5rem; /* Tamaño del icono */
-    margin-right: 10px; /* Espacio entre icono y texto */
-    color: #2c2c2c; /* Color del icono */
+    font-size: 1.5rem; 
+    margin-right: 10px; 
+    color: #2c2c2c; 
 }
 
 

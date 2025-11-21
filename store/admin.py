@@ -1,15 +1,14 @@
 from django.contrib import admin
 from .models import Categoria, Marca, Producto, Cliente, Direccion, Pedido, DetallePedido, ImagenProducto, Empleado
 
-# Define el 'inline' para las imágenes adicionales
+
 class ImagenProductoInline(admin.TabularInline):
     model = ImagenProducto
-    extra = 1 # Cuántos campos de subida de imagen extra mostrar por defecto
+    extra = 1
 
-# Personaliza cómo se ve el admin de Producto
 class ProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio', 'stock', 'categoria', 'marca')
-    inlines = [ImagenProductoInline] # Añade el inline aquí
+    inlines = [ImagenProductoInline]
 
 class EmpleadoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'apellidos', 'email', 'cargo', 'activo', 'fecha_contratacion')

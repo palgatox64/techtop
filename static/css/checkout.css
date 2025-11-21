@@ -1,4 +1,4 @@
-/* static/css/checkout.css */
+
 
 .checkout-main {
     flex: 2;
@@ -29,7 +29,7 @@
     margin-bottom: 1.5rem;
 }
 
-/* Grid para el formulario */
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -67,7 +67,7 @@
     box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
 }
 
-/* Estilos para los botones de Radio (Entrega y Pago) */
+
 .radio-options {
     display: flex;
     flex-direction: column;
@@ -75,7 +75,7 @@
 }
 
 .radio-options input[type="radio"] {
-    display: none; /* Ocultamos el radio real */
+    display: none; 
 }
 
 .radio-label {
@@ -92,15 +92,15 @@
 }
 
 .radio-options input[type="radio"]:checked + .radio-content {
-    /* Aquí podrías añadir un checkmark o algo, pero el borde es más simple */
+    
 }
 
 .radio-options input[type="radio"]:checked + .radio-content .radio-title {
     color: #000;
 }
 
-.radio-label-wrapper:has(input[type="radio"]:checked) .radio-label, /* Fallback para Firefox */
-.radio-label:has(input[type="radio"]:checked) { /* Estilo moderno */
+.radio-label-wrapper:has(input[type="radio"]:checked) .radio-label, 
+.radio-label:has(input[type="radio"]:checked) { 
     border-color: #000;
     box-shadow: 0 0 0 2px rgba(0,0,0,0.8);
     background-color: #fcfcfc;
@@ -130,7 +130,7 @@
     margin: 10px 0;
 }
 
-/* Resumen del Pedido */
+
 .summary-items-list {
     max-height: 300px;
     overflow-y: auto;
@@ -199,7 +199,7 @@
     }
 }
 
-/* Pega esto al final de static/css/checkout.css */
+
 
 #delivery-address-form {
     margin-top: 1.5rem;
@@ -220,7 +220,7 @@
     gap: 1.5rem;
 }
 
-/* Ajuste para que los <select> se vean igual que los <input> */
+
 .form-group select {
     width: 100%;
     padding: 12px 14px;
@@ -244,12 +244,12 @@
     }
 }
 
-/* Añade esto a static/css/checkout.css */
+
 
 .form-group.has-error input,
 .form-group.has-error select,
 .form-group.has-error textarea {
-    border-color: #dc3545; /* Rojo Bootstrap para errores */
+    border-color: #dc3545; 
     background-color: #fff8f8;
 }
 
@@ -261,7 +261,7 @@
     font-size: 0.8rem;
     color: #dc3545;
     margin-top: 5px;
-    display: block; /* Para que aparezca debajo */
+    display: block; 
 }
 
 .form-errors.global-errors {
@@ -273,18 +273,17 @@
 }
 
 .form-errors.global-errors .error-text {
-    color: #721c24; /* Color de texto más oscuro para el fondo rojo */
+    color: #721c24; 
 }
 
-/* Añade esto a static/css/checkout.css */
+
 
 .address-form-hidden {
     display: none;
 }
 
-/* ========================================
-   NUEVOS ESTILOS PARA MÉTODOS DE PAGO
-   ======================================== */
+
+
 
 .payment-methods-grid {
     display: grid;
@@ -380,7 +379,7 @@
     color: white;
 }
 
-/* Responsive para métodos de pago */
+
 @media (max-width: 992px) {
     .payment-methods-grid {
         grid-template-columns: repeat(2, 1fr);

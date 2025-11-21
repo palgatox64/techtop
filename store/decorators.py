@@ -7,13 +7,13 @@ def admin_required(view_func):
     Decorador que verifica si el usuario es un empleado activo con sesión iniciada.
     """
     def _wrapped_view(request, *args, **kwargs):
-        # 1. Verificar si hay sesión de empleado
+        
         if 'empleado_id' not in request.session:
             messages.error(request, 'Debes iniciar sesión como empleado para acceder a esta página.')
             return redirect('login')
         
         try:
-            # 2. Obtener el empleado y verificar que esté activo
+            
             empleado = Empleado.objects.get(id_empleado=request.session['empleado_id'])
             if not empleado.activo:
                 messages.error(request, 'Tu cuenta de empleado ha sido desactivada.')
@@ -24,7 +24,7 @@ def admin_required(view_func):
             request.session.flush()
             return redirect('login')
 
-        # Si todo está en orden, permite el acceso a la vista
+        
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
@@ -34,13 +34,13 @@ def superadmin_required(view_func):
     Y ADEMÁS tiene permisos de superadministrador.
     """
     def _wrapped_view(request, *args, **kwargs):
-        # 1. Verificar si hay sesión de empleado
+        
         if 'empleado_id' not in request.session:
             messages.error(request, 'Debes iniciar sesión como empleado para acceder a esta página.')
             return redirect('login')
         
         try:
-            # 2. Obtener el empleado y verificar que esté activo y sea superadmin
+            
             empleado = Empleado.objects.get(id_empleado=request.session['empleado_id'])
             if not empleado.activo:
                 messages.error(request, 'Tu cuenta de empleado ha sido desactivada.')
@@ -49,13 +49,13 @@ def superadmin_required(view_func):
             
             if not empleado.is_superadmin:
                 messages.error(request, 'No tienes permisos de superadministrador para acceder a esta página.')
-                return redirect('panel_gestion') # Redirigir al panel de gestión general
+                return redirect('panel_gestion') 
 
         except Empleado.DoesNotExist:
             messages.error(request, 'Sesión inválida. Por favor, inicia sesión de nuevo.')
             request.session.flush()
             return redirect('login')
 
-        # Si todo está en orden, permite el acceso a la vista
+        
         return view_func(request, *args, **kwargs)
     return _wrapped_view

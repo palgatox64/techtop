@@ -221,11 +221,11 @@
 </button>
 
 <style>
-    /* Estilos del botón flotante */
+    
     .floating-share-btn {
         position: fixed;
-        bottom: 85px; /* Altura para que quede encima de la barra pegajosa en móvil */
-        left: 20px;   /* A la izquierda */
+        bottom: 85px; 
+        left: 20px;   
         width: 50px;
         height: 50px;
         background-color: #ffffff;
@@ -237,14 +237,14 @@
         cursor: pointer;
         z-index: 9999;
         
-        /* --- CAMBIO PRINCIPAL --- */
-        display: flex; /* Ahora siempre es visible (antes era 'none') */
+        
+        display: flex; 
         align-items: center;
         justify-content: center;
         transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
     }
 
-    /* Efecto al pasar el mouse (útil para escritorio) */
+    
     .floating-share-btn:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 15px rgba(106, 13, 173, 0.3);
@@ -256,11 +256,11 @@
         background-color: #f0f0f0;
     }
     
-    /* Tooltip simple para escritorio */
+    
     .floating-share-btn::after {
         content: "Compartir";
         position: absolute;
-        left: 60px; /* A la derecha del botón */
+        left: 60px; 
         background: #333;
         color: white;
         padding: 5px 10px;
@@ -273,20 +273,20 @@
         pointer-events: none;
     }
 
-    /* Mostrar tooltip solo al pasar el mouse en pantallas grandes */
+    
     @media (min-width: 769px) {
         .floating-share-btn:hover::after {
             opacity: 1;
             visibility: visible;
         }
         
-        /* En escritorio, quizás quieras bajarlo un poco si no hay barra pegajosa */
+        
         .floating-share-btn {
             bottom: 20px; 
         }
     }
 
-    /* Animación de entrada */
+    
     .floating-share-btn {
         animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -299,7 +299,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // === LÓGICA ORIGINAL DE ZOOM E IMÁGENES ===
+        
         const thumbnails = document.querySelectorAll('.thumb-item');
         const mainImage = document.getElementById('main-product-image');
         const container = document.getElementById('image-zoom-container');
@@ -342,7 +342,7 @@
             container.style.backgroundSize = '250%'; 
         });
 
-        // === ALERTAS DE STOCK ===
+        
         {% if not producto_disponible %}
         Swal.fire({
             icon: 'warning',
@@ -391,7 +391,7 @@
         });
         {% endif %}
         
-        // === LÓGICA NUEVA: COMPARTIR (WEB SHARE API) ===
+        
         const shareBtn = document.getElementById('mobile-share-btn');
         if (shareBtn) {
             const shareData = {
@@ -408,7 +408,7 @@
                         console.log('Error al compartir:', err);
                     }
                 } else {
-                    // Fallback: Copiar al portapapeles
+                    
                     navigator.clipboard.writeText(window.location.href);
                     Swal.fire({
                         icon: 'success',
