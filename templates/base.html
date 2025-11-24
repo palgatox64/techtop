@@ -1,10 +1,21 @@
 {% load static %}
+{% load meta %}
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Techtop{% endblock %}</title>
+    
+    {# Meta tags SEO dinámicos #}
+    {% include "meta/meta.html" %}
+    
+    <title>{% block title %}Techtop - Tecnología y Electrónica{% endblock %}</title>
+    
+    {# Favicon #}
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+    
+    {# CSS #}
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">

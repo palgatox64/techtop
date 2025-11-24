@@ -119,13 +119,49 @@ def eliminar_empleado(request, pk):
 
 
 def home(request):
-    return render(request, 'home.html')
+    """Página de inicio con SEO optimizado"""
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Techtop - Radios Android, Electrónica Automotriz y Tecnología",
+        description="Tienda líder en radios Android, electrónica automotriz y tecnología en Chile. Envío rápido a todo el país. ¡Encuentra los mejores precios y ofertas!",
+        url=request.build_absolute_uri(),
+        keywords=['techtop', 'radios android', 'electrónica automotriz', 'tecnología', 'chile', 'tienda online'],
+        object_type='website'
+    )
+    
+    context = {'meta': meta}
+    return render(request, 'home.html', context)
 
 def contacto(request):
-    return render(request, 'contacto.html')
+    """Página de contacto con SEO"""
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Contacto - Techtop | Atención al Cliente",
+        description="Contáctanos por WhatsApp, email o teléfono. Atención personalizada de lunes a viernes. Resolvemos todas tus dudas sobre productos y envíos.",
+        url=request.build_absolute_uri(),
+        keywords=['contacto techtop', 'atención cliente', 'whatsapp', 'soporte'],
+        object_type='website'
+    )
+    
+    context = {'meta': meta}
+    return render(request, 'contacto.html', context)
 
 def about(request):
-    return render(request, 'about.html')
+    """Página Quiénes Somos con SEO"""
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Quiénes Somos - Techtop | Expertos en Tecnología Automotriz",
+        description="Conoce la historia de Techtop, tu tienda de confianza en radios Android y tecnología automotriz en Chile. Más de 5 años mejorando tu experiencia de conducción.",
+        url=request.build_absolute_uri(),
+        keywords=['techtop', 'quienes somos', 'historia', 'empresa', 'tecnología automotriz'],
+        object_type='website'
+    )
+    
+    context = {'meta': meta}
+    return render(request, 'about.html', context)
 
 def seguimiento_compra(request):
     return render(request, 'seguimiento_compra.html')
@@ -134,7 +170,19 @@ def centro_ayuda(request):
     return render(request, 'centro_ayuda.html')
 
 def garantias(request):
-    return render(request, 'garantias.html')
+    """Página de garantías con SEO"""
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Garantías y Devoluciones - Techtop | Compra Segura",
+        description="Conoce nuestras políticas de garantía, devoluciones y cambios. 6 meses de garantía legal en todos los productos. Compra con confianza en Techtop.",
+        url=request.build_absolute_uri(),
+        keywords=['garantías techtop', 'devoluciones', 'cambios', 'política', 'compra segura'],
+        object_type='website'
+    )
+    
+    context = {'meta': meta}
+    return render(request, 'garantias.html', context)
 
 def politicas_privacidad(request):
     return render(request, 'politicas_privacidad.html')
@@ -164,6 +212,17 @@ def radios_catalog(request):
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
+    # SEO para catálogo de radios
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Radios Android para Auto - Catálogo Completo | Techtop",
+        description="Amplio catálogo de radios Android de 7, 9, 10.1 y 12 pulgadas. GPS, Bluetooth, WiFi y más. Instalación incluida. Envío a todo Chile.",
+        url=request.build_absolute_uri(),
+        keywords=['radios android', 'radio auto', 'gps', 'bluetooth', 'pantalla táctil', 'chile'],
+        object_type='website'
+    )
+    
     context = {
         'products': products,
         'available_brands': available_brands,
@@ -171,6 +230,7 @@ def radios_catalog(request):
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
         'selected_inches_from_form': selected_inches,
+        'meta': meta,
     }
     
     return render(request, 'store/tienda.html', context)
@@ -203,6 +263,15 @@ def category_catalog(request, categoria_nombre):
     else:
         parent_category = None
 
+    # SEO para la categoría
+    meta = Meta(
+        title=f"{categoria.nombre} - Catálogo Techtop",
+        description=f"Descubre nuestra selección de {categoria.nombre.lower()} en Techtop. Encuentra los mejores productos con envío a todo Chile.",
+        keywords=[categoria.nombre.lower(), 'techtop', 'chile', 'tecnología', 'comprar'],
+        url=request.build_absolute_uri(),
+        object_type='website'
+    )
+
     context = {
         'products': products,
         'categoria_actual': categoria,
@@ -210,7 +279,8 @@ def category_catalog(request, categoria_nombre):
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
         'category_type': category_type,
-        'parent_category': parent_category
+        'parent_category': parent_category,
+        'meta': meta
     }
     
     return render(request, 'store/tienda.html', context)
@@ -252,6 +322,17 @@ def electronica_catalog(request):
     ).filter(product_count__gt=0).order_by('nombre')
 
 
+    # SEO para catálogo de electrónica
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Electrónica Automotriz - Catálogo Completo | Techtop",
+        description="Productos de electrónica automotriz de alta calidad. Encuentra todo para equipar tu vehículo: sensores, cámaras, alarmas y más. Envío a todo Chile.",
+        url=request.build_absolute_uri(),
+        keywords=['electrónica automotriz', 'accesorios auto', 'sensores', 'cámaras', 'alarmas'],
+        object_type='website'
+    )
+    
     context = {
         'products': products,
         'available_brands': available_brands,
@@ -259,7 +340,8 @@ def electronica_catalog(request):
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
         'selected_categories_from_form': selected_categories,
-        'category_type': 'electronica'
+        'category_type': 'electronica',
+        'meta': meta,
     }
     
     return render(request, 'store/tienda.html', context)
@@ -307,6 +389,17 @@ def accesorios_catalog(request):
     ).filter(product_count__gt=0).order_by('nombre')
 
 
+    # SEO para catálogo de accesorios
+    from meta.views import Meta
+    
+    meta = Meta(
+        title="Accesorios Automotrices - Audio, Seguridad y Diagnóstico | Techtop",
+        description="Accesorios de calidad para tu vehículo: audio, parlantes, herramientas de diagnóstico, sensores de seguridad y más. Precios competitivos y envío rápido.",
+        url=request.build_absolute_uri(),
+        keywords=['accesorios auto', 'audio', 'parlantes', 'seguridad', 'diagnóstico', 'scanner'],
+        object_type='website'
+    )
+    
     context = {
         'products': products,
         'available_brands': available_brands,
@@ -314,7 +407,8 @@ def accesorios_catalog(request):
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
         'selected_categories_from_form': selected_categories,
-        'category_type': 'accesorios'
+        'category_type': 'accesorios',
+        'meta': meta,
     }
 
     return render(request, 'store/tienda.html', context)
@@ -358,12 +452,22 @@ def otros_catalog(request):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
 
+    # SEO para otros productos
+    meta = Meta(
+        title="Otros Productos - Catálogo Techtop",
+        description="Explora nuestra variedad de productos tecnológicos: herramientas, medidores, compresores y más. Encuentra lo que necesitas en Techtop.",
+        keywords=['productos tecnológicos', 'herramientas', 'techtop', 'chile', 'comprar online'],
+        url=request.build_absolute_uri(),
+        object_type='website'
+    )
+
     context = {
         'products': products,
         'available_brands': available_brands,
         'selected_brands_from_form': selected_brands,
         'selected_prices_from_form': selected_prices,
-        'category_type': 'otros'
+        'category_type': 'otros',
+        'meta': meta
     }
 
     return render(request, 'store/tienda.html', context)
@@ -381,12 +485,30 @@ def product_catalog(request, brand_name=None):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre') 
 
+    # SEO para catálogo de productos (general o por marca)
+    if brand_name:
+        meta = Meta(
+            title=f"Productos {brand_name} - Techtop",
+            description=f"Descubre todos los productos de la marca {brand_name} disponibles en Techtop. Calidad garantizada y envío a todo Chile.",
+            keywords=[brand_name.lower(), 'productos', 'techtop', 'chile', 'tecnología'],
+            url=request.build_absolute_uri(),
+            object_type='website'
+        )
+    else:
+        meta = Meta(
+            title="Catálogo de Productos - Techtop",
+            description="Explora nuestro catálogo completo de productos tecnológicos. Encuentra radios Android, electrónica automotriz, accesorios y más en Techtop.",
+            keywords=['catálogo', 'productos', 'techtop', 'tecnología', 'chile', 'comprar'],
+            url=request.build_absolute_uri(),
+            object_type='website'
+        )
     
     context = {
         'products': products,
         'available_brands': available_brands,
         'selected_brand': brand_name,
         'selected_brands_from_form': selected_brands,
+        'meta': meta
     }
     return render(request, 'store/tienda.html', context)
 
@@ -424,7 +546,42 @@ def get_cart_data(request):
     })
 
 def product_detail(request, product_id):
+    """Vista de detalle de producto con SEO mejorado"""
     product = get_object_or_404(Producto, id=product_id)
+    from meta.views import Meta
+    
+    # Construir URL absoluta de la imagen
+    image_url = None
+    if product.imagen:
+        if product.imagen.url.startswith('http'):
+            image_url = product.imagen.url
+        else:
+            image_url = request.build_absolute_uri(product.imagen.url)
+    
+    # Keywords dinámicos del producto
+    keywords = ['techtop', 'comprar', 'chile']
+    if product.marca:
+        keywords.append(product.marca.nombre.lower())
+    if product.categoria:
+        keywords.append(product.categoria.nombre.lower())
+    keywords.append(product.nombre.lower())
+    
+    # Configurar metadata SEO
+    meta = Meta(
+        title=f"{product.nombre} - Techtop",
+        description=product.descripcion[:160] if product.descripcion else f"Compra {product.nombre} en Techtop. Envío a todo Chile.",
+        image=image_url,
+        url=request.build_absolute_uri(),
+        object_type='product',
+        keywords=keywords,
+        extra_custom_props=[
+            ('product:price:amount', str(product.precio_oferta)),
+            ('product:price:currency', 'CLP'),
+            ('product:availability', 'in stock' if product.stock > 0 else 'out of stock'),
+            ('product:condition', 'new'),
+        ]
+    )
+    
     precio_transferencia = product.precio * Decimal('0.97')
     precio_normal = product.precio * Decimal('1.03')
     descuento_porcentaje = 3
@@ -466,6 +623,7 @@ def product_detail(request, product_id):
         'precio_normal': precio_normal,
         'descuento_porcentaje': descuento_porcentaje,
         'imagenes_adicionales': imagenes_adicionales,
+        'meta': meta,  # Agregar meta al contexto
         'producto_disponible': producto_disponible,
         'comentarios': comentarios,
         'total_reseñas': total_reseñas,
@@ -1389,9 +1547,28 @@ def search_results_view(request):
             Q(marca__nombre__icontains=query)
         ).distinct()
 
+    # SEO para resultados de búsqueda
+    if query:
+        meta = Meta(
+            title=f"Resultados para '{query}' - Techtop",
+            description=f"Resultados de búsqueda para '{query}' en Techtop. Encuentra los mejores productos de tecnología y electrónica en Chile.",
+            keywords=[query.lower(), 'búsqueda', 'techtop', 'productos', 'chile'],
+            url=request.build_absolute_uri(),
+            object_type='website'
+        )
+    else:
+        meta = Meta(
+            title="Búsqueda de Productos - Techtop",
+            description="Busca productos en nuestro catálogo. Encuentra radios Android, electrónica automotriz y tecnología en Techtop.",
+            keywords=['búsqueda', 'productos', 'techtop', 'catálogo', 'chile'],
+            url=request.build_absolute_uri(),
+            object_type='website'
+        )
+
     context = {
         'products': products,
         'search_query': query,
+        'meta': meta
     }
     return render(request, 'store/search_results.html', context)
 
@@ -2033,6 +2210,46 @@ def retorno_mercadopago_failure(request):
 def retorno_mercadopago_pending(request):
     """Maneja el retorno pendiente desde Mercado Pago"""
     return _procesar_retorno_mercadopago(request, 'pending')
+
+
+@superadmin_required
+def test_seo(request):
+    """Vista temporal para testear SEO con preview visual - SOLO SUPERADMIN"""
+    # Obtener un producto de ejemplo
+    producto = Producto.objects.filter(activo=True).first()
+    
+    if not producto:
+        return HttpResponse("No hay productos disponibles para testear")
+    
+    from meta.views import Meta
+    
+    # Construir URL absoluta de la imagen
+    image_url = None
+    if producto.imagen:
+        if producto.imagen.url.startswith('http'):
+            image_url = producto.imagen.url
+        else:
+            image_url = request.build_absolute_uri(producto.imagen.url)
+    
+    meta = Meta(
+        title=f"{producto.nombre} - Techtop",
+        description=f"Compra {producto.nombre} al mejor precio en Techtop. Envío rápido a todo Chile. Stock disponible. ¡Aprovecha nuestras ofertas!",
+        image=image_url,
+        url=request.build_absolute_uri(),
+        object_type='product',
+        keywords=['techtop', producto.nombre.lower(), 'comprar', 'chile'],
+        extra_custom_props=[
+            ('product:price:amount', str(producto.precio_oferta)),
+            ('product:price:currency', 'CLP'),
+        ]
+    )
+    
+    context = {
+        'meta': meta,
+        'producto': producto
+    }
+    
+    return render(request, 'test_seo.html', context)
 
 
 def _procesar_retorno_mercadopago(request, estado_esperado):

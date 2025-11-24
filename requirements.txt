@@ -10,6 +10,7 @@ charset-normalizer==3.4.3
 cryptography==46.0.2
 cssselect2==0.8.0
 Django==5.2.6
+django-meta==2.3.0
 django-mssql-backend==2.8.1
 django-storages==1.14.6
 fonttools==4.60.1

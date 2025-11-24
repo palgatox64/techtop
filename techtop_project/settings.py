@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'store',
     'storages',
+    'meta',  # django-meta para SEO
 ]
 
 MIDDLEWARE = [
@@ -230,3 +231,13 @@ if IS_LINUX:
             },
         },
     }
+
+# Configuración de Meta Tags SEO    
+META_SITE_PROTOCOL = 'https' if PRODUCTION else 'http'
+META_SITE_DOMAIN = 'techtop.warevision.net' if PRODUCTION else 'localhost:8000'
+META_SITE_TYPE = 'website'
+META_SITE_NAME = 'Techtop'
+META_INCLUDE_KEYWORDS = ['techtop', 'tecnología', 'radio android', 'auto', 'electrónica', 'chile']
+META_USE_OG_PROPERTIES = True
+META_USE_TWITTER_PROPERTIES = True
+META_USE_SCHEMAORG_PROPERTIES = True

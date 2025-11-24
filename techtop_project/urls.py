@@ -32,6 +32,7 @@ urlpatterns = [
     path('registro/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'), 
     path('buscar/', views.search_results_view, name='search'),
+    path('test-seo/', views.test_seo, name='test_seo'),  # Vista de prueba de SEO
     path('gestion/comentarios/', views.listar_comentarios_view, name='listar_comentarios'),
     path('gestion/comentarios/aprobar/<int:comentario_id>/', views.aprobar_comentario_view, name='aprobar_comentario'),
     path('gestion/comentarios/rechazar/<int:comentario_id>/', views.rechazar_comentario_view, name='rechazar_comentario'),

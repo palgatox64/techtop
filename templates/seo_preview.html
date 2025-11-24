@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Preview SEO - {{ producto.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: #f0f2f5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 50px auto;
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+        color: #6a0dad;
+        margin-bottom: 40px;
+    }
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 30px;
+        margin-top: 30px;
+    }
+    .preview-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .preview-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .preview-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .preview-header.facebook {
+        background: linear-gradient(135deg, #1877f2 0%, #0c63d4 100%);
+    }
+    .preview-header.twitter {
+        background: linear-gradient(135deg, #1da1f2 0%, #0d8bd9 100%);
+    }
+    .preview-header.whatsapp {
+        background: linear-gradient(135deg, #25d366 0%, #1ebe57 100%);
+    }
+    .preview-header.google {
+        background: linear-gradient(135deg, #4285f4 0%, #3367d6 100%);
+    }
+    .preview-image {
+        width: 100%;
+        height: 260px;
+        object-fit: cover;
+        background: #e0e0e0;
+    }
+    .preview-content {
+        padding: 15px 20px;
+    }
+    .preview-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1c1e21;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+    .preview-description {
+        font-size: 14px;
+        color: #606770;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+    .preview-url {
+        font-size: 12px;
+        color: #8a8d91;
+        text-transform: uppercase;
+    }
+    .preview-price {
+        display: inline-block;
+        background: #4caf50;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 14px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    .google-result {
+        border-left: 3px solid #4285f4;
+        padding-left: 15px;
+    }
+    .google-title {
+        font-size: 20px;
+        color: #1a0dab;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 3px;
+    }
+    .google-title:hover {
+        text-decoration: underline;
+    }
+    .google-url {
+        font-size: 14px;
+        color: #006621;
+        margin-bottom: 5px;
+    }
+    .google-description {
+        font-size: 14px;
+        color: #545454;
+        line-height: 1.6;
+    }
+    .meta-info {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    .meta-info h3 {
+        color: #856404;
+        margin-top: 0;
+    }
+    .meta-list {
+        list-style: none;
+        padding: 0;
+    }
+    .meta-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #ffe69c;
+    }
+    .meta-list li:last-child {
+        border-bottom: none;
+    }
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+    .badge-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+</style>
+
+<div class="container">
+    <h1>🔍 Vista Previa SEO - {{ producto.nombre }}</h1>
+    
+    <div class="meta-info">
+        <h3>📊 Información de Meta Tags</h3>
+        <ul class="meta-list">
+            <li><strong>Título:</strong> {{ meta.title }} <span class="badge badge-success">{{ meta.title|length }} caracteres</span></li>
+            <li><strong>Descripción:</strong> {{ meta.description|truncatechars:100 }} <span class="badge {% if meta.description|length <= 160 %}badge-success{% else %}badge-warning{% endif %}">{{ meta.description|length }} caracteres</span></li>
+            <li><strong>Keywords:</strong> {{ meta.keywords|join:", " }}</li>
+            <li><strong>Imagen OG:</strong> {% if meta.image %}<span class="badge badge-success">✓ Configurada</span>{% else %}<span class="badge badge-warning">✗ No configurada</span>{% endif %}</li>
+            <li><strong>Tipo:</strong> {{ meta.object_type }}</li>
+        </ul>
+    </div>
+
+    <div class="preview-grid">
+        <!-- Facebook Preview -->
+        <div class="preview-card">
+            <div class="preview-header facebook">
+                <i class='bx bxl-facebook-circle' style="font-size: 24px;"></i>
+                Facebook
+            </div>
+            {% if meta.image %}
+            <img src="{{ meta.image }}" alt="{{ meta.title }}" class="preview-image">
+            {% else %}
+            <div class="preview-image" style="display: flex; align-items: center; justify-content: center; color: #999;">
+                Sin imagen
+            </div>
+            {% endif %}
+            <div class="preview-content">
+                <div class="preview-url">techtop.warevision.net</div>
+                <div class="preview-title">{{ meta.title }}</div>
+                <div class="preview-description">{{ meta.description|truncatechars:80 }}</div>
+            </div>
+        </div>
+
+        <!-- Twitter Preview -->
+        <div class="preview-card">
+            <div class="preview-header twitter">
+                <i class='bx bxl-twitter' style="font-size: 24px;"></i>
+                Twitter
+            </div>
+            {% if meta.image %}
+            <img src="{{ meta.image }}" alt="{{ meta.title }}" class="preview-image">
+            {% else %}
+            <div class="preview-image" style="display: flex; align-items: center; justify-content: center; color: #999;">
+                Sin imagen
+            </div>
+            {% endif %}
+            <div class="preview-content">
+                <div class="preview-title">{{ meta.title|truncatechars:70 }}</div>
+                <div class="preview-description">{{ meta.description|truncatechars:200 }}</div>
+                <div class="preview-url">🔗 techtop.warevision.net</div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Preview -->
+        <div class="preview-card">
+            <div class="preview-header whatsapp">
+                <i class='bx bxl-whatsapp' style="font-size: 24px;"></i>
+                WhatsApp
+            </div>
+            {% if meta.image %}
+            <img src="{{ meta.image }}" alt="{{ meta.title }}" class="preview-image">
+            {% else %}
+            <div class="preview-image" style="display: flex; align-items: center; justify-content: center; color: #999;">
+                Sin imagen
+            </div>
+            {% endif %}
+            <div class="preview-content">
+                <div class="preview-title">{{ meta.title|truncatechars:60 }}</div>
+                <div class="preview-description">{{ meta.description|truncatechars:90 }}</div>
+                <div class="preview-url">techtop.warevision.net</div>
+                <div class="preview-price">${{ producto.precio_oferta|floatformat:0 }}</div>
+            </div>
+        </div>
+
+        <!-- Google Search Preview -->
+        <div class="preview-card">
+            <div class="preview-header google">
+                <i class='bx bxl-google' style="font-size: 24px;"></i>
+                Google Search
+            </div>
+            <div class="preview-content google-result">
+                <a href="#" class="google-title">{{ meta.title }}</a>
+                <div class="google-url">https://techtop.warevision.net › producto › {{ producto.id }}</div>
+                <div class="google-description">{{ meta.description|truncatechars:160 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="{% url 'product_detail' producto.id %}" class="btn" style="display: inline-block; padding: 12px 30px; background: #6a0dad; color: white; text-decoration: none; border-radius: 5px; margin: 0 10px;">
+            Ver Producto Real →
+        </a>
+        <a href="/" class="btn" style="display: inline-block; padding: 12px 30px; background: #333; color: white; text-decoration: none; border-radius: 5px; margin: 0 10px;">
+            ← Volver al Inicio
+        </a>
+    </div>
+</div>
+{% endblock %}
