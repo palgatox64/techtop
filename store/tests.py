@@ -1,4 +1,4 @@
-
+# store/tests.py
 
 from django.test import TestCase, Client as TestClient
 from django.core.exceptions import ValidationError
@@ -10,6 +10,9 @@ from .models import (
 )
 
 
+# =============================================================================
+# GESTIÓN DE USUARIOS Y CLIENTES (TT-U01 a TT-U05)
+# =============================================================================
 
 class ClienteManagementTests(TestCase):
     """Pruebas para la gestión de usuarios y clientes"""
@@ -60,7 +63,7 @@ class ClienteManagementTests(TestCase):
         """
         cliente = Cliente.objects.create(**self.cliente_data)
         
-        
+        # Actualizar teléfono
         cliente.telefono = '987654321'
         cliente.save()
         
@@ -91,12 +94,12 @@ class ClienteManagementTests(TestCase):
         """
         Cliente.objects.create(**self.cliente_data)
         
-        
+        # Intentar crear otro cliente con el mismo email
         with self.assertRaises(IntegrityError):
             Cliente.objects.create(
                 nombre='María',
                 apellidos='López Silva',
-                email='juan.perez@example.com',  
+                email='juan.perez@example.com',  # Email duplicado
                 pass_hash='otro_hash',
                 telefono='923456789'
             )
@@ -104,7 +107,9 @@ class ClienteManagementTests(TestCase):
         print("✅ TT-U05: Verificación de email duplicado -> EXITOSA")
 
 
-
+# =============================================================================
+# GESTIÓN DE PRODUCTOS (TT-P01 a TT-P05)
+# =============================================================================
 
 class ProductoManagementTests(TestCase):
     """Pruebas para la gestión de productos (CRUD)"""
@@ -152,7 +157,7 @@ class ProductoManagementTests(TestCase):
             marca=self.marca
         )
 
-        
+        # Editar el producto
         producto.nombre = 'Mouse Óptico Gaming'
         producto.precio = 25000
         producto.stock = 15
@@ -231,7 +236,7 @@ class ProductoManagementTests(TestCase):
             marca=self.marca
         )
 
-        
+        # Buscar productos que contengan "Teclado"
         productos_teclado = Producto.objects.filter(nombre__icontains='Teclado')
         
         self.assertEqual(productos_teclado.count(), 2)
@@ -240,7 +245,9 @@ class ProductoManagementTests(TestCase):
         print("✅ TT-P05: Búsqueda de productos por nombre -> EXITOSA")
 
 
-
+# =============================================================================
+# PROCESO DE COMPRA (TT-C01 a TT-C05)
+# =============================================================================
 
 class ProcesoCompraTests(TestCase):
     """Pruebas para el proceso de compra y carrito"""
@@ -249,11 +256,11 @@ class ProcesoCompraTests(TestCase):
         """Configuración inicial para todas las pruebas de compra"""
         self.client = TestClient()
         
-        
+        # Crear categoría y marca
         self.categoria = Categoria.objects.create(nombre='Electrónica')
         self.marca = Marca.objects.create(nombre='TechTop')
         
-        
+        # Crear productos
         self.producto1 = Producto.objects.create(
             nombre='Teclado RGB',
             precio=50000,
@@ -269,7 +276,7 @@ class ProcesoCompraTests(TestCase):
             marca=self.marca
         )
         
-        
+        # Crear cliente
         self.cliente = Cliente.objects.create(
             nombre='Ana',
             apellidos='Silva Rojas',
@@ -278,7 +285,7 @@ class ProcesoCompraTests(TestCase):
             telefono='956789012'
         )
         
-        
+        # Crear dirección
         self.direccion = Direccion.objects.create(
             cliente=self.cliente,
             calle='Av. Principal 123',
@@ -292,13 +299,13 @@ class ProcesoCompraTests(TestCase):
         TT-C01: Añadir producto al carrito de compras
         Verifica que se pueda añadir un producto al carrito de sesión.
         """
-        
+        # Añadir producto al carrito vía POST
         response = self.client.post(
             f'/agregar/{self.producto1.id}/',
             {'quantity': 1}
         )
         
-        
+        # Verificar que el carrito contiene el producto
         cart = self.client.session.get('cart', {})
         
         self.assertIn(str(self.producto1.id), cart)
@@ -311,13 +318,13 @@ class ProcesoCompraTests(TestCase):
         TT-C02: Actualizar cantidad de producto en el carrito
         Verifica que se pueda modificar la cantidad de un producto en el carrito.
         """
-        
+        # Añadir producto al carrito primero
         self.client.post(
             f'/agregar/{self.producto1.id}/',
             {'quantity': 1}
         )
 
-        
+        # Incrementar cantidad usando action='increase'
         self.client.post(
             f'/actualizar-carro/{self.producto1.id}/',
             {'action': 'increase'}
@@ -338,7 +345,7 @@ class ProcesoCompraTests(TestCase):
         TT-C03: Eliminar producto del carrito
         Verifica que se pueda eliminar un producto del carrito.
         """
-        
+        # Añadir dos productos al carrito
         self.client.post(
             f'/agregar/{self.producto1.id}/',
             {'quantity': 2}
@@ -348,7 +355,7 @@ class ProcesoCompraTests(TestCase):
             {'quantity': 1}
         )
 
-        
+        # Eliminar producto1
         self.client.post(f'/eliminar-del-carro/{self.producto1.id}/')
 
         cart = self.client.session.get('cart', {})
@@ -363,7 +370,7 @@ class ProcesoCompraTests(TestCase):
         TT-C04: Proceso de Checkout (simulado)
         Verifica que el carrito tenga los datos necesarios para checkout.
         """
-        
+        # Añadir productos al carrito
         self.client.post(
             f'/agregar/{self.producto1.id}/',
             {'quantity': 2}
@@ -373,10 +380,10 @@ class ProcesoCompraTests(TestCase):
             {'quantity': 1}
         )
 
-        
+        # Obtener carrito
         cart = self.client.session.get('cart', {})
 
-        
+        # Calcular total esperado obteniendo productos de la BD
         total_calculado = Decimal('0')
         for product_id_str, item in cart.items():
             producto = Producto.objects.get(id=int(product_id_str))
@@ -394,7 +401,7 @@ class ProcesoCompraTests(TestCase):
         TT-C05: Creación de Pedido y DetallePedido en la BD
         Verifica que se pueda crear un pedido con sus detalles correctamente.
         """
-        
+        # Crear pedido
         pedido = Pedido.objects.create(
             cliente=self.cliente,
             direccion_envio=self.direccion,
@@ -402,7 +409,7 @@ class ProcesoCompraTests(TestCase):
             estado='pendiente'
         )
 
-        
+        # Crear detalles del pedido
         detalle1 = DetallePedido.objects.create(
             pedido=pedido,
             producto=self.producto1,
@@ -416,25 +423,28 @@ class ProcesoCompraTests(TestCase):
             precio_unitario=self.producto2.precio
         )
 
-        
+        # Calcular y actualizar total
         total = (detalle1.cantidad * detalle1.precio_unitario) + \
                 (detalle2.cantidad * detalle2.precio_unitario)
         pedido.total = total
         pedido.save()
 
-        
+        # Verificaciones
         self.assertEqual(Pedido.objects.count(), 1)
         self.assertEqual(pedido.detalles.count(), 2)
         self.assertEqual(pedido.total, Decimal('130000'))
         self.assertEqual(pedido.estado, 'pendiente')
         
-        
+        # Verificar relaciones
         self.assertEqual(pedido.cliente.email, 'ana.silva@example.com')
         self.assertEqual(pedido.direccion_envio.ciudad, 'Santiago')
         
         print("✅ TT-C05: Creación de Pedido y DetallePedido -> EXITOSA")
 
 
+# =============================================================================
+# RESUMEN DE EJECUCIÓN
+# =============================================================================
 
 def print_test_summary():
     """Imprime un resumen de las pruebas disponibles"""

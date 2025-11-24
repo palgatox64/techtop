@@ -145,7 +145,7 @@
                     </div>
                  {% endif %}
 
-                
+                <!-- Información de Webpay (se muestra al seleccionar) -->
                 <div id="webpay-info" style="display: none; margin-top: 20px; background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 4px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px; color: #3b82f6;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -164,7 +164,7 @@
                     </p>
                 </div>
 
-                
+                <!-- Información de Transferencia (se muestra al seleccionar) -->
                 <div id="transferencia-info" style="display: none; margin-top: 20px; background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px 20px; border-radius: 4px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px; color: #10b981;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,7 +180,7 @@
                     </p>
                 </div>
 
-                
+                <!-- Información de Mercado Pago (se muestra al seleccionar) -->
                 <div id="mercadopago-info" style="display: none; margin-top: 20px; background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 4px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <h4 style="margin: 0; color: #92400e; font-size: 16px;">💳 Mercado Pago</h4>
@@ -212,7 +212,7 @@
 
         <div class="summary-item">
             <span>Pago con transferencias</span>
-            
+            {# AÑADIMOS ID AQUÍ #}
             <strong id="subtotal-transferencia">${{ total_transferencia|floatformat:0|dot_thousands }}</strong>
         </div>
         <div class="summary-item-label">
@@ -220,14 +220,14 @@
         </div>
         <div class="summary-item">
             <span>Otros medios de pago</span>
-             
+             {# AÑADIMOS ID AQUÍ #}
             <strong id="subtotal-otros-medios">${{ total_otros_medios|floatformat:0|dot_thousands }}</strong>
         </div>
         <div class="summary-item-label">
             <span>Webpay/Onepay</span>
         </div>
 
-        
+        {# NUEVA SECCIÓN PARA COSTO DE ENVÍO (inicialmente oculto o $0) #}
         <div class="summary-item" id="summary-delivery-cost" style="display: none;">
             <span>Costo de Envío</span>
             <strong id="delivery-cost-value">$4.500</strong>
@@ -235,7 +235,7 @@
 
         <div class="summary-total">
             <span>TOTAL</span>
-             
+             {# AÑADIMOS ID AQUÍ y un valor inicial #}
             <span id="summary-total-value">-</span>
         </div>
 
@@ -253,22 +253,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('checkout-form');
     const submitBtn = document.getElementById('btn-finalizar-compra');
     const deliveryOptions = document.querySelectorAll('input[name="tipo_entrega"]');
-    const paymentOptions = document.querySelectorAll('input[name="metodo_pago"]'); 
+    const paymentOptions = document.querySelectorAll('input[name="metodo_pago"]'); // <-- NUEVA REFERENCIA
     const addressForm = document.getElementById('delivery-address-form');
 
-    
+    // --- NODOS PARA INFO DE MÉTODOS DE PAGO ---
     const webpayInfo = document.getElementById('webpay-info');
     const transferenciaInfo = document.getElementById('transferencia-info');
     const mercadopagoInfo = document.getElementById('mercadopago-info');
 
-    
+    // --- NODOS PARA LEER PRECIOS Y MOSTRAR TOTAL ---
     const subtotalTransferenciaElement = document.getElementById('subtotal-transferencia');
     const subtotalOtrosMediosElement = document.getElementById('subtotal-otros-medios');
     const summaryTotalValueElement = document.getElementById('summary-total-value');
-    const summaryDeliveryCostElement = document.getElementById('summary-delivery-cost'); 
-    const deliveryCostValue = 4500; 
+    const summaryDeliveryCostElement = document.getElementById('summary-delivery-cost'); // <-- NUEVA REFERENCIA
+    const deliveryCostValue = 4500; // Costo de envío fijo
 
-    
+    // --- NODOS DE INPUT PARA VALIDACIÓN (Sin cambios) ---
     const emailInput = document.getElementById('{{ form.email.id_for_label }}');
     const nombreInput = document.getElementById('{{ form.nombre.id_for_label }}');
     const apellidosInput = document.getElementById('{{ form.apellidos.id_for_label }}');
@@ -279,14 +279,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const tipoViviendaSelect = document.getElementById('{{ form.tipo_vivienda.id_for_label }}');
 
 
-    
+    // --- FUNCIÓN PARA FORMATEAR NÚMEROS COMO MONEDA CHILENA ---
     function formatCurrency(value) {
         return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 });
     }
 
-    
+    // --- FUNCIÓN PARA OBTENER PRECIOS BASE (leyendo el HTML) ---
     function getBasePrices() {
-        
+        // Limpiamos el texto ($ y puntos) y convertimos a número
         const transferText = subtotalTransferenciaElement.textContent.replace(/[$.]/g, '');
         const otherText = subtotalOtrosMediosElement.textContent.replace(/[$.]/g, '');
         return {
@@ -294,68 +294,68 @@ document.addEventListener('DOMContentLoaded', function () {
             otrosMedios: parseInt(otherText, 10) || 0
         };
     }
-    const basePrices = getBasePrices(); 
+    const basePrices = getBasePrices(); // Leemos los precios una vez al cargar
 
 
-    
+    // --- FUNCIÓN PARA ACTUALIZAR EL TOTAL ---
     function updateTotal() {
-        console.log("Actualizando total..."); 
+        console.log("Actualizando total..."); // Debug
         const selectedDeliveryOption = document.querySelector('input[name="tipo_entrega"]:checked');
         const selectedPaymentOption = document.querySelector('input[name="metodo_pago"]:checked');
 
         let currentSubtotal = 0;
         let deliveryCost = 0;
 
-        
+        // Determinar subtotal base según método de pago
         if (selectedPaymentOption) {
-            console.log("Método de pago:", selectedPaymentOption.value); 
+            console.log("Método de pago:", selectedPaymentOption.value); // Debug
             if (selectedPaymentOption.value === 'transferencia') {
                 currentSubtotal = basePrices.transferencia;
-            } else { 
+            } else { // Webpay o MercadoPago
                 currentSubtotal = basePrices.otrosMedios;
             }
         } else {
-             
+             // Si no hay método de pago seleccionado, usamos el de "Otros Medios" por defecto para mostrar algo
             currentSubtotal = basePrices.otrosMedios;
         }
-        console.log("Subtotal base:", currentSubtotal); 
-        console.log("Subtotal base:", currentSubtotal); 
+        console.log("Subtotal base:", currentSubtotal); // Debug
+        console.log("Subtotal base:", currentSubtotal); // Debug
 
-        
+        // Determinar costo de envío y mostrar/ocultar fila
         if (selectedDeliveryOption) {
-            console.log("Método de entrega:", selectedDeliveryOption.value); 
+            console.log("Método de entrega:", selectedDeliveryOption.value); // Debug
             if (selectedDeliveryOption.value === 'delivery') {
                 deliveryCost = deliveryCostValue;
-                summaryDeliveryCostElement.style.display = 'flex'; 
-            } else { 
+                summaryDeliveryCostElement.style.display = 'flex'; // O 'block', dependiendo de tu CSS base
+            } else { // Retiro en tienda
                 deliveryCost = 0;
                 summaryDeliveryCostElement.style.display = 'none';
             }
         } else {
-             
+             // Si no hay método de entrega, asumimos $0 y ocultamos
              deliveryCost = 0;
              summaryDeliveryCostElement.style.display = 'none';
         }
-        console.log("Costo envío:", deliveryCost); 
+        console.log("Costo envío:", deliveryCost); // Debug
 
-        
+        // Calcular total final
         const finalTotal = currentSubtotal + deliveryCost;
-        console.log("Total final:", finalTotal); 
+        console.log("Total final:", finalTotal); // Debug
 
-        
+        // Actualizar el HTML
         summaryTotalValueElement.textContent = formatCurrency(finalTotal);
     }
 
-    
+    // --- FUNCIÓN PARA MOSTRAR INFO DE MÉTODO DE PAGO ---
     function updatePaymentInfo() {
         const selectedPaymentOption = document.querySelector('input[name="metodo_pago"]:checked');
         
-        
+        // Ocultar todas primero
         webpayInfo.style.display = 'none';
         transferenciaInfo.style.display = 'none';
         mercadopagoInfo.style.display = 'none';
         
-        
+        // Mostrar la correspondiente
         if (selectedPaymentOption) {
             if (selectedPaymentOption.value === 'webpay') {
                 webpayInfo.style.display = 'block';
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    
+    // --- FUNCIÓN PARA MOSTRAR ALERTA DE ERROR (Sin cambios) ---
     function showErrorAlert(message) {
         Swal.fire({
             icon: 'error',
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.textContent = 'Finalizar Compra';
     }
 
-    
+    // --- FUNCIÓN DE VALIDACIÓN PRINCIPAL (Sin cambios) ---
     function validateForm() {
         if (!emailInput.value.trim()) { showErrorAlert('El correo electrónico es obligatorio.'); return false; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return true;
     }
 
-    
+    // --- MANEJO DEL FORMULARIO DE DIRECCIÓN (Sin cambios) ---
     function toggleAddressForm() {
         const checkedOption = document.querySelector('input[name="tipo_entrega"]:checked');
         if (!checkedOption) { addressForm.classList.add('address-form-hidden'); return; }
@@ -421,21 +421,21 @@ document.addEventListener('DOMContentLoaded', function () {
     deliveryOptions.forEach(option => {
         option.addEventListener('change', toggleAddressForm);
     });
-    toggleAddressForm(); 
+    toggleAddressForm(); // Llamada inicial
 
-    
+    // --- AÑADIR LISTENERS PARA ACTUALIZAR TOTAL ---
     deliveryOptions.forEach(option => {
-        option.addEventListener('change', updateTotal); 
+        option.addEventListener('change', updateTotal); // Actualiza total al cambiar entrega
     });
     paymentOptions.forEach(option => {
-        option.addEventListener('change', updateTotal); 
-        option.addEventListener('change', updatePaymentInfo); 
+        option.addEventListener('change', updateTotal); // Actualiza total al cambiar pago
+        option.addEventListener('change', updatePaymentInfo); // Actualiza info de pago al cambiar
     });
-    updateTotal(); 
-    updatePaymentInfo(); 
+    updateTotal(); // Llamada inicial para calcular el total al cargar la página
+    updatePaymentInfo(); // Llamada inicial para mostrar info del método seleccionado por defecto
 
 
-    
+    // --- MANEJO DEL ENVÍO DEL FORMULARIO CON VALIDACIÓN ---
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         submitBtn.disabled = true;
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 if (isWebpay) {
-                    
+                    // Para Webpay, mostrar mensaje diferente y redirigir inmediatamente
                     Swal.fire({ 
                         icon: 'info', 
                         title: 'Redirigiendo a Webpay...', 
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.location.href = data.redirect_url; 
                     });
                 } else if (isMercadoPago) {
-                    
+                    // Para Mercado Pago, mostrar mensaje específico
                     Swal.fire({ 
                         icon: 'info', 
                         title: 'Redirigiendo a Mercado Pago...', 
@@ -496,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.location.href = data.redirect_url; 
                     });
                 } else {
-                    
+                    // Para otros métodos, mensaje de éxito normal
                     Swal.fire({ 
                         icon: 'success', 
                         title: '¡Compra Exitosa!', 

@@ -13,7 +13,7 @@ def dot_thousands(value):
     if value is None:
         return value
     
-    
+    # Usar intcomma primero y luego reemplazar comas por puntos
     formatted = intcomma(value)
     return formatted.replace(',', '.')
 

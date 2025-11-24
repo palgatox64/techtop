@@ -45,6 +45,7 @@
 }
 
 
+/* --- Media Query para hacerlo responsivo --- */
 @media (max-width: 768px) {
     .about-container {
         flex-direction: column;

@@ -61,7 +61,7 @@ class ProductoForm(forms.ModelForm):
             'stock': forms.NumberInput(attrs={'class': 'form-control'}),
             'descuento': forms.NumberInput(attrs={
                 'type': 'range',
-                'class': 'form-range discount-slider', 
+                'class': 'form-range discount-slider', # Clase personalizada para JS
                 'min': '0',
                 'max': '99',
                 'step': '1'
@@ -78,14 +78,14 @@ class ProductoForm(forms.ModelForm):
         }
 
 class CheckoutForm(forms.Form):
-    
+    # DATOS DE CONTACTO
     nombre = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Tu nombre'}))
     apellidos = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Tus apellidos'}))
     rut = forms.CharField(max_length=12, required=True, widget=forms.TextInput(attrs={'placeholder': '12.345.678-9'}))
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'tu@correo.com'}))
     telefono = forms.CharField(max_length=9, required=True, widget=forms.TextInput(attrs={'placeholder': '987654321'}))
 
-    
+    # TIPO DE ENTREGA
     DELIVERY_CHOICES = [
         ('delivery', 'Delivery a Domicilio'),
         ('retiro', 'Retiro en Tienda'),
@@ -97,7 +97,7 @@ class CheckoutForm(forms.Form):
         required=True
     )
 
-    
+    # --- NUEVOS CAMPOS DE DIRECCIÓN (ocultos al inicio) ---
     TIPO_VIVIENDA_CHOICES = [
         ('casa', 'Casa'),
         ('depto', 'Departamento'),
@@ -109,7 +109,7 @@ class CheckoutForm(forms.Form):
     codigo_postal = forms.CharField(max_length=10, required=False, widget=forms.TextInput(attrs={'placeholder': 'Opcional'}))
 
 
-    
+    # MÉTODO DE PAGO
     PAYMENT_CHOICES = [
         ('webpay', 'Webpay Plus'),
         ('mercadopago', 'Mercado Pago'),
@@ -122,13 +122,13 @@ class CheckoutForm(forms.Form):
         required=True
     )
 
-    
+    # --- LÓGICA DE VALIDACIÓN ---
     def clean(self):
         cleaned_data = super().clean()
         tipo_entrega = cleaned_data.get('tipo_entrega')
 
         if tipo_entrega == 'delivery':
-            
+            # Si es delivery, estos campos son obligatorios
             calle = cleaned_data.get('calle')
             numero = cleaned_data.get('numero')
             tipo_vivienda = cleaned_data.get('tipo_vivienda')
@@ -142,7 +142,7 @@ class CheckoutForm(forms.Form):
         
         return cleaned_data
     
-
+# Widget personalizado para permitir múltiples archivos
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
@@ -175,13 +175,13 @@ class ComprobantePagoForm(forms.Form):
     )
     
 class PerfilUsuarioForm(forms.Form):
-    
+    # Datos del Cliente
     nombre = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
     apellidos = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control', 'readonly': 'readonly'})) 
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control', 'readonly': 'readonly'})) # Email suele ser solo lectura para no romper login
     telefono = forms.CharField(max_length=9, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
-    
+    # Datos de Dirección (Opcionales si no ha comprado, pero buenos para tener)
     calle = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     numero = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     ciudad = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -191,7 +191,7 @@ from .models import Empleado
 from django.contrib.auth.hashers import make_password
 
 class EmpleadoForm(forms.ModelForm):
-    
+    # Campo de contraseña no mapeado directamente al modelo para poder manejar el hasheo
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Dejar en blanco para no cambiar'}),
         required=False,
@@ -219,11 +219,11 @@ class EmpleadoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+        # Si es una instancia existente, la contraseña no es obligatoria
         if self.instance.pk:
             self.fields['password'].required = False
         else:
-            
+            # Si es un nuevo empleado, la contraseña es obligatoria
             self.fields['password'].required = True
             self.fields['password'].widget.attrs['placeholder'] = 'Contraseña (obligatoria)'
 
@@ -231,7 +231,7 @@ class EmpleadoForm(forms.ModelForm):
         empleado = super().save(commit=False)
         password = self.cleaned_data.get("password")
         
-        
+        # Hashear la contraseña solo si se proporcionó una nueva
         if password:
             empleado.pass_hash = make_password(password)
         

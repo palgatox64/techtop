@@ -86,10 +86,10 @@
         let timeSalesChart, shippingChart, paymentChart, topProductsChart;
 
         function initCharts() {
-            
+            // 1. Gráfico de Línea (Ventas en el tiempo) - Renombrado para claridad
             const ctxTime = document.getElementById('timeSalesChart').getContext('2d');
             timeSalesChart = new Chart(ctxTime, {
-                type: 'line', 
+                type: 'line', // Cambiado a línea para mejor visualización del tiempo
                 data: {
                     labels: [],
                     datasets: [{
@@ -104,7 +104,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            
+            // 2. Gráfico de Torta (Envíos) - Se hará pequeño por CSS
             const ctxShipping = document.getElementById('shippingChart').getContext('2d');
             shippingChart = new Chart(ctxShipping, {
                 type: 'doughnut',
@@ -125,12 +125,12 @@
             });
             const ctxPayment = document.getElementById('paymentChart').getContext('2d');
             paymentChart = new Chart(ctxPayment, {
-                type: 'doughnut', 
+                type: 'doughnut', // Tipo torta (con agujero, igual que el de envíos)
                 data: {
                     labels: ['Webpay', 'Mercado Pago', 'Transferencia'],
                     datasets: [{
                         data: [],
-                        
+                        // Colores diferentes para distinguir: Azul, Celeste, Verde
                         backgroundColor: ['#0d6efd', '#0dcaf0', '#198754']
                     }]
                 },
@@ -142,7 +142,7 @@
                     }
                 }
             });
-            
+            // 3. NUEVO Gráfico de Barras Horizontales (Top Productos)
             const ctxTop = document.getElementById('topProductsChart').getContext('2d');
             topProductsChart = new Chart(ctxTop, {
                 type: 'bar',
@@ -156,7 +156,7 @@
                     }]
                 },
                 options: {
-                    indexAxis: 'y', 
+                    indexAxis: 'y', // Hace que las barras sean horizontales
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
@@ -165,18 +165,18 @@
                 }
             });
 
-            updateCharts('monthly'); 
+            updateCharts('monthly'); // Cargar datos iniciales
         }
 
         window.updateCharts = function(period) {
             const data = metricsData[period];
             
-            
+            // Actualizar Gráfico 1: Tiempo
             timeSalesChart.data.labels = data.sales_over_time.labels;
             timeSalesChart.data.datasets[0].data = data.sales_over_time.values;
             timeSalesChart.update();
 
-            
+            // Actualizar Gráfico 2: Envíos
             shippingChart.data.datasets[0].data = [data.shipping.pickup, data.shipping.delivery];
             shippingChart.update();
 
@@ -187,20 +187,20 @@
             ];
             paymentChart.update();
             
-            
-            
+            // Actualizar Gráfico 3: Top Productos (NUEVO)
+            // Extraemos los nombres y cantidades de la lista de productos
             topProductsChart.data.labels = data.top_products.map(p => p.name);
             topProductsChart.data.datasets[0].data = data.top_products.map(p => p.quantity);
             topProductsChart.update();
 
-            
+            // Actualizar Tabla
             const tbody = document.getElementById('top-products-body');
             tbody.innerHTML = '';
             data.top_products.forEach((prod, index) => {
-                
+                // Formatear dinero
                 const revenueFormatted = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(prod.revenue);
                 
-                
+                // Determinar el badge del ranking
                 let rankingDisplay = `#${index + 1}`;
                 if (index === 0) {
                     rankingDisplay = '<span class="top-1-badge">1</span>';

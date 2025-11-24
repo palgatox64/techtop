@@ -7,18 +7,18 @@ def validate_chilean_rut(rut):
     Valida el formato y dígito verificador del RUT chileno.
     Formato esperado: 12345678-9 o 12.345.678-9
     """
-    
+    # Limpiar el RUT (eliminar puntos y guiones)
     rut_limpio = rut.replace('.', '').replace('-', '').upper()
     
-    
+    # Verificar formato básico (7-8 dígitos + 1 dígito verificador)
     if not re.match(r'^\d{7,8}[0-9K]$', rut_limpio):
         raise ValidationError('Formato de RUT inválido. Use el formato: 12345678-9')
     
-    
+    # Separar número y dígito verificador
     numero = rut_limpio[:-1]
     dv_ingresado = rut_limpio[-1]
     
-    
+    # Calcular dígito verificador
     suma = 0
     multiplicador = 2
     
@@ -31,7 +31,7 @@ def validate_chilean_rut(rut):
     resto = suma % 11
     dv_calculado = 11 - resto
     
-    
+    # Convertir a string según las reglas
     if dv_calculado == 11:
         dv_calculado = '0'
     elif dv_calculado == 10:
@@ -39,7 +39,7 @@ def validate_chilean_rut(rut):
     else:
         dv_calculado = str(dv_calculado)
     
-    
+    # Validar
     if dv_ingresado != dv_calculado:
         raise ValidationError(f'RUT inválido. El dígito verificador correcto es {dv_calculado}')
 
@@ -70,20 +70,20 @@ def validate_strong_password(password):
     if not re.search(r'\d', password):
         raise ValidationError('La contraseña debe contener al menos un número.')
     
-    
+    # REGEX MÁS AMPLIA para caracteres especiales
     if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>/?~`]', password):
         raise ValidationError('La contraseña debe contener al menos un carácter especial.')
     
-    
-    forbidden_chars = re.search(r'[\'"\\]', password)
+    # Opcional: Validar caracteres no permitidos por seguridad
+    forbidden_chars = re.search(r'[\'\"\\]', password)
     if forbidden_chars:
         raise ValidationError('La contraseña no puede contener comillas o barras invertidas.')
 
 def validate_email_extended(email):
     """Validación extendida de email"""
-    
+    # Primero usar la validación estándar de Django
     django_validate_email(email)
     
-    
+    # Validaciones adicionales
     if len(email) > 100:
         raise ValidationError('El correo electrónico es demasiado largo.')

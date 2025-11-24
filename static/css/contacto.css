@@ -30,7 +30,7 @@
     align-items: start;
 }
 
-
+/* Estilos del formulario */
 .form-section {
     background: #fff;
     padding: 2rem;
@@ -103,7 +103,7 @@
     transform: translateY(0);
 }
 
-
+/* Información de contacto */
 .contact-info {
     background: #fff;
     padding: 2rem;
@@ -145,7 +145,7 @@
     font-size: 0.95rem;
 }
 
-
+/* Responsive */
 @media (max-width: 768px) {
     .contacto-content {
         grid-template-columns: 1fr;

@@ -8,18 +8,18 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/gestion.css' %}">
 <style>
-    
+    /* Estilo para la celda de precio actualizada */
     .price-cell .original-price {
         text-decoration: line-through;
         color: #999;
         font-size: 0.9rem;
-        display: block; 
+        display: block; /* Muestra el precio original arriba */
     }
     .price-cell .final-price {
-        color: #28a745; 
+        color: #28a745; /* Verde para el precio final */
         font-weight: bold;
         font-size: 1.1rem;
-        display: block; 
+        display: block; /* Muestra el precio final abajo */
     }
     .price-cell .discount-badge {
         background-color: #dc3545;
