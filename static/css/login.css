@@ -29,7 +29,7 @@
     color: #333;
 }
 
-
+/* CONTENEDOR DE INPUT - IGUAL QUE EN REGISTRO */
 .input-container {
     position: relative;
 }
@@ -44,18 +44,18 @@
     transition: all 0.3s ease;
 }
 
-
+/* INPUTS DENTRO DE CONTENEDORES CON TOGGLE */
 .input-container input {
-    padding-right: 45px; 
+    padding-right: 45px; /* Espacio para el icono del ojo */
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: #667eea; 
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); 
+    border-color: #667eea; /* CAMBIADO: Mismo color que registro */
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); /* CAMBIADO: Mismo efecto que registro */
 }
 
-
+/* ESTILOS PARA EL ICONO DEL OJO - EXACTAMENTE IGUAL QUE EN REGISTRO */
 .password-toggle {
     position: absolute;
     right: 12px;
@@ -64,7 +64,7 @@
     background: none;
     border: none;
     font-size: 1.2rem;
-    color: #666; 
+    color: #666; /* MISMO COLOR INICIAL */
     cursor: pointer;
     padding: 0;
     z-index: 2;
@@ -72,12 +72,12 @@
 }
 
 .password-toggle:hover {
-    color: #333; 
+    color: #333; /* MISMO COLOR HOVER */
 }
 
 .password-toggle:focus {
     outline: none;
-    color: #667eea; 
+    color: #667eea; /* CAMBIADO: Mismo color que registro */
 }
 
 .btn-login {
@@ -155,7 +155,7 @@
     border: 1px solid #f5c6cb;
 }
 
-
+/* Responsive */
 @media (max-width: 768px) {
     .login-container {
         padding: 30px 20px;

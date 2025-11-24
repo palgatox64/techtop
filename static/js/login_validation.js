@@ -2,12 +2,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('login-form');
 
     form.addEventListener('submit', async function(event) {
-        event.preventDefault(); 
+        event.preventDefault(); // ¡AGREGAR ESTA LÍNEA QUE FALTA!
 
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
 
-        
+        // Validación de campos vacíos
         if (!email || !password) {
             Swal.fire({
                 icon: 'error',
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        
+        // Validación del formato de correo electrónico
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(email)) {
             Swal.fire({
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        
+        // Validación básica de longitud de contraseña
         if (password.length < 6) {
             Swal.fire({
                 icon: 'error',
@@ -61,12 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon: 'success',
                     title: '¡Éxito!',
                     text: data.message,
-                    timer: 3000,                    
-                    showConfirmButton: false,       
-                    allowOutsideClick: false,       
-                    allowEscapeKey: false           
+                    timer: 3000,                    // Exactamente 3 segundos
+                    showConfirmButton: false,       // No mostrar botón para que no interfiera
+                    allowOutsideClick: false,       // No permitir cerrar haciendo clic afuera
+                    allowEscapeKey: false           // No permitir cerrar con ESC
                 }).then(() => {
-                    
+                    // Esta función se ejecuta después de exactamente 3 segundos
                     window.location.href = data.redirect_url;
                 });
             } else {

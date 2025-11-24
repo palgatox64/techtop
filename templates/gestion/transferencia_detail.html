@@ -17,7 +17,7 @@
     .proof-img { width: 100%; max-width: 300px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: transform 0.3s; }
     .proof-img:hover { transform: scale(1.05); }
     .action-buttons { display: flex; gap: 20px; margin-top: 30px; }
-    
+    /* Botones personalizados para acciones */
     .btn-approve, .btn-reject { 
         flex: 1; 
         padding: 15px; 
@@ -113,7 +113,7 @@
         const btnApprove = document.getElementById('btn-approve');
         const btnReject = document.getElementById('btn-reject');
 
-        
+        // Lógica para el botón de APROBAR
         if (btnApprove) {
             btnApprove.addEventListener('click', function() {
                 Swal.fire({
@@ -127,14 +127,14 @@
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        accionInput.value = 'aprobar'; 
-                        form.submit(); 
+                        accionInput.value = 'aprobar'; // Seteamos la acción
+                        form.submit(); // Enviamos el formulario
                     }
                 });
             });
         }
 
-        
+        // Lógica para el botón de RECHAZAR
         if (btnReject) {
             btnReject.addEventListener('click', function() {
                 Swal.fire({
@@ -148,8 +148,8 @@
                     cancelButtonText: 'Volver'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        accionInput.value = 'rechazar'; 
-                        form.submit(); 
+                        accionInput.value = 'rechazar'; // Seteamos la acción
+                        form.submit(); // Enviamos el formulario
                     }
                 });
             });

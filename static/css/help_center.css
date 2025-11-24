@@ -6,7 +6,7 @@
     color: #333;
 }
 
-
+/* Encabezado y Barra de Búsqueda */
 .help-header {
     text-align: center;
     margin-bottom: 50px;
@@ -51,7 +51,7 @@
     font-size: 1.2rem;
 }
 
-
+/* Sección de Preguntas Frecuentes (FAQ) */
 .faq-container {
     margin-bottom: 50px;
 }
@@ -100,7 +100,7 @@
     padding-bottom: 20px;
 }
 
-
+/* Sección de Contacto */
 .contact-prompt {
     text-align: center;
     background-color: #f9f9f9;

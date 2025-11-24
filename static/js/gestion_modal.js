@@ -11,7 +11,7 @@ class GestionModal {
         console.log('🚀 Inicializando GestionModal...');
         this.createModal();
         this.attachEditButtonListeners();
-        this.attachAddButtonListeners(); 
+        this.attachAddButtonListeners(); // 👈 Nueva línea
         this.attachOutsideClickListener();
         console.log('✅ GestionModal inicializado correctamente');
     }
@@ -40,7 +40,7 @@ class GestionModal {
                             <p>Cargando formulario...</p>
                         </div>
                         <div id="modal-form-container" style="display: none;">
-                            
+                            <!-- El formulario se cargará aquí -->
                         </div>
                     </div>
                 </div>
@@ -60,15 +60,15 @@ class GestionModal {
     attachEditButtonListeners() {
         console.log('🎯 Configurando listeners para botones de editar...');
         
-        
+        // Buscar todos los enlaces de editar existentes
         const editLinks = document.querySelectorAll('a[href*="/editar/"]');
         console.log(`🔍 Encontrados ${editLinks.length} enlaces de editar:`, editLinks);
 
-        
+        // Interceptar TODOS los clics en el documento
         document.addEventListener('click', (e) => {
             console.log('🖱️ Click detectado en:', e.target);
             
-            
+            // Buscar el enlace de edición más cercano
             const editLink = e.target.closest('a[href*="/editar/"]');
             
             if (editLink && editLink.href.includes('/gestion/')) {
@@ -87,13 +87,13 @@ class GestionModal {
         console.log('✅ Listeners configurados');
     }
 
-    
+    // 👇 NUEVA FUNCIÓN PARA BOTONES DE AGREGAR
     attachAddButtonListeners() {
         console.log('🎯 Configurando listeners para botones de agregar...');
         
-        
+        // Interceptar clics en enlaces de agregar
         document.addEventListener('click', (e) => {
-            
+            // Buscar el enlace de agregar más cercano
             const addLink = e.target.closest('a[href*="/agregar"], a[href*="/nuevo"], a[href*="/crear"]');
             
             if (addLink && addLink.href.includes('/gestion/')) {
@@ -117,7 +117,7 @@ class GestionModal {
         return 'Item';
     }
 
-    
+    // 👇 NUEVA FUNCIÓN PARA ABRIR MODAL DE AGREGAR
     async openAddModal(addUrl, itemType) {
         console.log('🔓 Abriendo modal para agregar:', addUrl, 'tipo:', itemType);
         
@@ -322,11 +322,11 @@ class GestionModal {
     }
 }
 
-
+// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🏁 DOM listo, inicializando GestionModal...');
     
-    
+    // Verificar si existen los enlaces de editar y agregar
     const editLinks = document.querySelectorAll('a[href*="/editar/"]');
     const addLinks = document.querySelectorAll('a[href*="/agregar"], a[href*="/nuevo"], a[href*="/crear"]');
     console.log('🔍 Enlaces de editar encontrados:', editLinks.length);
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`  Agregar ${index + 1}. ${link.href}`);
     });
     
-    
+    // Crear instancia del modal
     new GestionModal();
     console.log('🎉 GestionModal inicializado completamente');
 });
@@ -347,13 +347,13 @@ console.log('📄 Final del archivo gestion_modal.js');
 
 document.addEventListener("DOMContentLoaded", function() {
 
-    
+    // Función para inicializar un slider
     function initSlider(sliderInput) {
-        
+        // Evitar inicializar dos veces el mismo slider
         if (sliderInput.dataset.initialized === 'true') return;
 
-        
-        
+        // 1. Crear el contenedor si no existe (para agrupar slider y numero)
+        // Esto ayuda a que se mantengan juntos visualmente
         let wrapper = sliderInput.closest('.slider-container');
         if (!wrapper) {
             wrapper = document.createElement('div');
@@ -362,17 +362,17 @@ document.addEventListener("DOMContentLoaded", function() {
             wrapper.appendChild(sliderInput);
         }
 
-        
+        // 2. Crear el elemento que mostrará el número
         let valueDisplay = document.createElement('span');
         valueDisplay.className = 'discount-value';
         wrapper.appendChild(valueDisplay);
 
-        
+        // 3. Función para actualizar el texto y el color
         function updateDisplay() {
             const val = sliderInput.value;
             valueDisplay.textContent = val + '%';
             
-            
+            // Si es 0%, ponerlo gris. Si es > 0%, ponerlo morado.
             if (val === '0') {
                 valueDisplay.classList.add('zero');
             } else {
@@ -380,31 +380,31 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        
+        // 4. Escuchar el evento 'input' (se dispara mientras arrastras)
         sliderInput.addEventListener('input', updateDisplay);
 
-        
+        // Inicializar el valor al cargar la página
         updateDisplay();
         
-        
+        // Marcar como inicializado
         sliderInput.dataset.initialized = 'true';
     }
 
-    
+    // Buscar e inicializar todos los sliders existentes al cargar la página
     const existingSliders = document.querySelectorAll('.discount-slider');
     existingSliders.forEach(initSlider);
 
-    
-    
+    // OBSERVER: Esto es IMPORTANTE si tus formularios cargan en Modales (popups).
+    // Detecta cuando se agregan nuevos elementos al HTML y si son sliders, los inicializa.
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
-                if (node.nodeType === 1) { 
-                    
+                if (node.nodeType === 1) { // Si es un elemento HTML
+                    // Si el nodo insertado es el slider mismo
                     if (node.classList && node.classList.contains('discount-slider')) {
                         initSlider(node);
                     }
-                    
+                    // O si el nodo insertado CONTIENE un slider dentro
                     else {
                         const slidersInside = node.querySelectorAll('.discount-slider');
                         slidersInside.forEach(initSlider);
@@ -414,7 +414,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    
+    // Iniciar el observador en todo el cuerpo del documento
     observer.observe(document.body, { childList: true, subtree: true });
 
 });

@@ -1,26 +1,26 @@
-
+/* --- ESTILOS GENERALES DE LA PÁGINA DE GESTIÓN --- */
 .gestion-page {
     max-width: 1200px;
     margin: 40px auto;
     padding: 20px;
 }
 
-
+/* Contenedor para el botón de volver y el encabezado en formularios (crear/editar) */
 .form-header-wrapper {
     display: flex;
-    align-items: center; 
-    justify-content: space-between; 
+    align-items: center; /* Alinea verticalmente el botón y el header */
+    justify-content: space-between; /* Espacia el botón a la izquierda y el header al centro */
     margin-bottom: 40px;
-    width: 100%; 
-    flex-wrap: wrap; 
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
 }
 
-
+/* Estilos para el encabezado principal de las páginas de gestión */
 .gestion-header {
-    text-align: center; 
-    margin-bottom: 40px; 
-    flex-grow: 1; 
-    padding: 0 20px; 
+    text-align: center; /* Centra el texto por defecto */
+    margin-bottom: 40px; /* Margen inferior para separar del contenido */
+    flex-grow: 1; /* Permite que el header ocupe el espacio restante en flex containers */
+    padding: 0 20px; /* Añade padding para que el texto no toque los bordes en flex */
 }
 
 .gestion-header h1 {
@@ -35,9 +35,9 @@
     margin-bottom: 0;
 }
 
-
+/* Estilo para el botón de volver al panel */
 .btn-back-panel {
-    display: inline-flex; 
+    display: inline-flex; /* Para que ocupe solo el espacio necesario y permita alinear */
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
@@ -48,8 +48,8 @@
     font-weight: 600;
     font-size: 0.9rem;
     transition: background-color 0.3s ease;
-    flex-shrink: 0; 
-    margin-bottom: 20px; 
+    flex-shrink: 0; /* Evita que el botón se encoja en flex containers */
+    margin-bottom: 20px; /* Margen inferior para separarlo del siguiente bloque */
 }
 
 .btn-back-panel:hover {
@@ -61,7 +61,7 @@
     font-size: 1.1rem;
 }
 
-
+/* Ajuste para pantallas pequeñas */
 @media (max-width: 768px) {
     .form-header-wrapper {
         flex-direction: column;
@@ -78,7 +78,8 @@
 }
 
 
-
+/* --- ESTILOS PARA FORMULARIOS (CREAR/EDITAR) --- */
+/* Contenedor que centra el formulario en la página */
 .gestion-page.form-container {
     display: flex;
     justify-content: center;
@@ -86,7 +87,7 @@
     flex-direction: column;
 }
 
-
+/* El "card" blanco que contiene el formulario */
 .gestion-form {
     background-color: #fff;
     padding: 40px;
@@ -94,10 +95,10 @@
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     width: 100%;
-    max-width: 700px; 
+    max-width: 700px; /* Ancho del formulario */
 }
 
-
+/* Django envuelve cada campo en <p>, lo usamos como .form-group */
 .gestion-form p {
     margin-bottom: 1.5rem;
 }
@@ -110,7 +111,7 @@
     color: #333;
 }
 
-
+/* Estilo unificado para todos los campos del formulario */
 .gestion-form .form-control,
 .gestion-form .form-select,
 .gestion-form input[type="text"],
@@ -138,7 +139,7 @@
     gap: 15px;
 }
 
-
+/* Botones de acción */
 .gestion-form .btn-submit, .gestion-form .btn-cancel {
     padding: 12px 30px;
     border: none;
@@ -151,7 +152,7 @@
 }
 
 .gestion-form .btn-submit {
-    background-color: #2c2c2c; 
+    background-color: #2c2c2c; /* Botón principal oscuro */
     color: white;
 }
 .gestion-form .btn-submit:hover {
@@ -159,14 +160,14 @@
 }
 
 .gestion-form .btn-cancel {
-    background-color: #6c757d; 
+    background-color: #6c757d; /* Botón secundario gris */
     color: white;
 }
 .gestion-form .btn-cancel:hover {
     background-color: #5a6268;
 }
 
-
+/* --- ESTILOS PARA EL MENÚ DEL PANEL (TARJETAS) --- */
 .gestion-menu {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -192,7 +193,7 @@
     color: #2c2c2c;
 }
 
-
+/* --- ESTILOS PARA LAS PÁGINAS DE LISTADO (TABLAS) --- */
 .table-actions {
     margin-bottom: 25px;
     display: flex;
@@ -239,14 +240,14 @@
     font-weight: 600; 
     border: none; 
     cursor: pointer;
-    
-    height: 36px; 
-    line-height: 20px; 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center; 
-    box-sizing: border-box; 
-    vertical-align: top; 
+    /* Nuevas propiedades para igualar altura */
+    height: 36px; /* Altura fija */
+    line-height: 20px; /* Altura de línea consistente */
+    display: inline-flex; /* Para mejor control del contenido */
+    align-items: center; /* Centrar verticalmente el texto */
+    justify-content: center; /* Centrar horizontalmente el texto */
+    box-sizing: border-box; /* Incluir padding y border en el cálculo de altura */
+    vertical-align: top; /* Alineación vertical consistente */
 }
 .btn-action.edit { 
     background-color: #ffc107; 
@@ -263,7 +264,7 @@
 .page-item.disabled .page-link { color: #6c757d; pointer-events: none; background-color: #fff; border-color: #dee2e6; }
 .page-item:not(.disabled) .page-link:hover { background-color: #e9ecef; }
 
-
+/* --- MENSAJES DE DJANGO --- */
 .messages {
     list-style-type: none;
     padding: 0;
@@ -277,9 +278,9 @@
 .alert-error { background-color: #f8d7da; color: #721c24; }
 
 .modal-overlay {
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
+    display: flex; /* Cambiado de 'none' a 'flex' */
+    align-items: center; /* Añadido para centrar verticalmente */
+    justify-content: center; /* Añadido para centrar horizontalmente */
     position: fixed;
     top: 0;
     left: 0;
@@ -288,14 +289,14 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     overflow-y: auto;
-    visibility: hidden; 
-    opacity: 0; 
-    transition: opacity 0.3s ease, visibility 0.3s ease; 
+    visibility: hidden; /* Añadido para ocultar */
+    opacity: 0; /* Añadido para hacerlo transparente */
+    transition: opacity 0.3s ease, visibility 0.3s ease; /* Añadido para animar */
 }
 
 .modal-overlay.show {
-    visibility: visible; 
-    opacity: 1; 
+    visibility: visible; /* Cambiado para mostrar */
+    opacity: 1; /* Cambiado para hacerlo opaco */
 }
 
 .modal-content {
@@ -413,7 +414,7 @@
     background-color: #5a6268;
 }
 
-
+/* Responsividad del modal */
 @media (max-width: 768px) {
     .modal-content {
         margin: 10px;
@@ -435,7 +436,7 @@
     }
 }
 
-
+/* Estilos para la página de Métricas */
 .metrics-page .metrics-container {
     max-width: 1200px;
     margin: 2rem auto;
@@ -510,8 +511,9 @@
     margin-right: 0.5rem;
 }
 
+/* --- Agrega esto al final de gestion.css --- */
 
-
+/* Contenedor principal de métricas */
 .metrics-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -534,7 +536,7 @@
     margin-left: 10px;
 }
 
-
+/* Sistema de filas y grids para gráficos */
 .charts-row {
     display: flex;
     gap: 25px;
@@ -557,33 +559,33 @@
     text-align: center;
 }
 
-
+/* Tamaños específicos de gráficos */
 .main-chart {
-    flex: 2;      
+    flex: 2;      /* Ocupa más espacio (66%) */
     min-height: 400px;
 }
 
 .small-chart {
-    flex: 1;      
+    flex: 1;      /* Ocupa menos espacio (33%) */
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-
+/* Contenedor para forzar el tamaño pequeño de la torta */
 .chart-wrapper-small {
     width: 100%;
-    max-width: 250px; 
-    height: 250px;    
+    max-width: 250px; /* Límite máximo de ancho para la torta */
+    height: 250px;    /* Altura fija para la torta */
     position: relative;
 }
 
 .full-width {
-    flex-basis: 100%; 
-    height: 500px;    
+    flex-basis: 100%; /* Ocupa todo el ancho */
+    height: 500px;    /* Altura mayor para que entren los nombres */
 }
 
-
+/* Estilos de la tabla */
 .table-card {
     background: #fff;
     padding: 25px;
@@ -615,7 +617,7 @@
     background-color: #f9f9f9;
 }
 
-
+/* Botón volver (estilo consistente) */
 .btn-volver {
     display: inline-flex;
     align-items: center;
@@ -632,7 +634,7 @@
     background-color: #dde2e6;
 }
 
-
+/* Responsive */
 @media (max-width: 992px) {
     .charts-row {
         flex-direction: column;
@@ -647,25 +649,27 @@
     }
 }
 
+/* --- ACTUALIZACIÓN EN static/css/gestion.css --- */
 
+/* ... (estilos anteriores de metrics-container, metrics-controls, etc.) ... */
 
 .charts-row {
     display: flex;
     gap: 25px;
     margin-bottom: 30px;
     flex-wrap: wrap;
-    align-items: stretch; 
+    align-items: stretch; /* Para que las tarjetas de una misma fila tengan la misma altura */
 }
 
 .chart-card {
     background: #fff;
-    padding: 20px; 
+    padding: 20px; /* Reducido un poco el padding */
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     border: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
-    
+    /* IMPORTANTE: overflow hidden evita que el contenido expanda la tarjeta */
     overflow: hidden; 
 }
 
@@ -674,42 +678,42 @@
     color: #333;
     font-size: 1.1rem;
     text-align: center;
-    flex-shrink: 0; 
+    flex-shrink: 0; /* Evita que el título se encoja */
 }
 
-
+/* Contenedor relativo para el canvas. CRUCIAL para Chart.js responsive */
 .chart-container-wrapper {
     position: relative;
     flex-grow: 1;
     width: 100%;
-    min-height: 0; 
+    min-height: 0; /* Permite que el flex item se encoja si es necesario */
 }
 
-
+/* Tamaños específicos de las tarjetas */
 .main-chart {
     flex: 2;
-    min-width: 300px; 
-    height: 400px;    
+    min-width: 300px; /* Ancho mínimo para evitar colapso en pantallas pequeñas */
+    height: 400px;    /* Altura fija para controlar el layout */
 }
 
 .small-chart {
     flex: 1;
     min-width: 250px;
-    height: 400px;    
+    height: 400px;    /* Misma altura que main-chart para alineación */
 }
 
 .full-width {
     flex-basis: 100%;
-    height: 500px;    
+    height: 500px;    /* Altura mayor para el gráfico de barras horizontales */
 }
 
-
+/* Ajuste específico para el gráfico de torta para que no sea gigante */
 .small-chart .chart-container-wrapper {
-    max-height: 300px; 
-    margin: auto;      
+    max-height: 300px; /* Limitar altura máxima de la torta */
+    margin: auto;      /* Centrar verticalmente si sobra espacio */
 }
 
-
+/* Responsive */
 @media (max-width: 768px) {
     .charts-row {
         flex-direction: column;
@@ -720,23 +724,23 @@
     .small-chart, 
     .full-width {
         flex: 1 1 auto;
-        width: 100%;     
-        height: auto;    
-        min-height: 350px; 
+        width: 100%;     /* Ocupar todo el ancho en móvil */
+        height: auto;    /* Altura automática */
+        min-height: 350px; /* Altura mínima razonable */
     }
 
-    
+    /* En móvil, permitimos que la torta ocupe más si es necesario, pero con límite */
     .small-chart .chart-container-wrapper {
         max-height: 350px;
     }
 }
 
-
+/* --- SELECTOR DE PERÍODO MODERNO --- */
 .metrics-controls {
     margin-bottom: 30px;
     text-align: right;
-    background: transparent; 
-    padding: 0; 
+    background: transparent; /* Quitamos el fondo gris del contenedor */
+    padding: 0; /* Quitamos el padding */
 }
 
 .metrics-controls label {
@@ -747,11 +751,11 @@
 }
 
 .metrics-controls select {
-    appearance: none; 
+    appearance: none; /* Elimina el estilo nativo del navegador */
     background-color: #fff;
-    border: 2px solid #6a0dad; 
-    border-radius: 25px; 
-    padding: 10px 40px 10px 20px; 
+    border: 2px solid #6a0dad; /* Color principal */
+    border-radius: 25px; /* Bordes muy redondeados */
+    padding: 10px 40px 10px 20px; /* Espacio para el texto y la flecha */
     font-size: 1rem;
     font-weight: 600;
     color: #6a0dad;
@@ -760,7 +764,7 @@
     transition: all 0.3s ease;
     box-shadow: 0 4px 6px rgba(106, 13, 173, 0.1);
     
-    
+    /* Flecha personalizada usando SVG en background-image */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' style='fill:%236a0dad;'%3E%3Cpath d='M16.293 9.293 12 13.586 7.707 9.293l-1.414 1.414L12 16.414l5.707-5.707z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 15px center;
@@ -770,7 +774,7 @@
 .metrics-controls select:hover {
     background-color: #6a0dad;
     color: #fff;
-    
+    /* Cambiamos el color de la flecha a blanco al hacer hover */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' style='fill:%23ffffff;'%3E%3Cpath d='M16.293 9.293 12 13.586 7.707 9.293l-1.414 1.414L12 16.414l5.707-5.707z'/%3E%3C/svg%3E");
 }
 
@@ -779,34 +783,34 @@
 }
 
 
-
+/* --- TABLA MODERNA Y COLORIDA --- */
 .table-card {
-    
-    border: none; 
-    overflow: hidden; 
+    /* ... (mantener estilos de fondo, padding, shadow del contenedor) ... */
+    border: none; /* Quitamos borde del card para un look más limpio */
+    overflow: hidden; /* Para que el header redondeado no se salga */
 }
 
 .table-card h3 {
-    
-    color: #6a0dad; 
+    /* ... (mantener estilos del título) ... */
+    color: #6a0dad; /* Título en color principal */
     font-weight: 700;
 }
 
 .table-responsive {
     overflow-x: auto;
-    border-radius: 12px; 
+    border-radius: 12px; /* Redondear la tabla completa */
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
 .metrics-table {
     width: 100%;
-    border-collapse: separate; 
+    border-collapse: separate; /* Necesario para border-radius en celdas */
     border-spacing: 0;
-    margin-top: 0; 
+    margin-top: 0; /* Quitamos margen superior porque el contenedor ya tiene padding */
 }
 
 .metrics-table th {
-    background: linear-gradient(135deg, #6a0dad, #9c27b0); 
+    background: linear-gradient(135deg, #6a0dad, #9c27b0); /* Degradado vibrante */
     color: white;
     padding: 18px 15px;
     text-align: left;
@@ -817,7 +821,7 @@
     border: none;
 }
 
-
+/* Redondear esquinas superiores del header */
 .metrics-table th:first-child { border-top-left-radius: 12px; }
 .metrics-table th:last-child { border-top-right-radius: 12px; }
 
@@ -829,37 +833,37 @@
     transition: all 0.2s ease;
 }
 
-
+/* Filas alternas con color muy suave */
 .metrics-table tbody tr:nth-child(even) {
     background-color: #fbfbfb;
 }
 
-
+/* Hover effect en filas */
 .metrics-table tbody tr:hover {
-    background-color: #f5eefc; 
-    transform: scale(1.01); 
+    background-color: #f5eefc; /* Color lavanda muy suave al pasar el mouse */
+    transform: scale(1.01); /* Liguero efecto de zoom */
     box-shadow: 0 4px 10px rgba(106, 13, 173, 0.1);
 }
 
-
-.metrics-table td:first-child { 
+/* Estilos específicos para columnas */
+.metrics-table td:first-child { /* Columna Ranking */
     font-weight: bold;
     color: #6a0dad;
     text-align: center;
 }
-.metrics-table th:first-child { text-align: center; } 
+.metrics-table th:first-child { text-align: center; } /* Centrar header de ranking */
 
-.metrics-table td:nth-child(2) { 
+.metrics-table td:nth-child(2) { /* Columna Producto */
     font-weight: 500;
     color: #333;
 }
 
-.metrics-table td:last-child { 
+.metrics-table td:last-child { /* Columna Ingresos */
     font-weight: 700;
-    color: #28a745; 
+    color: #28a745; /* Verde para dinero */
 }
 
-
+/* Badges para el top 3 */
 .top-1-badge, .top-2-badge, .top-3-badge {
     display: inline-block;
     width: 30px;
@@ -871,11 +875,11 @@
     font-size: 0.9rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-.top-1-badge { background: linear-gradient(45deg, #FFD700, #FFA500); } 
-.top-2-badge { background: linear-gradient(45deg, #C0C0C0, #A9A9A9); } 
-.top-3-badge { background: linear-gradient(45deg, #CD7F32, #8B4513); } 
+.top-1-badge { background: linear-gradient(45deg, #FFD700, #FFA500); } /* Dorado */
+.top-2-badge { background: linear-gradient(45deg, #C0C0C0, #A9A9A9); } /* Plateado */
+.top-3-badge { background: linear-gradient(45deg, #CD7F32, #8B4513); } /* Bronce */
 
-
+/* Responsive para la tabla */
 @media (max-width: 768px) {
     .metrics-table th, .metrics-table td {
         padding: 12px 10px;
@@ -883,37 +887,40 @@
     }
 }
 
+/* --- AÑADIR O ACTUALIZAR EN static/css/gestion.css --- */
 
+/* ... estilos existentes ... */
 
+/* Clase auxiliar para filas con 2 columnas iguales */
 .charts-row.two-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr; 
+    grid-template-columns: 1fr 1fr; /* Dos columnas de igual ancho */
     gap: 25px;
 }
 
-
+/* Aseguramos que en la fila de dos columnas, los small-chart ocupen todo su espacio de grid */
 .charts-row.two-columns .small-chart {
-    flex: unset; 
+    flex: unset; /* Anulamos el flex para que funcione el grid */
     width: auto;
-    min-width: 0; 
+    min-width: 0; /* Evita desbordamientos en grid */
 }
 
-
+/* Ajuste responsive para que vuelvan a ser una sola columna en móvil */
 @media (max-width: 768px) {
     .charts-row.two-columns {
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr; /* Una sola columna en móvil */
     }
 }
 
-
+/* Asegúrate de que .chart-wrapper-small esté bien definido para centrar las tortas */
 .chart-wrapper-small {
     width: 100%;
-    max-width: 300px; 
+    max-width: 300px; /* Un poco más grande para que se vean bien las dos */
     height: 300px;
-    margin: 0 auto; 
+    margin: 0 auto; /* Centrado horizontal */
 }
 
-
+/* Estilos para el slider de descuento */
 .discount-slider-container {
     display: flex;
     align-items: center;
@@ -932,10 +939,10 @@
     appearance: none;
     width: 20px;
     height: 20px;
-    background: #6a0dad; 
+    background: #6a0dad; /* Tu color morado corporativo */
     cursor: pointer;
     border-radius: 50%;
-    margin-top: -8px; 
+    margin-top: -8px; /* Ajuste para centrar */
 }
 .form-range::-webkit-slider-runnable-track {
     width: 100%;
@@ -955,39 +962,39 @@
     font-size: 0.9rem;
 }
 
-
+/* Contenedor para alinear el slider y el número */
 .slider-container {
     display: flex;
     align-items: center;
-    gap: 15px; 
+    gap: 15px; /* Espacio entre la barra y el número */
     width: 100%;
 }
 
-
+/* Estilo de la barra deslizante */
 .discount-slider {
-    flex-grow: 1; 
+    flex-grow: 1; /* Que ocupe todo el espacio posible */
     height: 8px;
     border-radius: 5px;
     background: #e0e0e0;
     outline: none;
     transition: background 0.2s;
-    -webkit-appearance: none; 
+    -webkit-appearance: none; /* Necesario para Chrome/Safari/Edge */
 }
 
-
+/* Estilo del círculo arrastrable (thumb) para Chrome/Safari/Edge */
 .discount-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: #6a0dad; 
+    background: #6a0dad; /* Tu color morado */
     cursor: pointer;
     border: 2px solid #fff;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-
+/* Estilo del círculo para Firefox */
 .discount-slider::-moz-range-thumb {
     width: 22px;
     height: 22px;
@@ -998,7 +1005,7 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-
+/* Estilo del número que muestra el porcentaje */
 .discount-value {
     min-width: 48px;
     padding: 4px 10px;
@@ -1011,7 +1018,7 @@
     transition: all 0.3s ease;
 }
 
-
+/* Cuando el valor es 0, lo mostramos en gris para indicar "inactivo" */
 .discount-value.zero {
     background-color: #e0e0e0;
     color: #666;

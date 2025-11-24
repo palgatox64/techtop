@@ -6,20 +6,20 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/help_center.css' %}">
 <style>
-    
+    /* Ocultamos el contenedor de FAQ por defecto */
     .faq-container {
         display: none;
         margin-top: 30px;
     }
     
-    
+    /* Mostramos el contenedor si tiene la clase 'active' (cuando hay resultados) */
     .faq-container.active {
         display: block;
     }
     
-    
+    /* Mensaje de 'no encontrado' (ahora controlado por JS) */
     #no-results-message {
-        display: none; 
+        display: none; /* Oculto por defecto */
         text-align: center;
         padding: 40px;
         background-color: #f8f9fa;
@@ -76,7 +76,7 @@
     },
     {
         "q": "¿Cómo funciona la garantía de los productos?",
-        "a": "<p>Todos nuestros productos tienen una <strong>Garantía Legal de 6 meses</strong> que cubre cualquier falla o defecto de fabricación. Si tu producto presenta un problema que no sea por mal uso, lo gestionaremos.</p><p>Además, tienes una <strong>Garantía de Satisfacción de 10 días</strong> para devolver el producto si no te gustó (debe estar sin uso y en su empaque original completo).</p><p>👉 <a href='{% url 'garantias' %}' style='font-weight: bold; color: #6a0dad;'>Ver detalles de la Política de Garantía</a></p>"
+        "a": "<p>Todos nuestros productos tienen una <strong>Garantía Legal de 6 meses</strong> que cubre cualquier falla o defecto de fabricación. Si tu producto presenta un problema que no sea por mal uso, lo gestionaremos.</p><p>Además, tienes una <strong>Garantía de Satisfacción de 10 días</strong> para devolver el producto si no te gustó (debe estar sin uso y en su empaque original).</p><p>👉 <a href='{% url 'garantias' %}' style='font-weight: bold; color: #6a0dad;'>Ver detalles de la Política de Garantía</a></p>"
     },
     {
         "q": "¿Qué hago si mi producto llegó roto o dañado?",

@@ -7,11 +7,11 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-zmwjx@35r3hbyyzn$rc0^(2!0vptp3ttzac=bo5%9d-gh0&jb2'
 
-
+# Detectar sistema operativo
 IS_LINUX = platform.system() == 'Linux'
 IS_WINDOWS = platform.system() == 'Windows'
 
-
+# Configuración según entorno
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 PRODUCTION = os.getenv('PRODUCTION', 'False') == 'True'
 
@@ -32,7 +32,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Debe estar después de SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,7 +62,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'techtop_project.wsgi.application'
 
 
-
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -80,7 +81,8 @@ DATABASES = {
 }
 
 
-
+# Password validation
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -98,7 +100,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -110,7 +113,8 @@ USE_I18N = True
 USE_TZ = True
 
 
-
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -119,16 +123,16 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-
+# Configuración para encontrar archivos estáticos
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 ]
 
-
+# Configuración de WhiteNoise para servir archivos estáticos en producción
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
+# Azure Blob Storage Configuration (solo para archivos de media)
 AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
 AZURE_ACCOUNT_KEY = os.getenv('AZURE_STORAGE_KEY')
 AZURE_CONTAINER = os.getenv('AZURE_CONTAINER')
@@ -149,38 +153,38 @@ STORAGES = {
     },
 }
 
+# Transbank WebPay Plus Configuration
+TRANSBANK_COMMERCE_CODE = os.getenv('TRANSBANK_COMMERCE_CODE', '597055555532')  # Código de comercio de prueba
+TRANSBANK_API_KEY = os.getenv('TRANSBANK_API_KEY', '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C')  # API Key de prueba
+TRANSBANK_ENVIRONMENT = os.getenv('TRANSBANK_ENVIRONMENT', 'INTEGRACION')  # INTEGRACION o PRODUCCION
 
-TRANSBANK_COMMERCE_CODE = os.getenv('TRANSBANK_COMMERCE_CODE', '597055555532')  
-TRANSBANK_API_KEY = os.getenv('TRANSBANK_API_KEY', '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C')  
-TRANSBANK_ENVIRONMENT = os.getenv('TRANSBANK_ENVIRONMENT', 'INTEGRACION')  
+# Mercado Pago Configuration
+MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', 'TEST-4660967168423158-102716-610c5f083948a0ce493719033f911bd3-835057213')  # Access Token de prueba
+MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', 'TEST-b729921c-1996-4f1a-9f68-0785f2d67619')  # Public Key de prueba
+MERCADOPAGO_ENVIRONMENT = os.getenv('MERCADOPAGO_ENVIRONMENT', 'TEST')  # TEST o PRODUCTION
 
-
-MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', 'TEST-4660967168423158-102716-610c5f083948a0ce493719033f911bd3-835057213')  
-MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY', 'TEST-b729921c-1996-4f1a-9f68-0785f2d67619')  
-MERCADOPAGO_ENVIRONMENT = os.getenv('MERCADOPAGO_ENVIRONMENT', 'TEST')  
-
-
+# Configuración de Email con Amazon SES
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('AWS_SES_EMAIL_HOST')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('AWS_SES_SMTP_USER')
 EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SMTP_PASSWORD')
-DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  
+DEFAULT_FROM_EMAIL = 'tienda-techtop@warevision.net'  # Usar el dominio verificado en SES
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 
-
+# Configuración de seguridad para HTTPS (solo en producción)
 if PRODUCTION:
-    SECURE_SSL_REDIRECT = False  
+    SECURE_SSL_REDIRECT = False  # Cloudflare Tunnel maneja SSL
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     
-    
+    # Configuración para confiar en los headers de proxy de Cloudflare
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_X_FORWARDED_HOST = True
     USE_X_FORWARDED_PORT = True
@@ -190,7 +194,7 @@ if PRODUCTION:
         'https://www.techtop.warevision.net'
     ]
 else:
-    
+    # Configuración para desarrollo
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
@@ -199,7 +203,7 @@ else:
         'http://127.0.0.1:8000'
     ]
 
-
+# Logging para debug en Linux
 if IS_LINUX:
     LOGGING = {
         'version': 1,

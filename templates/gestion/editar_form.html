@@ -9,7 +9,7 @@
     <header class="gestion-header">
         <h1>{{ titulo }}</h1>
         <p>Modifica los campos necesarios y guarda los cambios.</p>
-        
+        <!-- Nuevo botón para volver al panel principal -->
         <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
             <i class='bx bx-arrow-back'></i> Volver al Panel
         </a>
@@ -38,17 +38,17 @@
         function initDiscountSliders() {
             const sliders = document.querySelectorAll('.discount-slider');
             sliders.forEach(slider => {
-                
+                // Evitar doble inicialización
                 if (slider.dataset.initialized) return;
 
-                
+                // Crear elemento para mostrar el valor si no existe
                 let display = slider.parentElement.querySelector('.discount-value-display');
                 if (!display) {
                     display = document.createElement('span');
                     display.className = 'discount-value-display';
-                    
+                    // Insertar después del slider
                     slider.parentNode.insertBefore(display, slider.nextSibling);
-                    
+                    // Envolver en un contenedor para mejor alineación (opcional pero recomendado)
                     const wrapper = document.createElement('div');
                     wrapper.className = 'discount-slider-container';
                     slider.parentNode.insertBefore(wrapper, slider);
@@ -56,10 +56,10 @@
                     wrapper.appendChild(display);
                 }
 
-                
+                // Función para actualizar valor
                 const updateValue = () => {
                     display.textContent = slider.value + '%';
-                    
+                    // Cambiar color si hay descuento activo
                     if (parseInt(slider.value) > 0) {
                          display.style.backgroundColor = '#6a0dad';
                          display.style.color = 'white';
@@ -69,20 +69,20 @@
                     }
                 };
 
-                
+                // Listeners
                 slider.addEventListener('input', updateValue);
                 
-                
+                // Inicializar valor actual
                 updateValue();
                 slider.dataset.initialized = 'true';
             });
         }
 
-        
+        // Inicializar al cargar la página
         initDiscountSliders();
 
-        
-        
+        // SI USAS MODALES: Necesitas llamar a initDiscountSliders() cada vez que se abre el modal.
+        // Puedes usar un MutationObserver si no quieres tocar mucho el código JS existente del modal.
         const observer = new MutationObserver((mutations) => {
             initDiscountSliders();
         });

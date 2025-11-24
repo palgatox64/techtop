@@ -54,7 +54,7 @@ urlpatterns = [
     path('gestion/marcas/eliminar/<int:pk>/', views.eliminar_marca_view, name='eliminar_marca'),
     path('gestion/marcas/exportar-csv/', views.exportar_marcas_csv, name='exportar_marcas_csv'),
 
-    
+    # URLs para Gestión de Empleados (Superadmin)
     path('gestion/empleados/', views.gestion_empleados, name='gestion_empleados'),
     path('gestion/empleados/crear/', views.crear_empleado, name='crear_empleado'),
     path('gestion/empleados/editar/<int:pk>/', views.editar_empleado, name='editar_empleado'),
@@ -68,12 +68,12 @@ urlpatterns = [
     path('gestion/transferencias/', views.listar_transferencias_view, name='listar_transferencias'),
     path('gestion/transferencias/<int:pago_id>/', views.gestionar_transferencia_view, name='gestionar_transferencia'),
     path('pago/cancelar/<int:pedido_id>/', views.cancelar_pedido_transferencia, name='cancelar_pedido_transferencia'),
-    
+    # Rutas para Webpay Plus (Transbank)
     path('webpay/iniciar/<int:pedido_id>/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
     path('webpay/retorno/', views.retorno_webpay, name='retorno_webpay'),
     path('webpay/anular/<int:transaccion_id>/', views.anular_transaccion_webpay, name='anular_transaccion_webpay'),
     
-    
+    # Rutas para Mercado Pago
     path('mercadopago/iniciar/<int:pedido_id>/', views.iniciar_pago_mercadopago, name='iniciar_pago_mercadopago'),
     path('mercadopago/success/', views.retorno_mercadopago_success, name='retorno_mercadopago_success'),
     path('mercadopago/failure/', views.retorno_mercadopago_failure, name='retorno_mercadopago_failure'),
@@ -88,12 +88,12 @@ urlpatterns = [
     path('gestion/pedidos/<int:pedido_id>/', views.gestionar_pedido_view, name='gestionar_pedido'),
     path('mi-cuenta/notificaciones/', views.mis_notificaciones_view, name='mis_notificaciones'), 
     
-    
+    # Recuperación de contraseña
     path('recuperar-contrasena/', views.password_reset_request, name='password_reset_request'),
     path('restablecer-contrasena/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
 ]
 
-
+# Servir archivos estáticos en desarrollo
 if settings.DEBUG or not settings.PRODUCTION:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=os.path.join(settings.BASE_DIR, 'static'))

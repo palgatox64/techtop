@@ -17,38 +17,38 @@ def convert_to_webp(image_file, quality=85, max_width=1920, max_height=1920):
         InMemoryUploadedFile: Archivo WebP optimizado listo para guardar
     """
     try:
-        
+        # Abrir la imagen con Pillow
         img = Image.open(image_file)
         
-        
+        # Convertir a RGB si es necesario (WebP no soporta algunos modos como RGBA con transparencia)
         if img.mode in ('RGBA', 'LA', 'P'):
-            
+            # Mantener transparencia convirtiendo a RGBA primero
             img = img.convert('RGBA')
         elif img.mode != 'RGB':
             img = img.convert('RGB')
         
-        
+        # Redimensionar si excede los límites (mantiene aspect ratio)
         if img.width > max_width or img.height > max_height:
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
         
-        
+        # Crear buffer en memoria para guardar la imagen WebP
         output = BytesIO()
         
-        
+        # Guardar como WebP con la calidad especificada
         img.save(
             output,
             format='WEBP',
             quality=quality,
-            method=6  
+            method=6  # Método de compresión más lento pero mejor (0-6)
         )
         output.seek(0)
         
-        
+        # Obtener el nombre original y cambiar la extensión
         original_name = image_file.name
         name_without_ext = original_name.rsplit('.', 1)[0]
         new_name = f"{name_without_ext}.webp"
         
-        
+        # Crear el InMemoryUploadedFile que Django puede manejar
         webp_file = InMemoryUploadedFile(
             output,
             'ImageField',
@@ -62,7 +62,7 @@ def convert_to_webp(image_file, quality=85, max_width=1920, max_height=1920):
         
     except Exception as e:
         print(f"Error al convertir imagen a WebP: {e}")
-        
+        # En caso de error, devolver la imagen original
         return image_file
 
 
