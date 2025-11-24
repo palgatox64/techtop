@@ -561,7 +561,7 @@ def product_detail(request, product_id):
         else:
             image_url = request.build_absolute_uri(product.imagen.url)
     
-    # Keywords dinámicos del producto
+    # Keywords dinámicos del producto (incluyendo tags)
     keywords = ['techtop', 'comprar', 'chile']
     if product.marca:
         keywords.append(product.marca.nombre.lower())
@@ -569,10 +569,28 @@ def product_detail(request, product_id):
         keywords.append(product.categoria.nombre.lower())
     keywords.append(product.nombre.lower())
     
+    # Agregar tags del producto a las keywords
+    tags_list = product.get_tags_list()
+    if tags_list:
+        keywords.extend(tags_list)
+    
+    # Construir descripción mejorada con tags
+    if product.descripcion:
+        base_description = product.descripcion[:140]
+    else:
+        base_description = f"Compra {product.nombre} en Techtop. Envío a todo Chile."
+    
+    # Si hay tags, agregarlos al final de la descripción
+    if tags_list:
+        tags_text = ', '.join(tags_list[:3])  # Máximo 3 tags para no exceder 160 caracteres
+        description = f"{base_description} | {tags_text}"[:160]
+    else:
+        description = base_description
+    
     # Configurar metadata SEO
     meta = Meta(
         title=f"{product.nombre} - Techtop",
-        description=product.descripcion[:160] if product.descripcion else f"Compra {product.nombre} en Techtop. Envío a todo Chile.",
+        description=description,
         image=image_url,
         url=request.build_absolute_uri(),
         object_type='product',
