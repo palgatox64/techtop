@@ -49,11 +49,18 @@ urlpatterns = [
     path('gestion/categorias/editar/<int:pk>/', views.editar_categoria_view, name='editar_categoria'),
     path('gestion/categorias/eliminar/<int:pk>/', views.eliminar_categoria_view, name='eliminar_categoria'),
     path('gestion/categorias/exportar-csv/', views.exportar_categorias_csv, name='exportar_categorias_csv'),
+    # URLs para Gestión de Marcas
     path('gestion/marcas/', views.listar_marcas_view, name='listar_marcas'),
     path('gestion/marcas/crear/', views.crear_marca_view, name='crear_marca'),
     path('gestion/marcas/editar/<int:pk>/', views.editar_marca_view, name='editar_marca'),
     path('gestion/marcas/eliminar/<int:pk>/', views.eliminar_marca_view, name='eliminar_marca'),
     path('gestion/marcas/exportar-csv/', views.exportar_marcas_csv, name='exportar_marcas_csv'),
+
+    # URLs para Gestión de Tags
+    path('gestion/tags/', views.listar_tags_view, name='listar_tags'),
+    path('gestion/tags/crear/', views.crear_tag_view, name='crear_tag'),
+    path('gestion/tags/editar/<int:pk>/', views.editar_tag_view, name='editar_tag'),
+    path('gestion/tags/eliminar/<int:pk>/', views.eliminar_tag_view, name='eliminar_tag'),
 
     # URLs para Gestión de Empleados (Superadmin)
     path('gestion/empleados/', views.gestion_empleados, name='gestion_empleados'),

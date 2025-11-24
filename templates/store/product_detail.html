@@ -32,8 +32,28 @@
     </div>
 
     <div class="product-info-column">
-        <h1 class="product-title">{{ product.nombre }}</h1>
-        <p class="product-brand-name">Marca: <strong>{{ product.marca.nombre }}</strong></p>
+        <h1>{{ product.nombre }}</h1>
+        <p class="brand">Marca: <strong>{{ product.marca.nombre }}</strong></p>
+        
+        {# Mostrar tags del producto #}
+        {% if product.tags.exists %}
+        <div class="product-tags" style="margin: 15px 0;">
+            {% for tag in product.tags.all %}
+            <span class="product-tag" style="
+                display: inline-block;
+                background: {{ tag.color }};
+                color: white;
+                padding: 4px 12px;
+                border-radius: 15px;
+                font-size: 0.85rem;
+                margin-right: 5px;
+                margin-bottom: 5px;
+            ">
+                <i class='bx bx-purchase-tag'></i> {{ tag.nombre }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <div class="price-box">
             {% if product.descuento > 0 %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Categoria, Marca, Producto, Cliente, Direccion, Pedido, DetallePedido, ImagenProducto, Empleado
+from .models import Categoria, Marca, Producto, Cliente, Direccion, Pedido, DetallePedido, ImagenProducto, Empleado, Tag
 
 # Define el 'inline' para las imágenes adicionales
 class ImagenProductoInline(admin.TabularInline):
@@ -8,8 +8,9 @@ class ImagenProductoInline(admin.TabularInline):
 
 # Personaliza cómo se ve el admin de Producto
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio', 'stock', 'categoria', 'marca')
-    inlines = [ImagenProductoInline] # Añade el inline aquí
+    list_display = ('nombre', 'precio', 'stock', 'categoria', 'marca', 'get_tags_display')
+    inlines = [ImagenProductoInline]
+    filter_horizontal = ('tags',)  # Widget mejorado para selección de tags
 
 class EmpleadoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'apellidos', 'email', 'cargo', 'activo', 'fecha_contratacion')
@@ -25,3 +26,4 @@ admin.site.register(Direccion)
 admin.site.register(Pedido)
 admin.site.register(DetallePedido)
 admin.site.register(Empleado, EmpleadoAdmin)
+admin.site.register(Tag)

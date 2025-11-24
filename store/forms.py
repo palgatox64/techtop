@@ -1,5 +1,5 @@
 from django import forms
-from .models import Categoria, Marca, Producto, Comentario
+from .models import Categoria, Marca, Producto, Comentario, Tag
 from django.core.exceptions import ValidationError 
 from .models import Cliente, Direccion 
 
@@ -50,9 +50,32 @@ class ProductoForm(forms.ModelForm):
         label='¿Publicar en redes sociales?',
         help_text='Si está marcado, el producto se compartirá automáticamente en Facebook e Instagram'
     )
+    
+    # Campo personalizado para tags con autocompletado
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.all().order_by('nombre'),
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'tag-checkbox-list'
+        }),
+        required=False,
+        label='Etiquetas del Producto',
+        help_text='Selecciona las etiquetas que describen este producto (mejora el SEO y búsqueda)'
+    )
+    
+    # Campo para crear nuevos tags sobre la marcha
+    nuevos_tags = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'bluetooth, gps, android (separados por comas)'
+        }),
+        label='Agregar Nuevas Etiquetas',
+        help_text='Escribe nuevas etiquetas separadas por comas. Se crearán automáticamente.'
+    )
+    
     class Meta:
         model = Producto
-        fields = ['nombre', 'descripcion', 'precio', 'descuento', 'stock', 'imagen', 'categoria', 'marca', 'activo']
+        fields = ['nombre', 'descripcion', 'precio', 'descuento', 'stock', 'imagen', 'categoria', 'marca', 'tags', 'activo']
         
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
@@ -61,7 +84,7 @@ class ProductoForm(forms.ModelForm):
             'stock': forms.NumberInput(attrs={'class': 'form-control'}),
             'descuento': forms.NumberInput(attrs={
                 'type': 'range',
-                'class': 'form-range discount-slider', # Clase personalizada para JS
+                'class': 'form-range discount-slider',
                 'min': '0',
                 'max': '99',
                 'step': '1'
@@ -75,6 +98,56 @@ class ProductoForm(forms.ModelForm):
         labels = {
             'activo': 'Producto Activo (visible en tienda)',
             'descuento': 'Oferta Especial (%) - Arrastra para aplicar'
+        }
+    
+    def save(self, commit=True):
+        producto = super().save(commit=False)
+        
+        if commit:
+            producto.save()
+            
+            # Guardar tags existentes seleccionados
+            self.save_m2m()
+            
+            # Procesar nuevos tags si existen
+            nuevos_tags_str = self.cleaned_data.get('nuevos_tags', '')
+            if nuevos_tags_str:
+                from django.utils.text import slugify
+                
+                # Dividir por comas y limpiar espacios
+                tags_list = [tag.strip().lower() for tag in nuevos_tags_str.split(',') if tag.strip()]
+                
+                for tag_nombre in tags_list:
+                    # Crear o obtener el tag
+                    tag, created = Tag.objects.get_or_create(
+                        nombre=tag_nombre,
+                        defaults={'slug': slugify(tag_nombre)}
+                    )
+                    # Agregar el tag al producto
+                    producto.tags.add(tag)
+        
+        return producto
+
+
+class TagForm(forms.ModelForm):
+    """Formulario para gestionar tags individualmente"""
+    class Meta:
+        model = Tag
+        fields = ['nombre', 'color']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'ej: bluetooth, gps, wifi'
+            }),
+            'color': forms.TextInput(attrs={
+                'type': 'color',
+                'class': 'form-control form-control-color',
+                'title': 'Elige el color del tag'
+            }),
+        }
+        labels = {
+            'nombre': 'Nombre de la Etiqueta',
+            'color': 'Color (Hexadecimal)'
         }
 
 class CheckoutForm(forms.Form):

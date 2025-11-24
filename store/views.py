@@ -21,8 +21,8 @@ from django.db.models import Sum, Count, F, Q
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
 import datetime
-from .forms import ComprobantePagoForm, PerfilUsuarioForm, ComentarioForm, CheckoutForm
-from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia
+from .forms import ComprobantePagoForm, PerfilUsuarioForm, ComentarioForm, CheckoutForm, TagForm
+from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia, Tag
 from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg
 from decimal import Decimal
 from io import BytesIO
@@ -39,7 +39,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 # Local imports
-from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario, PasswordResetToken
+from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario, PasswordResetToken, Tag
 from .decorators import admin_required, superadmin_required
 from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm, EmpleadoForm
 from .validators import validate_chilean_rut
@@ -3079,13 +3079,14 @@ def generate_chatbot_response(message_raw):
         productos = Producto.objects.filter(activo=True, stock__gt=0).order_by('?')[:6]
         return crear_respuesta_productos(productos, "Explora nuestro catálogo 🚀")
 
-    # CASO: Búsqueda específica (Marcas, Categorías, Palabras clave)
+    # CASO: Búsqueda específica (Marcas, Categorías, Tags, Palabras clave)
     # Usamos la misma lógica de detección combinada de la V2 mejorada, 
     # pero aseguramos que busque por relevancia (fecha o precio) si es específico.
     
-    # 1. Detectar marcas y categorías en el mensaje
+    # 1. Detectar marcas, categorías y tags en el mensaje
     marcas_detectadas = [m for m in Marca.objects.all() if normalizar_texto(m.nombre) in msg]
     cats_detectadas = [c for c in Categoria.objects.all() if normalizar_texto(c.nombre) in msg]
+    tags_detectados = [t for t in Tag.objects.all() if normalizar_texto(t.nombre) in msg]
 
     if marcas_detectadas and cats_detectadas:
         # Búsqueda combinada: "Radio Kia"
@@ -3101,16 +3102,23 @@ def generate_chatbot_response(message_raw):
         # Solo categoría: "Muestrame radios" -> mostrar aleatorios de esa categoría para variedad
         prods = Producto.objects.filter(categoria=cats_detectadas[0], activo=True, stock__gt=0).order_by('?')[:6]
         return crear_respuesta_productos(prods, f"Categoría: {cats_detectadas[0].nombre}")
+    
+    if tags_detectados:
+        # Búsqueda por tag: "productos con bluetooth", "con gps", etc.
+        prods = Producto.objects.filter(tags=tags_detectados[0], activo=True, stock__gt=0).order_by('?')[:6]
+        if prods.exists():
+            return crear_respuesta_productos(prods, f"🏷️ Productos con {tags_detectados[0].nombre}")
 
-    # 2. Búsqueda por palabras clave (último recurso de búsqueda)
+    # 2. Búsqueda por palabras clave (incluye búsqueda en tags)
     intentos_busqueda = ['busco', 'quiero', 'necesito', 'tienes', 'venden', 'precio', 'valor', 'mostrar', 'ver']
     if any(i in msg for i in intentos_busqueda) or len(words) > 1: # Si parece una búsqueda
         palabras_clave = [w for w in words if len(w) > 3 and w not in intentos_busqueda]
         if palabras_clave:
             query = Q()
             for p in palabras_clave:
-                query |= Q(nombre__icontains=p) | Q(descripcion__icontains=p)
-            prods = Producto.objects.filter(query, activo=True, stock__gt=0).order_by('?')[:6]
+                # Buscar en nombre, descripción Y TAGS
+                query |= Q(nombre__icontains=p) | Q(descripcion__icontains=p) | Q(tags__nombre__icontains=p)
+            prods = Producto.objects.filter(query, activo=True, stock__gt=0).distinct().order_by('?')[:6]
             if prods.exists():
                 return crear_respuesta_productos(prods, "Lo que encontré para ti")
 
@@ -3490,3 +3498,79 @@ def contacto(request):
             messages.error(request, 'Ocurrió un error interno. Intenta nuevamente.')
 
     return render(request, 'contacto.html')
+
+@admin_required
+def listar_tags_view(request):
+    """Lista todos los tags disponibles"""
+    tags_list = Tag.objects.annotate(
+        productos_count=Count('productos')
+    ).order_by('id')
+    
+    paginator = Paginator(tags_list, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'gestion/tags_list.html', {'page_obj': page_obj})
+
+
+@admin_required
+def crear_tag_view(request):
+    """Crea un nuevo tag"""
+    if request.method == 'POST':
+        form = TagForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Etiqueta creada exitosamente!')
+            return redirect('listar_tags')
+    else:
+        form = TagForm()
+    
+    return render(request, 'gestion/crear_form.html', {
+        'form': form,
+        'titulo': 'Crear Nueva Etiqueta',
+        'volver_url': 'listar_tags'
+    })
+
+
+@admin_required
+def editar_tag_view(request, pk):
+    """Edita un tag existente"""
+    tag = get_object_or_404(Tag, pk=pk)
+    
+    if request.method == 'POST':
+        form = TagForm(request.POST, instance=tag)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'¡Etiqueta "{tag.nombre}" actualizada exitosamente!')
+            return redirect('listar_tags')
+    else:
+        form = TagForm(instance=tag)
+    
+    return render(request, 'gestion/editar_form.html', {
+        'form': form,
+        'titulo': f'Editar Etiqueta: {tag.nombre}',
+        'objeto_id': tag.pk,
+        'volver_url': 'listar_tags'
+    })
+
+
+@admin_required
+@require_http_methods(["POST"])
+def eliminar_tag_view(request, pk):
+    """Elimina un tag (solo si no tiene productos asociados)"""
+    tag = get_object_or_404(Tag, pk=pk)
+    
+    # Verificar si tiene productos asociados
+    if tag.productos.exists():
+        return JsonResponse({
+            'success': False,
+            'message': f'No se puede eliminar "{tag.nombre}" porque tiene {tag.productos.count()} producto(s) asociado(s). Primero quita esta etiqueta de los productos.'
+        })
+    
+    nombre_tag = tag.nombre
+    tag.delete()
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Etiqueta "{nombre_tag}" eliminada exitosamente.'
+    })

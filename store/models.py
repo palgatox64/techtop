@@ -40,6 +40,40 @@ class Marca(models.Model):
     def __str__(self):
         return self.nombre
 
+
+class Tag(models.Model):
+    """
+    Modelo para etiquetas/tags de productos.
+    Permite categorización adicional y mejora el SEO.
+    """
+    nombre = models.CharField(
+        max_length=50, 
+        unique=True,
+        help_text='Nombre de la etiqueta (ej: "bluetooth", "gps", "android")'
+    )
+    slug = models.SlugField(max_length=50, unique=True, blank=True)
+    color = models.CharField(
+        max_length=7, 
+        default='#6a0dad',
+        help_text='Color hexadecimal para mostrar el tag (ej: #6a0dad)'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Etiqueta'
+        verbose_name_plural = 'Etiquetas'
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+    
+    def save(self, *args, **kwargs):
+        # Auto-generar slug si no existe
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
+
 # =========================================
 # MODELOS DE PRODUCTO
 # =========================================
@@ -60,6 +94,7 @@ class Producto(models.Model):
     
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
     marca = models.ForeignKey(Marca, on_delete=models.PROTECT)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='productos', verbose_name='Etiquetas')  # NUEVO
     
     def __str__(self):
         return self.nombre
@@ -72,6 +107,14 @@ class Producto(models.Model):
         if self.stock == 0:
             self.activo = False
         super().save(*args, **kwargs)
+    
+    def get_tags_list(self):
+        """Retorna lista de nombres de tags para SEO"""
+        return [tag.nombre for tag in self.tags.all()]
+    
+    def get_tags_display(self):
+        """Retorna tags como string separado por comas"""
+        return ', '.join(self.get_tags_list())
         
     @property
     def precio_oferta(self):
@@ -79,18 +122,16 @@ class Producto(models.Model):
         if self.descuento > 0:
             descuento_decimal = Decimal(self.descuento) / Decimal(100)
             precio_final = self.precio * (1 - descuento_decimal)
-            return int(precio_final) # Redondeo a entero para CLP
+            return int(precio_final)
         return int(self.precio)
-
+    
     @property
     def precio_transferencia(self):
         """
         Calcula el precio final para transferencia.
         Aplica el 3% EXTRA sobre el precio que ya tiene oferta (si existe).
         """
-        # Primero obtenemos el precio base (normal u oferta)
         base = self.precio_oferta
-        # Aplicamos el 3% adicional de transferencia
         precio_final = base * Decimal('0.97')
         return int(precio_final) # Redondeo a entero para CLP
 

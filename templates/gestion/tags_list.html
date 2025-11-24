@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Gestionar Etiquetas{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion.css' %}">
+
+<style>
+    .tag-preview {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 15px;
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-right: 5px;
+    }
+    
+    .tag-count {
+        background: #f0f0f0;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        color: #666;
+        margin-left: 8px;
+    }
+</style>
+
+<div class="gestion-page">
+    <header class="gestion-header">
+        <h1>🏷️ Gestión de Etiquetas</h1>
+        <a href="{% url 'panel_gestion' %}" class="btn-back-panel">
+            <i class='bx bx-arrow-back'></i> Volver al Panel
+        </a>
+    </header>
+
+    <div class="table-actions">
+        <a href="{% url 'crear_tag' %}" class="btn-create">
+            <i class='bx bx-plus'></i> Añadir Etiqueta
+        </a>
+    </div>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Etiqueta</th>
+                    <th>Vista Previa</th>
+                    <th>Productos Asociados</th>
+                    <th>Fecha Creación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in page_obj %}
+                <tr>
+                    <td>{{ tag.id }}</td>
+                    <td>
+                        <strong>{{ tag.nombre }}</strong>
+                        <br>
+                        <small style="color: #999;">Slug: {{ tag.slug }}</small>
+                    </td>
+                    <td>
+                        <span class="tag-preview" style="background-color: {{ tag.color }};">
+                            {{ tag.nombre }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="tag-count">
+                            <i class='bx bx-box'></i> {{ tag.productos_count }} producto{{ tag.productos_count|pluralize }}
+                        </span>
+                    </td>
+                    <td>{{ tag.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'editar_tag' tag.id %}" class="btn-action edit">
+                            <i class='bx bx-edit'></i> Editar
+                        </a>
+                        <button type="button" class="btn-action delete btn-delete-item" 
+                                data-url="{% url 'eliminar_tag' tag.id %}" 
+                                data-item-name="{{ tag.nombre }}"
+                                data-csrf-token="{{ csrf_token }}">
+                            <i class='bx bx-trash'></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px;">
+                        <i class='bx bx-tag' style="font-size: 3rem; color: #ccc;"></i>
+                        <p style="margin-top: 10px; color: #999;">No hay etiquetas registradas.</p>
+                        <a href="{% url 'crear_tag' %}" class="btn-create" style="margin-top: 15px;">
+                            Crear Primera Etiqueta
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="pagination-container">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                        <i class='bx bx-chevron-left'></i> Anterior
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                        Siguiente <i class='bx bx-chevron-right'></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6a0dad;">
+        <h3 style="margin-top: 0;"><i class='bx bx-info-circle'></i> Información sobre Etiquetas</h3>
+        <ul style="line-height: 1.8;">
+            <li><strong>¿Para qué sirven?</strong> Las etiquetas ayudan a categorizar productos y mejorar el SEO.</li>
+            <li><strong>¿Cuántas puedo usar?</strong> Puedes asignar todas las etiquetas que quieras a cada producto.</li>
+            <li><strong>Búsqueda mejorada:</strong> Los clientes podrán encontrar productos buscando por etiquetas.</li>
+            <li><strong>Crear nuevas:</strong> Puedes crear etiquetas directamente al agregar/editar productos.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/gestion_delete.js' %}"></script>
+{% endblock %}
