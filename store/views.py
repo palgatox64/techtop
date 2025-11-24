@@ -1,51 +1,54 @@
-# Django core imports
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponse, Http404
-from django.contrib.auth import logout
-from django.contrib.auth.hashers import make_password, check_password
-from django.contrib import messages
-from django.db.models import Count, Q
-from django.db import IntegrityError, transaction
-from django.core.validators import validate_email
-from django.core.mail import send_mail, EmailMessage
-from django.core.exceptions import ValidationError
-from django.core.paginator import Paginator
-from django.urls import reverse
-from django.template.loader import render_to_string, get_template
-from django.utils import timezone
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Sum, Count, F, Q
-from django.db.models.functions import TruncDay, TruncMonth, TruncYear
-from django.utils import timezone
+
+# Python Standard Library
+import csv
 import datetime
-from .forms import ComprobantePagoForm, PerfilUsuarioForm, ComentarioForm, CheckoutForm, TagForm
-from .models import Notificacion, PagoTransferencia, ComprobanteTransferencia, Tag
-from django.db.models import Sum, Count, F, Q, Case, When, Value, IntegerField, Avg
+import json
+import random
+import re
+import unicodedata
 from decimal import Decimal
 from io import BytesIO
-from xhtml2pdf import pisa
-import re
-import csv
-import json
-import unicodedata 
-import random      
-from django.db.models import Q
-import unicodedata
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+
+# Django Core
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
+from django.core.mail import EmailMessage, send_mail
+from django.core.paginator import Paginator
+from django.core.validators import validate_email
+from django.db import IntegrityError, transaction
+from django.db.models import (
+    Avg, Case, Count, F, IntegerField, Q, Sum, Value, When
+)
+from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import get_template, render_to_string
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 
-# Local imports
-from .models import Producto, Marca, Categoria, Cliente, Empleado, Pedido, DetallePedido, Direccion, TransaccionWebpay, TransaccionMercadoPago, Comentario, PasswordResetToken, Tag
-from .decorators import admin_required, superadmin_required
-from .forms import CategoriaForm, MarcaForm, ProductoForm, CheckoutForm, EmpleadoForm
-from .validators import validate_chilean_rut
-from .models import MensajeContacto
-# --- VISTAS PARA GESTIÓN DE EMPLEADOS (SOLO SUPERADMIN) ---
+# Third Party
+from xhtml2pdf import pisa
 
+# Local App
+from .decorators import admin_required, superadmin_required
+from .forms import (
+    CategoriaForm, CheckoutForm, ComentarioForm, ComprobantePagoForm,
+    EmpleadoForm, MarcaForm, PerfilUsuarioForm, ProductoForm, TagForm
+)
+from .models import (
+    Categoria, Cliente, Comentario, ComprobanteTransferencia, DetallePedido,
+    Direccion, Empleado, Marca, MensajeContacto, Notificacion, PagoTransferencia,
+    PasswordResetToken, Pedido, Producto, Tag, TransaccionMercadoPago,
+    TransaccionWebpay
+)
+from .validators import validate_chilean_rut
+# ==================== END IMPORTS ==================== --- IGNORE ---
 @superadmin_required
 def gestion_empleados(request):
     """
