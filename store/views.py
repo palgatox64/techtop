@@ -3,6 +3,7 @@
 import csv
 import datetime
 import json
+import logging
 import random
 import re
 import unicodedata
@@ -48,6 +49,10 @@ from .models import (
     TransaccionWebpay
 )
 from .validators import validate_chilean_rut
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 # ==================== END IMPORTS ==================== --- IGNORE ---
 @superadmin_required
 def gestion_empleados(request):
@@ -2361,20 +2366,107 @@ def iniciar_pago_mercadopago(request):
 
 @transaction.atomic
 def retorno_mercadopago_success(request):
-    """Maneja el retorno exitoso desde Mercado Pago"""
-    return _procesar_retorno_mercadopago(request, 'approved')
+    """
+    Vista de éxito después de completar el pago en MercadoPago.
+    Procesa el pago y muestra la página de confirmación.
+    """
+    payment_id = request.GET.get('payment_id') or request.GET.get('collection_id')
+    external_reference = request.GET.get('external_reference')
+    status = request.GET.get('status') or request.GET.get('collection_status')
+    
+    logger.info(f"MercadoPago Success - payment_id: {payment_id}, external_reference: {external_reference}, status: {status}")
+    
+    if not external_reference:
+        logger.error("No se recibió external_reference en mercadopago_success")
+        messages.error(request, 'Error: No se encontró la referencia de la orden.')
+        return redirect('checkout')
+    
+    try:
+        pedido = Pedido.objects.get(id=external_reference)
+        logger.info(f"Pedido encontrado: {pedido.id}, estado actual: {pedido.estado}")
+        
+        # Si el pago fue aprobado y el pedido aún no está procesado
+        if status == 'approved' and pedido.estado == 'pendiente':
+            logger.info(f"Procesando pago aprobado para pedido {pedido.id}")
+            
+            try:
+                # Descontar stock
+                descontar_stock_pedido(pedido)
+                
+                # Actualizar estado del pedido
+                pedido.estado = 'procesando'
+                pedido.metodo_pago = 'mercadopago'
+                pedido.save()
+                
+                # Actualizar transacción si existe
+                transaccion = TransaccionMercadoPago.objects.filter(pedido=pedido).first()
+                if transaccion and payment_id:
+                    transaccion.payment_id = str(payment_id)
+                    transaccion.estado = 'approved'
+                    transaccion.save()
+                
+                # Limpiar el carrito y datos de checkout
+                _limpiar_datos_compra(request)
+                
+                # Enviar recibo por email
+                try:
+                    enviar_recibo_por_email(pedido)
+                except Exception as email_error:
+                    logger.error(f"Error enviando email: {email_error}")
+                
+                logger.info(f"Pedido {pedido.id} procesado exitosamente")
+                
+            except ValueError as e:
+                logger.error(f"Error al descontar stock: {str(e)}")
+                messages.error(request, f'Error al procesar el pedido: {str(e)}')
+                pedido.delete()
+                return redirect('checkout')
+        
+        # Mostrar la página de pago completado
+        messages.success(request, '¡Pago realizado exitosamente!')
+        return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+        
+    except Pedido.DoesNotExist:
+        logger.error(f"Pedido no encontrado con ID: {external_reference}")
+        messages.error(request, 'Pedido no encontrado.')
+        return redirect('shop')
+    except Exception as e:
+        logger.error(f"Error en mercadopago_success: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, 'Error al procesar el pago.')
+        return redirect('checkout')
 
 
 @transaction.atomic
 def retorno_mercadopago_failure(request):
     """Maneja el retorno fallido desde Mercado Pago"""
-    return _procesar_retorno_mercadopago(request, 'rejected')
+    external_reference = request.GET.get('external_reference')
+    logger.warning(f"Pago fallido - external_reference: {external_reference}")
+    
+    # Eliminar el pedido si existe
+    if external_reference:
+        try:
+            pedido = Pedido.objects.get(id=external_reference, estado='pendiente')
+            pedido.delete()
+            logger.info(f"Pedido {external_reference} eliminado por pago fallido")
+        except Pedido.DoesNotExist:
+            pass
+    
+    messages.error(request, 'El pago no pudo ser procesado. Por favor, intenta nuevamente.')
+    return redirect('checkout')
 
 
 @transaction.atomic
 def retorno_mercadopago_pending(request):
     """Maneja el retorno pendiente desde Mercado Pago"""
-    return _procesar_retorno_mercadopago(request, 'pending')
+    external_reference = request.GET.get('external_reference')
+    payment_id = request.GET.get('payment_id')
+    
+    logger.info(f"Pago pendiente - external_reference: {external_reference}, payment_id: {payment_id}")
+    
+    messages.info(request, 'Tu pago está pendiente de aprobación. Te notificaremos cuando se confirme.')
+    return redirect('home')
 
 
 @superadmin_required
@@ -2568,28 +2660,15 @@ def webhook_mercadopago(request):
     Webhook para recibir notificaciones de MercadoPago sobre pagos.
     MercadoPago envía notificaciones cuando cambia el estado de un pago.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
     try:
-        # MercadoPago puede enviar notificaciones por POST o GET
-        if request.method == 'POST':
-            # Leer el cuerpo de la petición
-            try:
-                data = json.loads(request.body.decode('utf-8'))
-            except:
-                data = {}
-            
-            # Log para debug
-            logger.info(f"Webhook MercadoPago POST recibido: {data}")
-            
-        else:  # GET
-            data = request.GET.dict()
-            logger.info(f"Webhook MercadoPago GET recibido: {data}")
+        # Log de la petición recibida
+        logger.info(f"Webhook recibido - Method: {request.method}, GET: {request.GET.dict()}")
         
-        # Obtener el tipo de notificación
-        topic = data.get('topic') or data.get('type')
-        resource_id = data.get('id') or data.get('data', {}).get('id')
+        # MercadoPago envía los datos en los parámetros GET
+        topic = request.GET.get('topic') or request.GET.get('type')
+        resource_id = request.GET.get('id') or request.GET.get('data.id')
+        
+        logger.info(f"Topic: {topic}, Resource ID: {resource_id}")
         
         # Solo procesar notificaciones de pago
         if topic == 'payment' and resource_id:
@@ -2597,83 +2676,102 @@ def webhook_mercadopago(request):
             sdk = _configurar_mercadopago()
             
             # Obtener información del pago
-            payment_response = sdk.payment().get(int(resource_id))
-            
-            if payment_response.get('status') != 200:
-                logger.error(f"Error al obtener pago {resource_id}: {payment_response}")
-                return HttpResponse(status=200)  # Retornar 200 para que MP no reintente
-            
-            payment_data = payment_response.get('response', {})
-            payment_status = payment_data.get('status')
-            external_reference = payment_data.get('external_reference')
-            
-            logger.info(f"Pago {resource_id} - Estado: {payment_status} - Referencia: {external_reference}")
-            
-            # Buscar la transacción
-            if external_reference:
-                try:
-                    pedido_id = int(external_reference)
-                    transaccion = TransaccionMercadoPago.objects.filter(pedido_id=pedido_id).first()
-                    
-                    if transaccion:
-                        # Actualizar información de la transacción
-                        transaccion.payment_id = str(resource_id)
-                        transaccion.estado = payment_status
-                        transaccion.status_detail = payment_data.get('status_detail', '')
+            try:
+                payment_response = sdk.payment().get(int(resource_id))
+                
+                if payment_response.get('status') != 200:
+                    logger.error(f"Error al obtener pago {resource_id}: {payment_response}")
+                    return HttpResponse(status=200)
+                
+                payment_data = payment_response.get('response', {})
+                payment_status = payment_data.get('status')
+                external_reference = payment_data.get('external_reference')
+                
+                logger.info(f"Pago {resource_id} - Estado: {payment_status} - Referencia: {external_reference}")
+                
+                # Buscar el pedido
+                if external_reference:
+                    try:
+                        pedido_id = int(external_reference)
+                        pedido = Pedido.objects.filter(id=pedido_id).first()
                         
-                        if 'transaction_amount' in payment_data:
-                            transaccion.monto = Decimal(str(payment_data['transaction_amount']))
-                        
-                        transaccion.payment_method_id = payment_data.get('payment_method_id', '')
-                        transaccion.payment_type_id = payment_data.get('payment_type_id', '')
-                        
-                        if 'card' in payment_data and payment_data['card']:
-                            transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
-                        
-                        if 'payer' in payment_data:
-                            transaccion.payer_email = payment_data['payer'].get('email', '')
-                            if 'identification' in payment_data['payer']:
-                                transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
-                        
-                        transaccion.save()
-                        
-                        pedido = transaccion.pedido
-                        
-                        # Si el pago fue aprobado y el pedido no ha sido procesado
-                        if payment_status == 'approved' and pedido.estado == 'pendiente':
-                            try:
-                                # Descontar stock
-                                descontar_stock_pedido(pedido)
-                                
-                                # Actualizar estado del pedido
-                                pedido.estado = 'procesando'
-                                pedido.metodo_pago = 'mercadopago'
-                                pedido.save()
-                                
-                                # Enviar email con el recibo
+                        if pedido:
+                            # Actualizar o crear transacción
+                            transaccion, created = TransaccionMercadoPago.objects.get_or_create(
+                                pedido=pedido,
+                                defaults={
+                                    'preference_id': '',
+                                    'monto': pedido.total,
+                                    'estado': payment_status
+                                }
+                            )
+                            
+                            # Actualizar información de la transacción
+                            transaccion.payment_id = str(resource_id)
+                            transaccion.estado = payment_status
+                            transaccion.status_detail = payment_data.get('status_detail', '')
+                            
+                            if 'transaction_amount' in payment_data:
+                                transaccion.monto = Decimal(str(payment_data['transaction_amount']))
+                            
+                            transaccion.payment_method_id = payment_data.get('payment_method_id', '')
+                            transaccion.payment_type_id = payment_data.get('payment_type_id', '')
+                            
+                            if 'card' in payment_data and payment_data['card']:
+                                transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
+                            
+                            if 'payer' in payment_data:
+                                transaccion.payer_email = payment_data['payer'].get('email', '')
+                                if 'identification' in payment_data['payer']:
+                                    transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
+                            
+                            transaccion.save()
+                            
+                            # Si el pago fue aprobado y el pedido no ha sido procesado
+                            if payment_status == 'approved' and pedido.estado == 'pendiente':
                                 try:
-                                    enviar_recibo_por_email(pedido)
-                                except Exception as email_error:
-                                    logger.error(f"Error enviando email: {email_error}")
-                                
-                                logger.info(f"Pedido {pedido.id} procesado exitosamente por webhook")
-                                
-                            except ValueError as e:
-                                logger.error(f"Error al descontar stock para pedido {pedido.id}: {str(e)}")
-                                # No eliminar el pedido desde el webhook, solo registrar el error
+                                    # Descontar stock
+                                    descontar_stock_pedido(pedido)
+                                    
+                                    # Actualizar estado del pedido
+                                    pedido.estado = 'procesando'
+                                    pedido.metodo_pago = 'mercadopago'
+                                    pedido.save()
+                                    
+                                    # Enviar email con el recibo
+                                    try:
+                                        enviar_recibo_por_email(pedido)
+                                    except Exception as email_error:
+                                        logger.error(f"Error enviando email: {email_error}")
+                                    
+                                    logger.info(f"Pedido {pedido.id} procesado exitosamente por webhook")
+                                    
+                                except ValueError as e:
+                                    logger.error(f"Error al descontar stock para pedido {pedido.id}: {str(e)}")
+                            
+                            # Si el pago fue rechazado o cancelado
+                            elif payment_status in ['rejected', 'cancelled']:
+                                if pedido.estado == 'pendiente':
+                                    logger.info(f"Pedido {pedido.id} eliminado por pago {payment_status}")
+                                    pedido.delete()
+                        else:
+                            logger.warning(f"Pedido {pedido_id} no encontrado")
                         
-                        # Si el pago fue rechazado o cancelado
-                        elif payment_status in ['rejected', 'cancelled']:
-                            if pedido.estado == 'pendiente':
-                                logger.info(f"Pedido {pedido.id} eliminado por pago {payment_status}")
-                                pedido.delete()
-                    
-                except ValueError:
-                    logger.error(f"External reference inválido: {external_reference}")
-                except Exception as e:
-                    logger.error(f"Error procesando webhook: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
+                    except ValueError:
+                        logger.error(f"External reference inválido: {external_reference}")
+                    except Exception as e:
+                        logger.error(f"Error procesando pedido: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+                        
+            except Exception as e:
+                logger.error(f"Error obteniendo pago: {str(e)}")
+                import traceback
+                traceback.print_exc()
+        
+        elif topic == 'merchant_order':
+            # Log para merchant_order pero no procesamos aquí
+            logger.info(f"Merchant order recibido: {resource_id}")
         
         # Siempre retornar 200 para que MercadoPago no reintente
         return HttpResponse(status=200)
@@ -2682,7 +2780,7 @@ def webhook_mercadopago(request):
         logger.error(f"Error en webhook MercadoPago: {str(e)}")
         import traceback
         traceback.print_exc()
-        return HttpResponse(status=200)  # Retornar 200 incluso si hay error
+        return HttpResponse(status=200)
 
 
 def obtener_ventas_en_tiempo(fecha_inicio, agrupador):
