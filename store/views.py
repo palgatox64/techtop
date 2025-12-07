@@ -2422,9 +2422,20 @@ def retorno_mercadopago_success(request):
                 pedido.delete()
                 return redirect('checkout')
         
-        # Mostrar la página de pago completado
+        # Renderizar página de confirmación (igual que WebPay)
         messages.success(request, '¡Pago realizado exitosamente!')
-        return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+        
+        # Preparar contexto para la plantilla
+        context = {
+            'pedido': pedido,
+            'transaccion': TransaccionMercadoPago.objects.filter(pedido=pedido).first(),
+            'exito': True,
+            'es_mercadopago': True,
+            'payment_id': payment_id
+        }
+        
+        logger.info(f"Renderizando confirmacion_pago.html para pedido {pedido.id}")
+        return render(request, 'store/confirmacion_pago.html', context)
         
     except Pedido.DoesNotExist:
         logger.error(f"Pedido no encontrado con ID: {external_reference}")
@@ -2672,6 +2683,10 @@ def webhook_mercadopago(request):
         
         # Solo procesar notificaciones de pago
         if topic == 'payment' and resource_id:
+            # Esperar un momento para que el pago esté disponible en la API de MercadoPago
+            import time
+            time.sleep(2)
+            
             # Configurar SDK de MercadoPago
             sdk = _configurar_mercadopago()
             
