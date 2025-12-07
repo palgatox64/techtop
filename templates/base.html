@@ -3,37 +3,41 @@
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     {# Meta tags SEO dinámicos #}
     {% include "meta/meta.html" %}
-    
+
     <title>{% block title %}Techtop - Tecnología y Electrónica{% endblock %}</title>
-    
+
     {# Favicon #}
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
-    
+
     {# CSS #}
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
+
 <body>
-    <div id="page-overlay" class="page-overlay"></div> <header class="header">
+    <div id="page-overlay" class="page-overlay"></div>
+    <header class="header">
         <div class="header-container">
             <a href="/" class="header-logo">
-                <img src="{% static 'img/new.png' %}" alt="TECHTOP"> 
+                <img src="{% static 'img/new.png' %}" alt="TECHTOP">
             </a>
             <form class="header-search" method="GET" action="{% url 'search' %}">
-                <input type="text" name="q" placeholder="Busca los mejores productos y marcas :)" value="{{ search_query|default:'' }}">
+                <input type="text" name="q" placeholder="Busca los mejores productos y marcas :)"
+                    value="{{ search_query|default:'' }}">
                 <button type="submit"><i class='bx bx-search'></i></button>
             </form>
-        <div class="header-actions">
-            {% if request.session.user_type == 'empleado' %}
+            <div class="header-actions">
+                {% if request.session.user_type == 'empleado' %}
                 {# === Menú para EMPLEADOS === #}
                 <div class="user-info">
                     <div class="user-menu">
@@ -49,23 +53,24 @@
                             </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
-                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                                <button type="submit"
+                                    style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
                                     <i class='bx bx-log-out'></i> Cerrar Sesión
                                 </button>
                             </form>
                         </div>
                     </div>
                     <span style="margin-left: 8px; font-size: 0.9rem; color: #666;">
-                        {{ request.session.empleado_nombre }} 
+                        {{ request.session.empleado_nombre }}
                         {% if request.session.is_superadmin %}
-                            (Superadministrador)
+                        (Superadministrador)
                         {% else %}
-                            ({{ request.session.empleado_cargo }})
+                        ({{ request.session.empleado_cargo }})
                         {% endif %}
                     </span>
                 </div>
 
-            {% elif request.session.user_type == 'cliente' %}
+                {% elif request.session.user_type == 'cliente' %}
                 {# === Menú para CLIENTES (MODIFICADO) === #}
                 <div class="user-info">
                     <div class="user-menu">
@@ -81,7 +86,8 @@
                             </a>
                             <form method="post" action="{% url 'logout' %}" style="margin: 0; padding: 0;">
                                 {% csrf_token %}
-                                <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+                                <button type="submit"
+                                    style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; cursor: pointer; font-size: 14px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
                                     <i class='bx bx-log-out'></i> Cerrar Sesión
                                 </button>
                             </form>
@@ -92,7 +98,7 @@
                     </span>
                 </div>
 
-            {% else %}
+                {% else %}
                 {# === Menú para VISITANTES (MODIFICADO) === #}
                 <div class="user-menu">
                     <div id="user-menu-button" class="action-item">
@@ -107,85 +113,88 @@
                         </a>
                     </div>
                 </div>
-            {% endif %}
+                {% endif %}
 
-            <div class="cart-icon-wrapper">
-                <a href="#" id="cart-icon-button" class="action-item">
-                    <i class='bx bx-cart'></i>
-                </a>
-                <span id="cart-item-count" class="cart-item-count" 
-                        {% if cart_item_count > 0 %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                <div class="cart-icon-wrapper">
+                    <a href="#" id="cart-icon-button" class="action-item">
+                        <i class='bx bx-cart'></i>
+                    </a>
+                    <span id="cart-item-count" class="cart-item-count" {% if cart_item_count > 0 %}style="display: block;"{% else %}style="display: none;"{% endif %}>
                         {{ cart_item_count }}
-                </span>
-            </div>
+                    </span>
+                </div>
 
-        </div>
+            </div>
         </div>
     </header>
     <nav class="navbar">
-    <ul class="nav-links">
-    <li class="nav-item-dropdown">
-        <a href="{% url 'radios_catalog' %}" class="nav-link">Radios <i class='bx bx-chevron-down'></i></a>
-        <div class="mega-menu">
-        <div class="mega-menu-content">
-            <div class="mega-menu-column full-width">
-                <h3 class="mega-menu-main-title">Marcas</h3>
-                <ul class="brand-list">
-                    <li><a href="{% url 'product_catalog_by_brand' 'Fiat' %}">Fiat</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Ford' %}">Ford</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Honda' %}">Honda</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'KIA' %}">KIA</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Mazda' %}">Mazda</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Mitsubishi' %}">Mitsubishi</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Nissan' %}">Nissan</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Renault' %}">Renault</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Volkswagen' %}">Volkswagen</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'Toyota' %}">Toyota</a></li>
-                    <li><a href="{% url 'product_catalog_by_brand' 'SsangYong' %}">SsangYong</a></li>
-                    </ul>
-            </div>
-        </div>
-    </div>
-</li>       
-        <li class="nav-item-dropdown">
-    <a href="{% url 'accesorios_catalog' %}" class="nav-link">Accesorios <i class='bx bx-chevron-down'></i></a>
-    <div class="mega-menu">
-        <div class="mega-menu-content">
-            <div class="mega-menu-column">
-                <h3>Para Vehículos</h3>
-                <ul>
-                    <li><a href="{% url 'category_catalog' 'Audio' %}">Audio y Video</a></li>
-                    <li><a href="{% url 'category_catalog' 'Seguridad y Sensores' %}">Seguridad y Sensores</a></li>
-                    <li><a href="{% url 'category_catalog' 'Diagnostico Automotriz' %}">Diagnóstico Automotriz</a></li>
-                </ul>
-            </div>
-            <div class="mega-menu-column">
-                <h3>Herramientas</h3>
-                <ul>
-                    <li><a href="{% url 'category_catalog' 'Herramientas de Medicion' %}">Herramientas de Medición</a></li>
-                    <li><a href="{% url 'category_catalog' 'Medidores' %}">Medidores</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</li>
-<li class="nav-item-dropdown">
-    <a href="{% url 'electronica_catalog' %}" class="nav-link">Electrónica <i class='bx bx-chevron-down'></i></a>
-    <div class="mega-menu">
-        <div class="mega-menu-content">
-            <div class="mega-menu-column">
-                <h3>Categorías</h3>
-                <ul>
-                    <li><a href="{% url 'category_catalog' 'Electronica Automotriz' %}">Electrónica Automotriz</a></li>
-                    <li><a href="{% url 'category_catalog' 'Electronica General' %}">Electrónica General</a></li>
-                </ul>
+        <ul class="nav-links">
+            <li class="nav-item-dropdown">
+                <a href="{% url 'radios_catalog' %}" class="nav-link">Radios <i class='bx bx-chevron-down'></i></a>
+                <div class="mega-menu">
+                    <div class="mega-menu-content">
+                        <div class="mega-menu-column full-width">
+                            <h3 class="mega-menu-main-title">Marcas</h3>
+                            <ul class="brand-list">
+                                <li><a href="{% url 'product_catalog_by_brand' 'Fiat' %}">Fiat</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Ford' %}">Ford</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Honda' %}">Honda</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'KIA' %}">KIA</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Mazda' %}">Mazda</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Mitsubishi' %}">Mitsubishi</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Nissan' %}">Nissan</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Renault' %}">Renault</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Volkswagen' %}">Volkswagen</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'Toyota' %}">Toyota</a></li>
+                                <li><a href="{% url 'product_catalog_by_brand' 'SsangYong' %}">SsangYong</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-        </div>
-    </div>
-</li>
-        <li><a href="{% url 'otros_catalog' %}" class="nav-link">Otros</a></li>
-    </ul>
-</nav>
+            </li>
+            <li class="nav-item-dropdown">
+                <a href="{% url 'accesorios_catalog' %}" class="nav-link">Accesorios <i
+                        class='bx bx-chevron-down'></i></a>
+                <div class="mega-menu">
+                    <div class="mega-menu-content">
+                        <div class="mega-menu-column">
+                            <h3>Para Vehículos</h3>
+                            <ul>
+                                <li><a href="{% url 'category_catalog' 'Audio' %}">Audio y Video</a></li>
+                                <li><a href="{% url 'category_catalog' 'Seguridad y Sensores' %}">Seguridad y
+                                        Sensores</a></li>
+                                <li><a href="{% url 'category_catalog' 'Diagnostico Automotriz' %}">Diagnóstico
+                                        Automotriz</a></li>
+                            </ul>
+                        </div>
+                        <div class="mega-menu-column">
+                            <h3>Herramientas</h3>
+                            <ul>
+                                <li><a href="{% url 'category_catalog' 'Herramientas de Medicion' %}">Herramientas de
+                                        Medición</a></li>
+                                <li><a href="{% url 'category_catalog' 'Medidores' %}">Medidores</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item-dropdown">
+                <a href="{% url 'electronica_catalog' %}" class="nav-link">Electrónica <i
+                        class='bx bx-chevron-down'></i></a>
+                <div class="mega-menu">
+                    <div class="mega-menu-content">
+                        <div class="mega-menu-column">
+                            <h3>Categorías</h3>
+                            <ul>
+                                <li><a href="{% url 'category_catalog' 'Electronica Automotriz' %}">Electrónica
+                                        Automotriz</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <main class="main-content">
         {% block content %}
@@ -199,14 +208,14 @@
                 <ul>
                     <li><a href="{% url 'centro_ayuda' %}">Centro de Ayuda</a></li>
                     <li><a href="{% url 'seguimiento_compra' %}">Seguimiento de mi compra</a></li>
-                    <li><a href="{% url 'contacto' %}">Contacto</a></li>   
+                    <li><a href="{% url 'contacto' %}">Contacto</a></li>
                     <li><a href="{% url 'garantias' %}">Garantías</a></li>
                 </ul>
             </div>
             <div class="footer-column">
                 <h3>Nosotros</h3>
                 <ul>
-                    <li><a href="{% url 'about' %}">Quiénes Somos</a></li>                 
+                    <li><a href="{% url 'about' %}">Quiénes Somos</a></li>
                     <li><a href="{% url 'politicas_privacidad' %}">Políticas de Privacidad</a></li>
                     <li><a href="{% url 'terminos_condiciones' %}">Términos y Condiciones</a></li>
                 </ul>
@@ -214,10 +223,14 @@
             <div class="footer-column">
                 <h3>Redes Sociales</h3>
                 <ul>
-                    <li><a href="https://www.instagram.com/techtop.chile/" target="_blank"><i class='bx bxl-instagram'></i> Instagram</a></li>
-                    <li><a href="https://api.whatsapp.com/send?phone=56966526672&text=Hola!" target="_blank"><i class='bx bxl-whatsapp'></i> WhatsApp</a></li>
-                    <li><a href="https://www.facebook.com/profile.php?id=100064087001310" target="_blank"><i class='bx bxl-facebook-square'></i> Facebook</a></li>
-                    <li><a href="https://www.youtube.com/@techtopchile4617/featured" target="_blank"><i class='bx bxl-youtube'></i> YouTube</a></li>
+                    <li><a href="https://www.instagram.com/techtop.chile/" target="_blank"><i
+                                class='bx bxl-instagram'></i> Instagram</a></li>
+                    <li><a href="https://api.whatsapp.com/send?phone=56966526672&text=Hola!" target="_blank"><i
+                                class='bx bxl-whatsapp'></i> WhatsApp</a></li>
+                    <li><a href="https://www.facebook.com/profile.php?id=100064087001310" target="_blank"><i
+                                class='bx bxl-facebook-square'></i> Facebook</a></li>
+                    <li><a href="https://www.youtube.com/@techtopchile4617/featured" target="_blank"><i
+                                class='bx bxl-youtube'></i> YouTube</a></li>
                 </ul>
             </div>
         </div>
@@ -231,7 +244,8 @@
         <div class="cart-offcanvas-header">
             <h3>Tu Carrito</h3>
             <div>
-                <button id="clear-cart-btn" class="clear-cart-btn" title="Vaciar Carrito"><i class='bx bx-trash'></i></button>
+                <button id="clear-cart-btn" class="clear-cart-btn" title="Vaciar Carrito"><i
+                        class='bx bx-trash'></i></button>
                 <button id="close-cart-btn" class="close-cart-btn">&times;</button>
             </div>
         </div>
@@ -239,19 +253,21 @@
             <p>Tu carrito está vacío.</p>
         </div>
         <div class="cart-offcanvas-footer">
-    <div class="cart-total">
-        <span>Subtotal:</span>
-        <span id="cart-subtotal">${{ request.session.cart_total|default:"0" }}</span> </div>
-    
-    <a href="{% url 'view_cart' %}" class="btn-view-cart">Ir al Carro</a>
-    
-    <a href="{% url 'checkout' %}" class="btn-checkout">Finalizar Compra</a>
-</div>
-    
-<script src="{% static 'js/main.js' %}"></script>
-<script src="{% static 'js/chatbot.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {% block extra_js %}{% endblock %}
+            <div class="cart-total">
+                <span>Subtotal:</span>
+                <span id="cart-subtotal">${{ request.session.cart_total|default:"0" }}</span>
+            </div>
+
+            <a href="{% url 'view_cart' %}" class="btn-view-cart">Ir al Carro</a>
+
+            <a href="{% url 'checkout' %}" class="btn-checkout">Finalizar Compra</a>
+        </div>
+
+        <script src="{% static 'js/main.js' %}"></script>
+        <script src="{% static 'js/chatbot.js' %}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {% block extra_js %}{% endblock %}
 
 </body>
+
 </html>

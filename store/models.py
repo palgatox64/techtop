@@ -36,6 +36,7 @@ class Categoria(models.Model):
 
 class Marca(models.Model):
     nombre = models.CharField(max_length=100)
+    es_marca_auto = models.BooleanField(default=False, verbose_name="Es Marca de Auto", help_text="Marcar si esta marca corresponde a un fabricante de vehículos (ej: Nissan, Toyota).")
 
     def __str__(self):
         return self.nombre

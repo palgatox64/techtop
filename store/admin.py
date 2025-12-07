@@ -19,7 +19,12 @@ class EmpleadoAdmin(admin.ModelAdmin):
     ordering = ('-fecha_contratacion',)
 
 admin.site.register(Categoria)
-admin.site.register(Marca)
+class MarcaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'es_marca_auto')
+    list_filter = ('es_marca_auto',)
+    search_fields = ('nombre',)
+
+admin.site.register(Marca, MarcaAdmin)
 admin.site.register(Producto, ProductoAdmin)
 admin.site.register(Cliente)
 admin.site.register(Direccion)
