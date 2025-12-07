@@ -1686,7 +1686,9 @@ def checkout_view(request):
 @transaction.atomic
 def procesar_pedido_view(request):
     """
-    Procesa el pedido usando los precios correctos según el método de pago elegido.
+    Valida datos del checkout y guarda en sesión.
+    Solo crea pedido si es transferencia.
+    Para otros métodos, redirige al pago y crea pedido después.
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Método no permitido'})
@@ -1702,140 +1704,163 @@ def procesar_pedido_view(request):
         metodo_pago = cleaned_data.get('metodo_pago')
         tipo_entrega = cleaned_data.get('tipo_entrega')
 
-        # --- 1. OBTENER DATOS Y VALIDAR STOCK ---
+        # Validar stock disponible
         product_ids = cart.keys()
-        # Usamos select_for_update para bloquear los registros mientras descontamos stock
-        products_in_cart = Producto.objects.select_for_update().filter(id__in=product_ids)
+        products_in_cart = Producto.objects.filter(id__in=product_ids)
         
-        cart_items_details = []
-        subtotal_calculado = Decimal('0')
+        total_calculado = Decimal('0')
         
-        product_map = {str(p.id): p for p in products_in_cart}
-
-        for product_id_str, item_data in cart.items():
-            product = product_map.get(product_id_str)
-            if not product:
-                return JsonResponse({'success': False, 'message': f'Producto ID {product_id_str} no disponible.'})
+        for product in products_in_cart:
+            cantidad_en_carrito = cart[str(product.id)]['quantity']
+            if product.stock < cantidad_en_carrito:
+                return JsonResponse({'success': False, 'message': f'Stock insuficiente para {product.nombre}. Stock disponible: {product.stock}'})
             
-            quantity = item_data['quantity']
-            if product.stock < quantity:
-                return JsonResponse({'success': False, 'message': f'Stock insuficiente para "{product.nombre}".'})
-
-            # --- CAMBIO CLAVE: DETERMINAR PRECIO FINAL A GUARDAR ---
-            # Si paga con transferencia, usamos el precio que ya incluye oferta + 3% extra.
-            # Si paga con otro medio, usamos el precio oferta (que puede ser igual al normal si el descuento es 0%).
+            # Calcular total
             if metodo_pago == 'transferencia':
-                precio_final_unitario = product.precio_transferencia
+                precio = product.precio_transferencia
             else:
-                precio_final_unitario = product.precio_oferta
-            
-            cart_items_details.append({
-                'producto': product,
-                'cantidad': quantity,
-                'precio_unitario': precio_final_unitario
-            })
-            subtotal_calculado += precio_final_unitario * quantity
+                precio = product.precio_oferta
+            total_calculado += precio * cantidad_en_carrito
 
-        # --- 2. BUSCAR CLIENTE (Si está logueado) ---
-        cliente_obj = None
-        if request.session.get('user_type') == 'cliente':
-            try:
-                cliente_obj = Cliente.objects.get(id_cliente=request.session.get('cliente_id'))
-            except Cliente.DoesNotExist:
-                pass # Si no existe, el pedido quedará como anónimo (o podrías forzar logout)
-
-        # --- 3. MANEJAR DIRECCIÓN Y COSTO DE ENVÍO ---
-        direccion_obj = None
-        costo_envio_calculado = Decimal('0')
-        
+        # Agregar costo de envío
         if tipo_entrega == 'delivery':
-            costo_envio_calculado = Decimal('4500') # Costo fijo por ahora
-            # Si el cliente está registrado, guardamos la dirección
-            if cliente_obj:
-                 try:
-                     # Podrías mejorar esto para no crear duplicados si la dirección ya existe
-                     direccion_obj = Direccion.objects.create(
-                        cliente=cliente_obj,
-                        calle=cleaned_data.get('calle'),
-                        numero=cleaned_data.get('numero', ''),
-                        # Depto/Casa y Comuna se podrían agregar al modelo Direccion si lo actualizas
-                        ciudad='Santiago',    # Valor por defecto si no está en el formulario
-                        region='Metropolitana', # Valor por defecto
-                        codigo_postal=cleaned_data.get('codigo_postal', '')
-                     )
-                 except Exception as e:
-                      print(f"Advertencia: No se pudo guardar la dirección: {e}")
-                      # El pedido sigue adelante, pero sin dirección guardada en BD (solo en el pedido físico si lo requieres)
+            total_calculado += Decimal('4500')
 
-        # --- 4. CALCULAR TOTAL FINAL ---
-        total_pedido = subtotal_calculado + costo_envio_calculado
+        # Guardar datos del checkout en sesión
+        checkout_data = {
+            'metodo_pago': metodo_pago,
+            'tipo_entrega': tipo_entrega,
+            'nombre_completo': cleaned_data.get('nombre_completo'),
+            'email': cleaned_data.get('email'),
+            'telefono': cleaned_data.get('telefono'),
+            'rut': cleaned_data.get('rut'),
+            'total': str(total_calculado),
+        }
+        
+        # Guardar dirección si es delivery
+        if tipo_entrega == 'delivery':
+            checkout_data['calle'] = cleaned_data.get('calle')
+            checkout_data['numero'] = cleaned_data.get('numero', '')
+            checkout_data['codigo_postal'] = cleaned_data.get('codigo_postal', '')
+        
+        # Obtener cliente si está logueado
+        if request.session.get('user_type') == 'cliente':
+            cliente_id = request.session.get('cliente_id')
+            if cliente_id:
+                try:
+                    Cliente.objects.get(id_cliente=cliente_id)
+                    checkout_data['cliente_id'] = cliente_id
+                except Cliente.DoesNotExist:
+                    pass
+        
+        request.session['checkout_data'] = checkout_data
+        request.session.modified = True
 
-        # --- 5. CREAR EL PEDIDO ---
-        try:
-            nuevo_pedido = Pedido.objects.create(
-                cliente=cliente_obj,
-                direccion_envio=direccion_obj,
-                total=total_pedido,
-                estado='pendiente',
-                metodo_pago=metodo_pago
-                # fecha_pedido y tracking_number se generan automáticamente
-            )
-        except Exception as e:
-             return JsonResponse({'success': False, 'message': 'Error interno al crear el pedido. Intenta nuevamente.'})
-
-        # --- 6. GUARDAR DETALLES Y ACTUALIZAR STOCK ---
-        for item in cart_items_details:
-            DetallePedido.objects.create(
-                pedido=nuevo_pedido,
-                producto=item['producto'],
-                cantidad=item['cantidad'],
-                precio_unitario=item['precio_unitario'] # Guardamos el precio exacto que se cobró
-            )
-            # Descontar stock
-            producto = item['producto']
-            producto.stock -= item['cantidad']
-            producto.save() # El método save() del modelo ya maneja el campo 'activo' si stock llega a 0
-
-        # --- 7. FINALIZAR: LIMPIAR CARRO (Solo si no es pago externo inmediato) ---
-        # Si es transferencia, ya "terminó" la compra online, así que limpiamos el carro.
-        # Si es Webpay/MercadoPago, esperamos a la confirmación para limpiar.
+        # Solo para TRANSFERENCIA creamos el pedido inmediatamente
         if metodo_pago == 'transferencia':
-             if 'cart' in request.session:
+            pedido = _crear_pedido_desde_sesion(request)
+            # Limpiar carrito
+            if 'cart' in request.session:
                 del request.session['cart']
                 request.session.modified = True
-
-        # --- 8. REDIRECCIONAR SEGÚN MÉTODO DE PAGO ---
-        if metodo_pago == 'webpay':
+            return JsonResponse({
+                'success': True,
+                'message': 'Pedido creado. Por favor realiza la transferencia.',
+                'redirect_url': reverse('subir_comprobante', args=[pedido.id])
+            })
+        
+        # Para WEBPAY y MERCADOPAGO, redirigir sin crear pedido
+        elif metodo_pago == 'webpay':
             return JsonResponse({
                 'success': True,
                 'message': 'Redirigiendo a Webpay...',
-                'redirect_url': reverse('iniciar_pago_webpay', args=[nuevo_pedido.id])
+                'redirect_url': reverse('iniciar_pago_webpay')
             })
         elif metodo_pago == 'mercadopago':
             return JsonResponse({
                 'success': True,
                 'message': 'Redirigiendo a Mercado Pago...',
-                'redirect_url': reverse('iniciar_pago_mercadopago', args=[nuevo_pedido.id])
-            })
-        elif metodo_pago == 'transferencia':
-            # Redirigir a la página de subir comprobante
-            return JsonResponse({
-                'success': True,
-                'message': 'Pedido creado correctamente. Redirigiendo para finalizar...',
-                'redirect_url': reverse('subir_comprobante', args=[nuevo_pedido.id])
+                'redirect_url': reverse('iniciar_pago_mercadopago')
             })
         else:
-            # Fallback para otros métodos futuros
-            return JsonResponse({
-                'success': True,
-                'message': 'Pedido creado exitosamente.',
-                'redirect_url': reverse('generar_recibo_pdf', args=[nuevo_pedido.id])
-            })
+            return JsonResponse({'success': False, 'message': 'Método de pago no válido.'})
 
     else:
-        # Errores de validación del formulario
         first_error = next(iter(form.errors.values()))[0] if form.errors else "Revisa los datos ingresados."
-        return JsonResponse({ 'success': False, 'message': f'Error en el formulario: {first_error}' })
+        return JsonResponse({'success': False, 'message': f'Error en el formulario: {first_error}'})
+
+def _crear_pedido_desde_sesion(request):
+    """
+    Crea un pedido a partir de los datos guardados en sesión.
+    Retorna el objeto Pedido creado.
+    """
+    checkout_data = request.session.get('checkout_data')
+    cart = request.session.get('cart', {})
+    
+    if not checkout_data or not cart:
+        raise ValueError('No hay datos de checkout en sesión')
+    
+    # Obtener cliente si existe
+    cliente = None
+    if 'cliente_id' in checkout_data:
+        try:
+            cliente = Cliente.objects.get(id_cliente=checkout_data['cliente_id'])
+        except Cliente.DoesNotExist:
+            pass
+    
+    # Crear dirección de envío si es delivery
+    direccion_obj = None
+    if checkout_data['tipo_entrega'] == 'delivery':
+        if cliente:
+            try:
+                direccion_obj = Direccion.objects.create(
+                    cliente=cliente,
+                    calle=checkout_data.get('calle', ''),
+                    ciudad='Santiago',
+                    region='Metropolitana',
+                    codigo_postal=checkout_data.get('codigo_postal', '')
+                )
+            except:
+                pass
+    
+    # Crear el pedido
+    pedido = Pedido.objects.create(
+        cliente=cliente,
+        direccion_envio=direccion_obj,
+        total=Decimal(checkout_data['total']),
+        metodo_pago=checkout_data['metodo_pago'],
+        estado='pendiente'
+    )
+    
+    # Crear detalles del pedido
+    product_ids = cart.keys()
+    products_in_cart = Producto.objects.filter(id__in=product_ids)
+    
+    for product in products_in_cart:
+        cantidad = cart[str(product.id)]['quantity']
+        if checkout_data['metodo_pago'] == 'transferencia':
+            precio = product.precio_transferencia
+        else:
+            precio = product.precio_oferta
+        
+        DetallePedido.objects.create(
+            pedido=pedido,
+            producto=product,
+            cantidad=cantidad,
+            precio_unitario=precio
+        )
+    
+    return pedido
+
+def _limpiar_datos_compra(request):
+    """
+    Limpia los datos de compra de la sesión.
+    """
+    if 'cart' in request.session:
+        del request.session['cart']
+    if 'checkout_data' in request.session:
+        del request.session['checkout_data']
+    request.session.modified = True
 
 def generar_recibo_pdf(request, pedido_id):
     """
@@ -1909,6 +1934,32 @@ from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.integration_type import IntegrationType
 import uuid
 
+# Funciones auxiliares para gestión de stock
+def descontar_stock_pedido(pedido):
+    """
+    Descuenta el stock de los productos de un pedido.
+    Se llama solo cuando el pago es confirmado.
+    """
+    for detalle in pedido.detalles.all():
+        producto = detalle.producto
+        
+        # Verificar stock disponible
+        if producto.stock < detalle.cantidad:
+            raise ValueError(f'Stock insuficiente para {producto.nombre}')
+        
+        # Descontar stock
+        producto.stock -= detalle.cantidad
+        producto.save()
+
+def restaurar_stock_pedido(pedido):
+    """
+    Restaura el stock de los productos de un pedido cancelado.
+    """
+    for detalle in pedido.detalles.all():
+        producto = detalle.producto
+        producto.stock += detalle.cantidad
+        producto.save()
+
 def _configurar_transbank():
     """Configura el SDK de Transbank según el ambiente (integración/producción)"""
     if settings.TRANSBANK_ENVIRONMENT == 'PRODUCCION':
@@ -1923,15 +1974,15 @@ def _configurar_transbank():
 
 
 @transaction.atomic
-def iniciar_pago_webpay(request, pedido_id):
+def iniciar_pago_webpay(request):
     """
     Inicia el proceso de pago con Webpay Plus.
-    Crea el token y redirige al usuario a Transbank.
+    Crea el pedido desde la sesión, crea el token y redirige al usuario a Transbank.
     """
 
     try:
-        # Obtener el pedido
-        pedido = get_object_or_404(Pedido, id=pedido_id)
+        # Crear el pedido desde los datos de sesión
+        pedido = _crear_pedido_desde_sesion(request)
         
         # Verificar que no exista ya una transacción autorizada para este pedido
         transaccion_existente = TransaccionWebpay.objects.filter(
@@ -1979,6 +2030,9 @@ def iniciar_pago_webpay(request, pedido_id):
         return redirect(webpay_url)
         
     except Exception as e:
+        # Si falla, eliminar el pedido creado
+        if 'pedido' in locals():
+            pedido.delete()
         messages.error(request, f'Error al procesar el pago: {str(e)}')
         return redirect('checkout')
 
@@ -2026,12 +2080,23 @@ def retorno_webpay(request):
             
             # Actualizar el estado del pedido
             pedido = transaccion.pedido
+            
+            # DESCONTAR STOCK AQUÍ (solo si el pago fue exitoso)
+            try:
+                descontar_stock_pedido(pedido)
+            except ValueError as e:
+                messages.error(request, f'Error al procesar el pedido: {str(e)}')
+                transaccion.estado = 'ERROR'
+                transaccion.save()
+                pedido.delete()
+                _limpiar_datos_compra(request)
+                return redirect('home')
+            
             pedido.estado = 'procesando'
             pedido.save()
             
-            # Limpiar el carrito
-            if 'cart' in request.session:
-                del request.session['cart']
+            # Limpiar el carrito y datos de checkout
+            _limpiar_datos_compra(request)
             
             enviar_recibo_por_email(pedido)
             
@@ -2046,30 +2111,22 @@ def retorno_webpay(request):
             }
             return render(request, 'store/confirmacion_pago.html', context)
         else:
-            # Pago rechazado
+            # Pago rechazado - ELIMINAR EL PEDIDO
             transaccion.estado = 'RECHAZADO'
             transaccion.save()
             
-            # Opcional: Actualizar estado del pedido
+            # Eliminar el pedido
             pedido = transaccion.pedido
-            pedido.estado = 'cancelado'
-            pedido.save()
+            pedido.delete()
             
-            # Restaurar el stock de los productos
-            for detalle in pedido.detalles.all():
-                producto = detalle.producto
-                producto.stock += detalle.cantidad
-                producto.save()
+            # Limpiar datos de checkout (pero mantener carrito para reintentar)
+            if 'checkout_data' in request.session:
+                del request.session['checkout_data']
+                request.session.modified = True
             
             messages.error(request, 'El pago fue rechazado. Por favor, intenta nuevamente.')
             
-            context = {
-                'pedido': pedido,
-                'transaccion': transaccion,
-                'exito': False,
-                'response': response
-            }
-            return render(request, 'store/confirmacion_pago.html', context)
+            return redirect('checkout')
             
     except Exception as e:
         messages.error(request, f'Error al procesar el pago: {str(e)}')
@@ -2129,18 +2186,20 @@ import mercadopago
 
 def _configurar_mercadopago():
     """Configura el SDK de Mercado Pago según el ambiente"""
+    import mercadopago
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
     return sdk
 
 
 @transaction.atomic
-def iniciar_pago_mercadopago(request, pedido_id):
+def iniciar_pago_mercadopago(request):
     """
     Crea una preferencia de pago en Mercado Pago y redirige al usuario.
+    Primero crea el pedido desde los datos de sesión.
     """
     try:
-        # Obtener el pedido
-        pedido = get_object_or_404(Pedido, id=pedido_id)
+        # Crear el pedido desde los datos de sesión
+        pedido = _crear_pedido_desde_sesion(request)
         
         # Verificar que no exista ya una transacción aprobada
         transaccion_existente = TransaccionMercadoPago.objects.filter(
@@ -2158,20 +2217,35 @@ def iniciar_pago_mercadopago(request, pedido_id):
         items = []
         for detalle in pedido.detalles.all():
             items.append({
-                "title": detalle.producto.nombre,
-                "quantity": detalle.cantidad,
+                "title": detalle.producto.nombre[:256],  # Límite de caracteres
+                "quantity": int(detalle.cantidad),
                 "unit_price": float(detalle.precio_unitario),
                 "currency_id": "CLP"
             })
         
-        
         # URLs de retorno
-        success_url = request.build_absolute_uri(reverse('retorno_mercadopago_success'))
-        failure_url = request.build_absolute_uri(reverse('retorno_mercadopago_failure'))
-        pending_url = request.build_absolute_uri(reverse('retorno_mercadopago_pending'))
+        # Determinar la URL base según el entorno
+        if settings.DEBUG and request.get_host().startswith('localhost'):
+            # En desarrollo local
+            base_url = 'http://localhost:8000'
+        else:
+            # En producción
+            base_url = settings.SITE_URL
         
+        success_url = f"{base_url}/mercadopago/success/"
+        failure_url = f"{base_url}/mercadopago/failure/"
+        pending_url = f"{base_url}/mercadopago/pending/"
         
-        # Crear preferencia de pago (sin auto_return por ahora)
+        # Datos del pagador (opcional pero recomendado)
+        payer_data = {}
+        if pedido.cliente:
+            payer_data = {
+                "name": pedido.cliente.nombre,
+                "surname": pedido.cliente.apellidos,
+                "email": pedido.cliente.email,
+            }
+        
+        # Crear preferencia de pago
         preference_data = {
             "items": items,
             "back_urls": {
@@ -2183,16 +2257,26 @@ def iniciar_pago_mercadopago(request, pedido_id):
             "statement_descriptor": "TechTop"
         }
         
+        # Solo agregar auto_return si no estamos en localhost
+        if not (settings.DEBUG and 'localhost' in base_url):
+            preference_data["auto_return"] = "approved"
+        
+        # Agregar datos del pagador si existen
+        if payer_data:
+            preference_data["payer"] = payer_data
+        
         preference_response = sdk.preference().create(preference_data)
         
         # Verificar si hay error en la respuesta
-        if preference_response.get('status') != 201:
+        if preference_response.get('status') not in [200, 201]:
             error_msg = preference_response.get('response', {}).get('message', 'Error desconocido')
-            raise Exception(f"Error de Mercado Pago: {error_msg}")
+            # Eliminar el pedido creado
+            pedido.delete()
+            messages.error(request, 'Error al procesar el pago. Por favor, intenta nuevamente.')
+            return redirect('checkout')
         
         # La respuesta exitosa viene en preference_response["response"]
         preference = preference_response["response"]
-        
         
         # Guardar la transacción en la base de datos
         transaccion = TransaccionMercadoPago.objects.create(
@@ -2203,15 +2287,16 @@ def iniciar_pago_mercadopago(request, pedido_id):
         )
         
         # Obtener la URL de inicio de pago (usar sandbox para ambiente de pruebas)
-        init_point = preference.get('sandbox_init_point') or preference.get('init_point')
+        if settings.MERCADOPAGO_ENVIRONMENT == 'TEST':
+            init_point = preference.get('sandbox_init_point')
+        else:
+            init_point = preference.get('init_point')
         
         # Redirigir al usuario a Mercado Pago
         return redirect(init_point)
         
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        messages.error(request, f'Error al procesar el pago: {str(e)}')
+        messages.error(request, 'Error al procesar el pago. Por favor, intenta nuevamente.')
         return redirect('checkout')
 
 
@@ -2317,52 +2402,98 @@ def _procesar_retorno_mercadopago(request, estado_esperado):
         
         # Obtener información del pago
         if payment_id:
-
-            payment_resource = sdk.payment()
-            payment_data = payment_resource.get(int(payment_id))
-            
-            if 'response' in payment_data:
-                payment_data = payment_data['response']
-            
-            
-            # Actualizar la transacción
-            transaccion.payment_id = str(payment_id)
-            transaccion.estado = payment_data.get('status', 'unknown')
-            transaccion.status_detail = payment_data.get('status_detail', '')
-            
-            if 'transaction_amount' in payment_data:
-                transaccion.monto = Decimal(str(payment_data['transaction_amount']))
-            
-            transaccion.payment_method_id = payment_data.get('payment_method_id', '')
-            transaccion.payment_type_id = payment_data.get('payment_type_id', '')
-            
-            if 'card' in payment_data and payment_data['card']:
-                transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
-            
-            if 'payer' in payment_data:
-                transaccion.payer_email = payment_data['payer'].get('email', '')
-                if 'identification' in payment_data['payer']:
-                    transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
-            
-            transaccion.save()
-            
-            # Si fue aprobado
-            if payment_data.get('status') == 'approved':
-                pedido = transaccion.pedido
-                pedido.estado = 'procesando'
-                pedido.save()
+            try:
+                payment_resource = sdk.payment()
+                payment_response = payment_resource.get(int(payment_id))
                 
-                # Limpiar el carrito
-                if 'cart' in request.session:
-                    del request.session['cart']
+                # Verificar si la respuesta es exitosa
+                if payment_response.get('status') != 200:
+                    messages.error(request, 'No se pudo verificar el estado del pago.')
+                    return redirect('checkout')
                 
-                enviar_recibo_por_email(pedido)
+                payment_data = payment_response.get('response', {})
                 
+                # Actualizar la transacción
+                transaccion.payment_id = str(payment_id)
+                transaccion.estado = payment_data.get('status', 'unknown')
+                transaccion.status_detail = payment_data.get('status_detail', '')
+                
+                if 'transaction_amount' in payment_data:
+                    transaccion.monto = Decimal(str(payment_data['transaction_amount']))
+                
+                transaccion.payment_method_id = payment_data.get('payment_method_id', '')
+                transaccion.payment_type_id = payment_data.get('payment_type_id', '')
+                
+                if 'card' in payment_data and payment_data['card']:
+                    transaccion.card_last_four_digits = payment_data['card'].get('last_four_digits', '')
+                
+                if 'payer' in payment_data:
+                    transaccion.payer_email = payment_data['payer'].get('email', '')
+                    if 'identification' in payment_data['payer']:
+                        transaccion.payer_identification = payment_data['payer']['identification'].get('number', '')
+                
+                transaccion.save()
+                
+                # Si fue aprobado
+                if payment_data.get('status') == 'approved':
+                    # DESCONTAR STOCK AQUÍ
+                    try:
+                        descontar_stock_pedido(pedido)
+                    except ValueError as e:
+                        messages.error(request, f'Error al procesar el pedido: {str(e)}')
+                        transaccion.save()
+                        pedido.delete()
+                        _limpiar_datos_compra(request)
+                        return redirect('home')
+                    
+                    pedido = transaccion.pedido
+                    pedido.estado = 'procesando'
+                    pedido.metodo_pago = 'mercadopago'
+                    pedido.save()
+                    
+                    # Limpiar el carrito y datos de checkout
+                    _limpiar_datos_compra(request)
+                    
+                    # Enviar notificación por email
+                    try:
+                        enviar_recibo_por_email(pedido)
+                    except Exception as email_error:
+                        pass  # No fallar si el email falla
+                    
+                    messages.success(request, '¡Pago realizado exitosamente!')
+                    return redirect('generar_recibo_pdf', pedido_id=pedido.id)
+                    
+                # Si fue rechazado o cancelado - ELIMINAR EL PEDIDO
+                elif payment_data.get('status') in ['rejected', 'cancelled']:
+                    pedido.delete()
+                    
+                    # Limpiar datos de checkout (pero mantener carrito para reintentar)
+                    if 'checkout_data' in request.session:
+                        del request.session['checkout_data']
+                        request.session.modified = True
+                    
+                    messages.error(request, f'El pago fue {payment_data.get("status")}. Por favor, intenta con otro medio de pago.')
+                    return redirect('checkout')
+                    
+                # Si está en proceso
+                else:
+                    messages.info(request, 'Tu pago está siendo procesado. Te notificaremos cuando se confirme.')
+                    return redirect('home')
+                    
+            except Exception as e:
+                messages.error(request, 'Error al verificar el estado del pago.')
+                return redirect('checkout')
+        else:
+            # Si no hay payment_id, solo mostrar mensaje según el estado
+            if estado_esperado == 'approved':
                 messages.success(request, '¡Pago realizado exitosamente!')
                 return redirect('generar_recibo_pdf', pedido_id=pedido.id)
-            else:
-                messages.warning(request, 'El pago no se completó correctamente.')
+            elif estado_esperado == 'rejected':
+                messages.error(request, 'El pago fue rechazado.')
                 return redirect('checkout')
+            else:
+                messages.info(request, 'El pago está pendiente.')
+                return redirect('home')
         
     except Exception as e:
         import traceback

@@ -77,12 +77,12 @@ urlpatterns = [
     path('gestion/transferencias/<int:pago_id>/', views.gestionar_transferencia_view, name='gestionar_transferencia'),
     path('pago/cancelar/<int:pedido_id>/', views.cancelar_pedido_transferencia, name='cancelar_pedido_transferencia'),
     # Rutas para Webpay Plus (Transbank)
-    path('webpay/iniciar/<int:pedido_id>/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
+    path('webpay/iniciar/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
     path('webpay/retorno/', views.retorno_webpay, name='retorno_webpay'),
     path('webpay/anular/<int:transaccion_id>/', views.anular_transaccion_webpay, name='anular_transaccion_webpay'),
     
     # Rutas para Mercado Pago
-    path('mercadopago/iniciar/<int:pedido_id>/', views.iniciar_pago_mercadopago, name='iniciar_pago_mercadopago'),
+    path('mercadopago/iniciar/', views.iniciar_pago_mercadopago, name='iniciar_pago_mercadopago'),
     path('mercadopago/success/', views.retorno_mercadopago_success, name='retorno_mercadopago_success'),
     path('mercadopago/failure/', views.retorno_mercadopago_failure, name='retorno_mercadopago_failure'),
     path('mercadopago/pending/', views.retorno_mercadopago_pending, name='retorno_mercadopago_pending'),
