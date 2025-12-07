@@ -86,6 +86,7 @@ urlpatterns = [
     path('mercadopago/success/', views.retorno_mercadopago_success, name='retorno_mercadopago_success'),
     path('mercadopago/failure/', views.retorno_mercadopago_failure, name='retorno_mercadopago_failure'),
     path('mercadopago/pending/', views.retorno_mercadopago_pending, name='retorno_mercadopago_pending'),
+    path('mercadopago/webhook/', views.webhook_mercadopago, name='webhook_mercadopago'),
     
     path('mi-cuenta/', views.perfil_usuario_view, name='perfil_usuario'),
     path('mi-cuenta/editar/', views.editar_perfil_view, name='editar_perfil'),
