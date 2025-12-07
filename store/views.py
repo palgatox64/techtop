@@ -120,6 +120,7 @@ def eliminar_empleado(request, pk):
     
     return JsonResponse({'success': True, 'message': f'Empleado "{empleado.nombre} {empleado.apellidos}" ha sido desactivado.'})
 
+    
 
 def home(request):
     """Página de inicio con SEO optimizado"""
@@ -211,7 +212,8 @@ def radios_catalog(request):
         products = products.filter(price_queries)
     available_inches = ['7', '9', '10.1', '12']
     available_brands = Marca.objects.filter(
-        producto__in=products
+        producto__in=products,
+        es_marca_auto=True  # Solo mostrar marcas de autos en catálogo de radios
     ).annotate(
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
@@ -239,6 +241,7 @@ def radios_catalog(request):
     return render(request, 'store/tienda.html', context)
 
 def category_catalog(request, categoria_nombre):
+    from meta.views import Meta
     nombre_categoria_con_espacios = categoria_nombre.replace('-', ' ')
     categoria = get_object_or_404(Categoria, nombre__iexact=nombre_categoria_con_espacios)
     products = Producto.objects.filter(categoria=categoria)
@@ -259,9 +262,9 @@ def category_catalog(request, categoria_nombre):
         product_count=Count('producto')
     ).filter(product_count__gt=0).order_by('nombre')
     category_type = 'subcategoria'
-    if categoria_nombre in ['Audio-y-Video', 'Seguridad-y-Sensores', 'Diagnostico-Automotriz']:
+    if categoria_nombre in ['Audio', 'Audio-y-Video', 'Seguridad y Sensores', 'Seguridad-y-Sensores', 'Diagnostico Automotriz', 'Diagnostico-Automotriz']:
         parent_category = 'accesorios'
-    elif categoria_nombre in ['Electronica-Automotriz', 'Electronica-General']:
+    elif categoria_nombre in ['Electronica Automotriz', 'Electronica-Automotriz', 'Electronica General', 'Electronica-General']:
         parent_category = 'electronica'
     else:
         parent_category = None
@@ -353,9 +356,9 @@ def electronica_catalog(request):
 def accesorios_catalog(request):
     accessory_categories = [
         'Audio', 
-        'Seguridad-y-Sensores', 
-        'Diagnostico-Automotriz',
-        'Herramientas-de-Medicion',
+        'Seguridad y Sensores', 
+        'Diagnostico Automotriz',
+        'Herramientas de Medicion',
         'Medidores',
         'Parlante',     
         'Scanner',
@@ -476,6 +479,7 @@ def otros_catalog(request):
     return render(request, 'store/tienda.html', context)
 
 def product_catalog(request, brand_name=None):
+    from meta.views import Meta
     products = Producto.objects.filter(activo=True)
     if brand_name:
         products = products.filter(marca__nombre__iexact=brand_name)
@@ -486,7 +490,32 @@ def product_catalog(request, brand_name=None):
 
     available_brands = Marca.objects.annotate(
         product_count=Count('producto')
-    ).filter(product_count__gt=0).order_by('nombre') 
+    ).filter(product_count__gt=0).order_by('nombre')
+    
+    # Si estamos viendo una marca de auto, filtrar el sidebar para mostrar solo marcas de autos
+    # Lista de nombres de marcas de autos conocidas (fallback por si no existen en DB con el flag)
+    KNOWN_CAR_BRANDS = [
+        'Fiat', 'Ford', 'Honda', 'Kia', 'KIA', 'Mazda', 'Mitsubishi', 'Nissan', 'Renault', 
+        'Volkswagen', 'Toyota', 'SsangYong', 'Subaru', 'Chevrolet', 'Hyundai', 'Suzuki', 
+        'Peugeot', 'Citroen', 'Chery', 'Jac', 'Great Wall', 'Changan', 'Haval', 'MG', 
+        'Jeep', 'Dodge', 'Ram', 'BMW', 'Mercedes', 'Audi', 'Volvo', 'Land Rover'
+    ]
+
+    # Si estamos viendo una marca de auto, filtrar el sidebar para mostrar solo marcas de autos
+    if brand_name:
+        is_car_view = False
+        
+        # 1. Check DB
+        current_brand = Marca.objects.filter(nombre__iexact=brand_name).first()
+        if current_brand and current_brand.es_marca_auto:
+            is_car_view = True
+        
+        # 2. Check fallback list (insensitive)
+        if not is_car_view and brand_name.lower() in [b.lower() for b in KNOWN_CAR_BRANDS]:
+            is_car_view = True
+            
+        if is_car_view:
+             available_brands = available_brands.filter(es_marca_auto=True) 
 
     # SEO para catálogo de productos (general o por marca)
     if brand_name:
@@ -774,8 +803,36 @@ def remove_from_cart(request, product_id):
 
     if product_id_str in cart:
         del cart[product_id_str]
+        request.session['cart'] = cart
+        request.session.modified = True
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Recalcular totales para respuesta JSON
+        total_price = 0
+        cart_items_data = []
+        product_ids = cart.keys()
+        products_in_cart = Producto.objects.filter(id__in=product_ids)
+        for p in products_in_cart:
+            pid_str = str(p.id)
+            if pid_str in cart:
+                qty = cart[pid_str]['quantity']
+                total_price += p.precio_oferta * qty
+                cart_items_data.append({
+                    'id': p.id,
+                    'name': p.nombre,
+                    'quantity': qty,
+                    'price': float(p.precio_oferta),
+                    'image_url': p.imagen.url if p.imagen else ''
+                })
 
-    request.session['cart'] = cart
+        return JsonResponse({
+            'success': True,
+            'cart_item_count': len(cart),
+            'subtotal': float(total_price),
+            'items': cart_items_data,
+            'message': 'Producto eliminado del carro.'
+        })
+
     return redirect('view_cart')
 
 def clear_cart(request):

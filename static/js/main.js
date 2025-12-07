@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -35,44 +35,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const userMenuDropdownLoggedIn = document.getElementById('user-menu-dropdown-loggedin');
 
     if (userMenuButton) {
-        userMenuButton.addEventListener('click', function(event) {
+        userMenuButton.addEventListener('click', function (event) {
             event.stopPropagation();
             userMenuDropdown.classList.toggle('show');
         });
     }
     if (userMenuButtonLoggedIn) {
-        userMenuButtonLoggedIn.addEventListener('click', function(event) {
+        userMenuButtonLoggedIn.addEventListener('click', function (event) {
             event.stopPropagation();
             userMenuDropdownLoggedIn.classList.toggle('show');
         });
     }
     const dropdownItems = document.querySelectorAll('.nav-item-dropdown');
-    const pageOverlay = document.getElementById('page-overlay'); 
+    const pageOverlay = document.getElementById('page-overlay');
 
     dropdownItems.forEach(item => {
         const link = item.querySelector('.nav-link');
-        
-        link.addEventListener('click', function(event) {
+
+        link.addEventListener('click', function (event) {
             if (window.innerWidth <= 768) {
-                event.preventDefault(); 
                 const wasActive = item.classList.contains('active');
-                dropdownItems.forEach(openItem => {
-                    if (openItem !== item) {
-                        openItem.classList.remove('active');
-                    }
-                });
-                if (wasActive) {
-                    item.classList.remove('active'); 
-                    if (pageOverlay) pageOverlay.classList.remove('is-active'); 
-                } else {
-                    item.classList.add('active'); 
-                    if (pageOverlay) pageOverlay.classList.add('is-active'); 
+
+                // Si NO estaba activo, abrimos el menú y prevenimos la navegación inmediata
+                if (!wasActive) {
+                    event.preventDefault();
+
+                    // Cerrar otros
+                    dropdownItems.forEach(openItem => {
+                        if (openItem !== item) {
+                            openItem.classList.remove('active');
+                        }
+                    });
+
+                    item.classList.add('active');
+                    if (pageOverlay) pageOverlay.classList.add('is-active');
                 }
+                // Si YA estaba activo, NO prevenimos el default, permitiendo que el link funcione (doble tap)
             }
         });
     });
 
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (!event.target.closest('.user-menu')) {
             if (userMenuDropdown) userMenuDropdown.classList.remove('show');
             if (userMenuDropdownLoggedIn) userMenuDropdownLoggedIn.classList.remove('show');
@@ -83,19 +86,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 dropdownItems.forEach(item => {
                     item.classList.remove('active');
                 });
-                if (pageOverlay) pageOverlay.classList.remove('is-active'); 
+                if (pageOverlay) pageOverlay.classList.remove('is-active');
             }
         }
     });
 
     if (pageOverlay && dropdownItems.length > 0) {
         dropdownItems.forEach(item => {
-            item.addEventListener('mouseenter', function() {
+            item.addEventListener('mouseenter', function () {
                 if (window.innerWidth > 768) {
                     pageOverlay.classList.add('is-active');
                 }
             });
-            item.addEventListener('mouseleave', function() {
+            item.addEventListener('mouseleave', function () {
                 if (window.innerWidth > 768) {
                     pageOverlay.classList.remove('is-active');
                 }
@@ -108,19 +111,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const backdrop = document.getElementById('filter-backdrop');
 
     if (openBtn) {
-        openBtn.addEventListener('click', function() {
+        openBtn.addEventListener('click', function () {
             filterSidebar.classList.add('is-open');
             backdrop.classList.add('is-active');
         });
     }
     if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
+        closeBtn.addEventListener('click', function () {
             filterSidebar.classList.remove('is-open');
             backdrop.classList.remove('is-active');
         });
     }
     if (backdrop) {
-        backdrop.addEventListener('click', function() {
+        backdrop.addEventListener('click', function () {
             filterSidebar.classList.remove('is-open');
             backdrop.classList.remove('is-active');
         });
@@ -129,25 +132,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartOffcanvas = document.getElementById('cart-offcanvas');
     const cartBackdrop = document.getElementById('cart-backdrop');
     const closeCartBtn = document.getElementById('close-cart-btn');
+    const cartBody = document.getElementById('cart-offcanvas-body');
 
     function openCartPanel() {
-        if(cartBackdrop) cartBackdrop.classList.add('is-active');
-        if(cartOffcanvas) cartOffcanvas.classList.add('is-open');
+        if (cartBackdrop) cartBackdrop.classList.add('is-active');
+        if (cartOffcanvas) cartOffcanvas.classList.add('is-open');
     }
 
     function closeCartPanel() {
-        if(cartBackdrop) cartBackdrop.classList.remove('is-active');
-        if(cartOffcanvas) cartOffcanvas.classList.remove('is-open');
+        if (cartBackdrop) cartBackdrop.classList.remove('is-active');
+        if (cartOffcanvas) cartOffcanvas.classList.remove('is-open');
     }
 
-    if(cartIconButton) cartIconButton.addEventListener('click', (e) => { e.preventDefault(); loadInitialCart(); openCartPanel(); });
-    if(closeCartBtn) closeCartBtn.addEventListener('click', closeCartPanel);
-    if(cartBackdrop) cartBackdrop.addEventListener('click', closeCartPanel);
+    if (cartIconButton) cartIconButton.addEventListener('click', (e) => { e.preventDefault(); loadInitialCart(); openCartPanel(); });
+    if (closeCartBtn) closeCartBtn.addEventListener('click', closeCartPanel);
+    if (cartBackdrop) cartBackdrop.addEventListener('click', closeCartPanel);
     function updateCartUI(data) {
         const cartCountSpan = document.getElementById('cart-item-count');
         const cartBody = document.getElementById('cart-offcanvas-body');
         const cartSubtotal = document.getElementById('cart-subtotal');
-        
+
         if (!cartCountSpan || !cartBody || !cartSubtotal) {
             console.error("Elementos del carrito no encontrados en el DOM.");
             return;
@@ -177,45 +181,45 @@ document.addEventListener('DOMContentLoaded', function() {
             cartSubtotal.textContent = '$0';
         }
     }
-    document.body.addEventListener('submit', function(event) {
+    document.body.addEventListener('submit', function (event) {
         if (event.target.matches('form[action*="/agregar/"]')) {
-            
+
             const form = event.target;
             const formData = new FormData(form);
-            const redirectNext = formData.get('next'); 
+            const redirectNext = formData.get('next');
             if (redirectNext === 'checkout') {
-                return; 
+                return;
             }
             event.preventDefault();
             const url = form.action;
-            
+
             fetch(url, {
                 method: 'POST',
                 body: formData,
-                headers: { 
+                headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCookie('csrftoken') 
+                    'X-CSRFToken': getCookie('csrftoken')
                 },
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateCartUI(data); 
-                    Swal.fire({
-                        icon: 'success', title: '¡Producto Agregado!', toast: true,
-                        position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true
-                    });
-                    openCartPanel(); 
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Oops...', text: data.message || 'Ocurrió un error.' });
-                }
-            })
-            .catch(error => console.error('Error en AJAX al agregar:', error));
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateCartUI(data);
+                        Swal.fire({
+                            icon: 'success', title: '¡Producto Agregado!', toast: true,
+                            position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true
+                        });
+                        openCartPanel();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Oops...', text: data.message || 'Ocurrió un error.' });
+                    }
+                })
+                .catch(error => console.error('Error en AJAX al agregar:', error));
         }
     });
 
     function loadInitialCart() {
-        fetch('/api/get-cart/') 
+        fetch('/api/get-cart/')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -228,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInitialCart();
     const clearCartBtn = document.getElementById('clear-cart-btn');
     if (clearCartBtn) {
-        clearCartBtn.addEventListener('click', function() {
+        clearCartBtn.addEventListener('click', function () {
             const cartItemCountSpan = document.getElementById('cart-item-count');
             const itemCount = parseInt(cartItemCountSpan?.textContent) || 0;
 
@@ -253,56 +257,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch('/limpiar-carro/', { 
+                    fetch('/limpiar-carro/', {
                         method: 'POST',
                         headers: {
                             'X-CSRFToken': getCookie('csrftoken'),
                             'X-Requested-With': 'XMLHttpRequest',
                         },
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            loadInitialCart(); 
-                            Swal.fire(
-                                '¡Vaciado!',
-                                'Tu carrito ha sido vaciado.',
-                                'success'
-                            );
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                loadInitialCart();
+                                Swal.fire(
+                                    '¡Vaciado!',
+                                    'Tu carrito ha sido vaciado.',
+                                    'success'
+                                );
 
-                            closeCartPanel(); 
-                        }
-                    })
-                    .catch(error => console.error('Error al vaciar el carrito:', error));
+                                closeCartPanel();
+                            }
+                        })
+                        .catch(error => console.error('Error al vaciar el carrito:', error));
                 }
             });
         });
     }
 
     if (cartBody) {
-        cartBody.addEventListener('click', function(e) {
+        cartBody.addEventListener('click', function (e) {
             if (e.target.classList.contains('cart-item-remove')) {
                 e.preventDefault();
                 const product_id = e.target.dataset.itemId;
-                const url = `/eliminar-del-carro/${product_id}/`; 
+                const url = `/eliminar-del-carro/${product_id}/`;
 
                 fetch(url, {
-                    method: 'POST', 
+                    method: 'POST',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateCartUI(data); 
-                        closeCartPanel();
-                    } else {
-                        alert(data.message || 'Error al eliminar el producto.');
-                    }
-                })
-                .catch(error => console.error('Error al eliminar ítem:', error));
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateCartUI(data);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Producto eliminado',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message || 'Error al eliminar el producto.'
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error al eliminar ítem:', error));
             }
         });
     }
