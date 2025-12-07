@@ -1621,13 +1621,16 @@ def search_results_view(request):
     """
     Filtra los productos basándose en la consulta de búsqueda y muestra los resultados.
     """
+    from meta.views import Meta
+    
     query = request.GET.get('q', '') 
     products = None
 
     if query:
         products = Producto.objects.filter(
             Q(nombre__icontains=query) |
-            Q(marca__nombre__icontains=query)
+            Q(marca__nombre__icontains=query) |
+            Q(tags__nombre__icontains=query)
         ).distinct()
 
     # SEO para resultados de búsqueda
