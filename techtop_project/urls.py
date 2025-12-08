@@ -80,6 +80,7 @@ urlpatterns = [
     path('webpay/iniciar/', views.iniciar_pago_webpay, name='iniciar_pago_webpay'),
     path('webpay/retorno/', views.retorno_webpay, name='retorno_webpay'),
     path('webpay/anular/<int:transaccion_id>/', views.anular_transaccion_webpay, name='anular_transaccion_webpay'),
+    path('reanudar-pago/<int:pedido_id>/', views.reanudar_pago, name='reanudar_pago'),
     
     # Rutas para Mercado Pago
     path('mercadopago/iniciar/', views.iniciar_pago_mercadopago, name='iniciar_pago_mercadopago'),
