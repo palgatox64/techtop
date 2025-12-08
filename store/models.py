@@ -227,6 +227,8 @@ class Direccion(models.Model):
 # MODELOS DE PEDIDO Y NOTIFICACIONES
 # =========================================
 
+# En store/models.py
+
 class Pedido(models.Model):
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
@@ -242,19 +244,28 @@ class Pedido(models.Model):
         ('otro', 'Otro'),
     ]
 
-    cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True)
-    direccion_envio = models.ForeignKey(Direccion, on_delete=models.SET_NULL, null=True)
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # --- CORRECCIÓN CLAVE: TextField para evitar error 'direccion_envio_id' ---
+    direccion_envio = models.TextField(blank=True, null=True)
+    
+    # --- FECHA: Usamos fecha_pedido ---
     fecha_pedido = models.DateTimeField(auto_now_add=True)
+    
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, default='pendiente')
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, default='otro')
     tracking_number = models.CharField(max_length=8, unique=True, null=True, blank=True)
     
+    # Campos de auditoría extra (opcional, pero útil para evitar errores si existían)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         if not self.tracking_number:
-            new_tracking = generate_tracking_number()
+            # Asegúrate de tener importado 'string' y 'random' y la función generate_tracking_number
+            new_tracking = ''.join(random.choices(string.digits, k=8))
             while Pedido.objects.filter(tracking_number=new_tracking).exists():
-                new_tracking = generate_tracking_number()
+                new_tracking = ''.join(random.choices(string.digits, k=8))
             self.tracking_number = new_tracking
         super().save(*args, **kwargs)
 
@@ -262,6 +273,28 @@ class Pedido(models.Model):
         cliente_nombre = self.cliente.nombre if self.cliente else 'Cliente Desconocido'
         tracking = self.tracking_number if self.tracking_number else f"ID {self.id}"
         return f"Pedido #{tracking} - {cliente_nombre}"
+
+    # --- PROPIEDAD PARA EL BOTÓN DE PAGO ---
+    @property
+    def puede_continuar_pago(self):
+        if self.estado != 'pendiente': 
+            return False
+        # Usamos fecha_pedido + 1 hora
+        tiempo_limite = self.fecha_pedido + datetime.timedelta(hours=1)
+        return timezone.now() < tiempo_limite
+
+    # --- LÓGICA DE CANCELACIÓN AUTOMÁTICA (Agregada de nuevo) ---
+    @property
+    def puede_continuar_pago(self):
+        """
+        Retorna True si el pedido está Pendiente y tiene menos de 1 hora.
+        """
+        # Ojo con las mayúsculas/minúsculas en 'pendiente' según tu ESTADO_CHOICES
+        if self.estado != 'pendiente': 
+            return False
+        
+        tiempo_limite = self.fecha_pedido + datetime.timedelta(hours=1)
+        return timezone.now() < tiempo_limite
 
 class DetallePedido(models.Model):
     pedido = models.ForeignKey(Pedido, related_name='detalles', on_delete=models.CASCADE)

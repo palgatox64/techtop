@@ -1,3 +1,6 @@
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Pedido
 
 # Python Standard Library
 import csv
@@ -2802,13 +2805,8 @@ def webhook_mercadopago(request):
 
 
 def obtener_ventas_en_tiempo(fecha_inicio, agrupador):
-    """
-    Obtiene las ventas agregadas por tiempo (día, mes o año).
-    Filtra solo pedidos confirmados (no pendientes ni cancelados).
-    """
-    # Definimos qué estados consideramos como "ventas reales"
     estados_validos = ['procesando', 'enviado', 'entregado']
-    
+    # CORREGIDO: Usamos fecha_pedido
     ventas = Pedido.objects.filter(
         fecha_pedido__gte=fecha_inicio,
         estado__in=estados_validos
@@ -2818,67 +2816,41 @@ def obtener_ventas_en_tiempo(fecha_inicio, agrupador):
         total_ventas=Sum('total')
     ).order_by('periodo')
 
-    # Formatear para Chart.js
     labels = []
     values = []
     for venta in ventas:
-        # Formato de fecha dependiendo del agrupador
         if isinstance(agrupador, type(TruncDay)):
-            fecha_fmt = venta['periodo'].strftime("%d/%m") # Ej: 25/10
+            fecha_fmt = venta['periodo'].strftime("%d/%m")
         elif isinstance(agrupador, type(TruncMonth)):
-            fecha_fmt = venta['periodo'].strftime("%m/%Y") # Ej: 10/2025
+            fecha_fmt = venta['periodo'].strftime("%m/%Y")
         else:
-            fecha_fmt = venta['periodo'].strftime("%Y") # Ej: 2025
-            
+            fecha_fmt = venta['periodo'].strftime("%Y")
         labels.append(fecha_fmt)
         values.append(float(venta['total_ventas']))
-
     return {'labels': labels, 'values': values}
 
 def obtener_top_productos(fecha_inicio):
-    """
-    Obtiene el top 10 de productos más vendidos en un período.
-    Ordena primero por cantidad vendida (descendente) y luego por ingresos generados (descendente) para desempatar.
-    """
     estados_validos = ['procesando', 'enviado', 'entregado']
-    
+    # CORREGIDO: Usamos fecha_pedido en el filtro related
     top = DetallePedido.objects.filter(
         pedido__fecha_pedido__gte=fecha_inicio,
         pedido__estado__in=estados_validos
-    ).values(
-        'producto__nombre'
-    ).annotate(
+    ).values('producto__nombre').annotate(
         cantidad_total=Sum('cantidad'),
         ingresos_totales=Sum(F('cantidad') * F('precio_unitario'))
-    ).order_by('-cantidad_total', '-ingresos_totales')[:10]  # <-- AQUÍ ESTÁ EL CAMBIO CLAVE
+    ).order_by('-cantidad_total', '-ingresos_totales')[:10]
 
-    return [
-        {
-            'name': item['producto__nombre'],
-            'quantity': item['cantidad_total'],
-            'revenue': float(item['ingresos_totales'])
-        }
-        for item in top
-    ]
+    return [{'name': i['producto__nombre'], 'quantity': i['cantidad_total'], 'revenue': float(i['ingresos_totales'])} for i in top]
 
 def obtener_metricas_envio(fecha_inicio):
-    """
-    Cuenta cuántos pedidos fueron con retiro vs delivery.
-    """
     estados_validos = ['procesando', 'enviado', 'entregado']
+    # CORREGIDO: Filtro simple por texto vacío/lleno
+    pedidos = Pedido.objects.filter(fecha_pedido__gte=fecha_inicio, estado__in=estados_validos)
     
-    stats = Pedido.objects.filter(
-        fecha_pedido__gte=fecha_inicio,
-        estado__in=estados_validos
-    ).aggregate(
-        retiro=Count('id', filter=Q(direccion_envio__isnull=True)),
-        delivery=Count('id', filter=Q(direccion_envio__isnull=False))
-    )
+    delivery = pedidos.exclude(direccion_envio__isnull=True).exclude(direccion_envio__exact='').count()
+    pickup = pedidos.filter(Q(direccion_envio__isnull=True) | Q(direccion_envio__exact='')).count()
     
-    return {
-        'pickup': stats['retiro'] or 0,
-        'delivery': stats['delivery'] or 0
-    }
+    return {'pickup': pickup, 'delivery': delivery}
     
 def obtener_metricas_pago(fecha_inicio):
     """
@@ -3146,15 +3118,13 @@ def perfil_usuario_view(request):
     
     if user_type == 'cliente':
         cliente = get_object_or_404(Cliente, id_cliente=request.session.get('cliente_id'))
+        # CORREGIDO: Usamos fecha_pedido
         ultimas_compras = Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')[:5]
         context = {'cliente': cliente, 'ultimas_compras': ultimas_compras, 'es_cliente': True}
     
     elif user_type == 'empleado':
         empleado = get_object_or_404(Empleado, id_empleado=request.session.get('empleado_id'))
-        # Los empleados no suelen tener compras asociadas en este modelo, 
-        # pero podríamos mostrar las últimas ventas generales si quisieras.
-        # Por ahora, lo dejamos simple.
-        context = {'cliente': empleado, 'es_cliente': False} # Usamos 'cliente' en el template para reutilizarlo
+        context = {'cliente': empleado, 'es_cliente': False}
         
     return render(request, 'usuario/perfil.html', context)
 
@@ -3208,17 +3178,16 @@ def editar_perfil_view(request):
 
     return render(request, 'usuario/editar_perfil.html', {'form': form, 'es_cliente': (user_type == 'cliente')})
 
-@usuario_logueado_required
 def historial_compras_view(request):
     user_type = request.session.get('user_type')
     
     if user_type == 'empleado':
-        # Opcional: Permitir que el admin vea TODAS las compras aquí, o redirigirlo.
-        # Por ahora, redirigimos al panel de gestión que es más apropiado para ellos.
-        messages.info(request, 'Como administrador, puedes ver todas las transacciones en el Panel de Gestión.')
+        messages.info(request, 'Como administrador, ve al Panel de Gestión.')
         return redirect('panel_gestion')
 
     cliente = get_object_or_404(Cliente, id_cliente=request.session.get('cliente_id'))
+    
+    # CORREGIDO: Usamos fecha_pedido
     pedidos = Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')
     
     paginator = Paginator(pedidos, 10)
@@ -3245,35 +3214,31 @@ def detalle_compra_view(request, pedido_id):
 
 @admin_required
 def listar_pedidos_view(request):
-    # Filtrado inicial base
-    pedidos = Pedido.objects.all().order_by('-fecha_pedido').select_related('cliente', 'direccion_envio')
+    # CORREGIDO: Usamos fecha_pedido y QUITAMOS direccion_envio del select_related
+    pedidos = Pedido.objects.all().order_by('-fecha_pedido').select_related('cliente')
 
-    # --- FILTROS ---
-    # 1. Filtro por Tipo de Entrega
+    # Filtros
     delivery_filter = request.GET.get('entrega')
     if delivery_filter == 'delivery':
-        pedidos = pedidos.filter(direccion_envio__isnull=False)
+        # Asumiendo que guardas texto en direccion_envio, filtramos los no vacíos
+        pedidos = pedidos.exclude(direccion_envio__isnull=True).exclude(direccion_envio__exact='')
     elif delivery_filter == 'retiro':
-        pedidos = pedidos.filter(direccion_envio__isnull=True)
+        pedidos = pedidos.filter(Q(direccion_envio__isnull=True) | Q(direccion_envio__exact=''))
 
-    # 2. Filtro por Método de Pago
     pago_filter = request.GET.get('pago')
     if pago_filter in ['webpay', 'mercadopago', 'transferencia']:
         pedidos = pedidos.filter(metodo_pago=pago_filter)
 
-    # 3. Filtro por Estado
     estado_filter = request.GET.get('estado')
     if estado_filter:
         pedidos = pedidos.filter(estado=estado_filter)
 
-    # Paginación
     paginator = Paginator(pedidos, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'gestion/pedidos_list.html', {
         'page_obj': page_obj,
-        # Pasamos los filtros actuales al template para mantenerlos seleccionados
         'current_entrega': delivery_filter,
         'current_pago': pago_filter,
         'current_estado': estado_filter
@@ -4026,3 +3991,36 @@ def eliminar_tag_view(request, pk):
         'success': True,
         'message': f'Etiqueta "{nombre_tag}" eliminada exitosamente.'
     })
+
+def reanudar_pago(request, pedido_id):
+    """Vista para retomar el pago de un pedido pendiente."""
+    if request.session.get('user_type') == 'cliente':
+        cliente_id = request.session.get('cliente_id')
+        pedido = get_object_or_404(Pedido, id=pedido_id, cliente__id_cliente=cliente_id)
+    else:
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+
+    if not pedido.puede_continuar_pago:
+        messages.error(request, "El tiempo para pagar ha expirado o el pedido no está pendiente.")
+        return redirect('historial_compras')
+
+    # Redirección según método
+    if pedido.metodo_pago == 'webpay':
+        # Truco: guardamos datos en sesión para que la vista de pago funcione
+        request.session['checkout_data'] = {
+            'total': str(pedido.total),
+            'metodo_pago': 'webpay',
+            'pedido_existente_id': pedido.id # Útil si modificas iniciar_pago_webpay
+        }
+        return redirect('iniciar_pago_webpay')
+    
+    elif pedido.metodo_pago == 'mercadopago':
+         # Similar para MercadoPago
+        return redirect('iniciar_pago_mercadopago')
+        
+    elif pedido.metodo_pago == 'transferencia':
+        return redirect('subir_comprobante', pedido_id=pedido.id)
+
+    else:
+        messages.error(request, "Método de pago no reconocido.")
+        return redirect('historial_compras')

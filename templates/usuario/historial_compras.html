@@ -34,6 +34,28 @@
                     <td>
                         <a href="{% url 'detalle_compra' pedido.id %}" class="btn-action" style="background:#6a0dad; color:white;">Ver</a>
                     </td>
+                    <td>
+                        <span class="badge {% if pedido.estado == 'pendiente' %}bg-warning{% elif pedido.estado == 'cancelado' %}bg-danger{% else %}bg-success{% endif %}">
+                            {{ pedido.get_estado_display }}
+                        </span>
+
+                        {% if pedido.puede_continuar_pago %}
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1" style="font-size: 0.8rem;">
+                                    <i class="far fa-clock"></i> Tienes 1 hora para pagar
+                                </small>
+                                <a href="{% url 'reanudar_pago' pedido.id %}" class="btn btn-primary btn-sm">
+                                    Pagar Ahora
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if pedido.estado == 'pendiente' and not pedido.puede_continuar_pago %}
+                            <div class="mt-1">
+                                <small class="text-danger">Expirado (Se cancelará pronto)</small>
+                            </div>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="5" style="text-align: center; padding: 30px;">No tienes pedidos registrados.</td></tr>
