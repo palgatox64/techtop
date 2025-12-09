@@ -50,7 +50,7 @@
         </div>
         <div class="summary-item">
             <h4>Dirección de Envío</h4>
-            <p>{% if pedido.direccion_envio %}{{ pedido.direccion_envio.calle }}, {{ pedido.direccion_envio.ciudad }}{% else %}Retiro en Tienda{% endif %}</p>
+            <p>{% if pedido.direccion_envio %}{{ pedido.direccion_envio }}{% else %}Retiro en Tienda{% endif %}</p>
         </div>
     </div>
 

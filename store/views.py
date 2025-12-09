@@ -1876,25 +1876,31 @@ def _crear_pedido_desde_sesion(request):
         except Cliente.DoesNotExist:
             pass
     
-    # Crear dirección de envío si es delivery
-    direccion_obj = None
+    # Construir dirección de envío como texto si es delivery
+    direccion_texto = None
     if checkout_data['tipo_entrega'] == 'delivery':
-        if cliente:
-            try:
-                direccion_obj = Direccion.objects.create(
-                    cliente=cliente,
-                    calle=checkout_data.get('calle', ''),
-                    ciudad='Santiago',
-                    region='Metropolitana',
-                    codigo_postal=checkout_data.get('codigo_postal', '')
-                )
-            except:
-                pass
+        calle = checkout_data.get('calle', '')
+        numero = checkout_data.get('numero', '')
+        depto = checkout_data.get('depto', '')
+        ciudad = checkout_data.get('ciudad', 'Santiago')
+        region = checkout_data.get('region', 'Región Metropolitana')
+        codigo_postal = checkout_data.get('codigo_postal', '')
+        
+        # Formatear la dirección completa
+        direccion_partes = [f"{calle} {numero}".strip()]
+        if depto:
+            direccion_partes.append(f"Depto/Casa {depto}")
+        direccion_partes.append(ciudad)
+        direccion_partes.append(region)
+        if codigo_postal:
+            direccion_partes.append(f"CP: {codigo_postal}")
+        
+        direccion_texto = ", ".join(direccion_partes)
     
     # Crear el pedido
     pedido = Pedido.objects.create(
         cliente=cliente,
-        direccion_envio=direccion_obj,
+        direccion_envio=direccion_texto,
         total=Decimal(checkout_data['total']),
         metodo_pago=checkout_data['metodo_pago'],
         estado='pendiente'

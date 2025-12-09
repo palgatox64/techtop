@@ -79,10 +79,10 @@
                     <strong>Método de Entrega:</strong>
                     <p>{% if es_retiro == 'yes' %}Retiro en Tienda{% else %}Despacho a Domicilio{% endif %}</p>
                 </div>
-                {% if not es_retiro == 'yes' and pedido.direccion_envio %}
+                {% if es_retiro == 'no' and pedido.direccion_envio %}
                 <div>
                     <strong>Dirección de Envío:</strong>
-                    <p>{{ pedido.direccion_envio.calle }} #{{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}</p>
+                    <p>{{ pedido.direccion_envio }}</p>
                 </div>
                 {% endif %}
             </div>
