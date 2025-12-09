@@ -84,7 +84,7 @@
     </header>
 
     <div class="form-container">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" class="gestion-form">
             {% csrf_token %}
             
             {% if form.errors %}
