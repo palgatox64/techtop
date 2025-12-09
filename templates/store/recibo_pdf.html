@@ -137,7 +137,7 @@
             <strong>Email:</strong> {{ cliente_email }} <br>
             {% if cliente_rut != 'No disponible' %}<strong>RUT:</strong> {{ cliente_rut }}<br>{% endif %}
             {% if pedido.direccion_envio %}
-                <strong>Dirección de Envío:</strong> {{ pedido.direccion_envio.calle }} #{{ pedido.direccion_envio.numero }}, {{ pedido.direccion_envio.ciudad }}
+                <strong>Dirección de Envío:</strong> {{ pedido.direccion_envio }}
             {% else %}
                 <strong>Método de Entrega:</strong> Retiro en Tienda
             {% endif %}

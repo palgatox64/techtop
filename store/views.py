@@ -1937,7 +1937,7 @@ def generar_recibo_pdf(request, pedido_id):
     """
     try:
         # Buscamos el pedido y precargamos datos relacionados
-        pedido = Pedido.objects.select_related('cliente', 'direccion_envio').get(id=pedido_id)
+        pedido = Pedido.objects.select_related('cliente').get(id=pedido_id)
         detalles = pedido.detalles.select_related('producto').all()
     except Pedido.DoesNotExist:
         raise Http404("Pedido no encontrado")
