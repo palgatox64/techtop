@@ -7,9 +7,29 @@
 
 <div class="swiper">
   <div class="swiper-wrapper">
-    <div class="swiper-slide" style="background-image: url('static/img/banner-1.webp');"></div>
-    <div class="swiper-slide" style="background-image: url('#');"></div>
-    <div class="swiper-slide" style="background-image: url('#');"></div>
+    <!-- Slide 1: Normal -->
+    <div class="swiper-slide">
+      <picture style="width: 100%; height: 100%;">
+        <source media="(max-width: 768px)" srcset="{% static 'img/NormalCelular.png' %}">
+        <img src="{% static 'img/Normal.png' %}" alt="Normal" style="width: 100%; height: 100%; object-fit: cover;">
+      </picture>
+    </div>
+    <!-- Slide 2: Navidad Rojo -->
+    <div class="swiper-slide">
+      <picture style="width: 100%; height: 100%;">
+        <source media="(max-width: 768px)" srcset="{% static 'img/NavidadRojoCelular.png' %}">
+        <img src="{% static 'img/NavidadRojo.png' %}" alt="Navidad Rojo"
+          style="width: 100%; height: 100%; object-fit: cover;">
+      </picture>
+    </div>
+    <!-- Slide 3: Navidad Verde -->
+    <div class="swiper-slide">
+      <picture style="width: 100%; height: 100%;">
+        <source media="(max-width: 768px)" srcset="{% static 'img/NavidadVerdeCelular.png' %}">
+        <img src="{% static 'img/NavidadVerde.png' %}" alt="Navidad Verde"
+          style="width: 100%; height: 100%; object-fit: cover;">
+      </picture>
+    </div>
   </div>
   <div class="swiper-pagination"></div>
   <div class="swiper-button-prev"></div>
@@ -17,7 +37,7 @@
 </div>
 
 <div class="page-content" style="text-align: center; padding: 2rem;">
-    <h2>Productos Destacados</h2>
+  <h2>Productos Destacados</h2>
 </div>
 
 {% endblock %}
